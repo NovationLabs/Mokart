@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: mokart-web
     ports:
-      - "9980:3000"
+      - "8080:3000"
     volumes:
       - ./web/src:/app/src
       - ./web/public:/app/public
@@ -17,7 +17,7 @@ services:
       dockerfile: Dockerfile
     container_name: mokart-api
     ports:
-      - "9981:5000"
+      - "8081:5000"
     volumes:
       - ./api:/app
     restart: unless-stopped

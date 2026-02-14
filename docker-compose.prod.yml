@@ -1,0 +1,22 @@
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.prod
+    container_name: mokart-web-prod
+    ports:
+      - "9980:80"
+    restart: always
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: mokart-api-prod
+    ports:
+      - "9981:5000"
+    volumes:
+      - ./api:/app
+    restart: always
