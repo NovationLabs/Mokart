@@ -10,6 +10,27 @@
 
 ## Quick Start
 
+**Script de démarrage recommandé**
+   ```bash
+   # Démarrage rapide (développement)
+   ./start.sh
+
+   # Construction et démarrage
+   ./start.sh build
+
+   # Reconstruction complète
+   ./start.sh rebuild
+
+   # Mode production
+   ./start.sh prod
+
+   # Arrêter les services
+   ./start.sh stop
+
+   # Nettoyage complet
+   ./start.sh clean
+   ```
+
 **Run with Docker Compose**
    ```bash
    # Development
@@ -34,4 +55,3 @@
 - **Clément DORGE**
 - **Selim BOUASKER**
 - **Anthony COLOMBANI-GAILLEUR**
-

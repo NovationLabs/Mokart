@@ -20,4 +20,6 @@ services:
       - "8081:5000"
     volumes:
       - ./api:/app
+    env_file:
+      - ./api/.env
     restart: unless-stopped
