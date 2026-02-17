@@ -121,7 +121,7 @@ const MokartMain: React.FC = () => {
               <Icons.Chart />
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">Precision Analysis</h3>
-            <p className="text-gray-400">After the race, scan a QR Code to access your trajectory with 10cm precision thanks to our RTK technology.</p>
+            <p className="text-gray-400">After the race, scan a QR Code to access your trajectory with 10cm precision thanks to RTK technology.</p>
           </div>
         </div>
       </Section>
@@ -169,8 +169,8 @@ const MokartMain: React.FC = () => {
                <div className="flex items-start">
                  <div className="w-2 h-2 mt-2 rounded-full bg-mokart-accent mr-4"></div>
                  <div>
-                   <h4 className="text-xl font-bold text-white">Centimetric Precision</h4>
-                   <p className="text-gray-400">Innovation partnership with <span className="text-mokart-success font-bold">Point One Navigation</span> for sub-decimeter RTK positioning.</p>
+                   <h4 className="text-xl font-bold text-white">High-Precision Tracking</h4>
+                   <p className="text-gray-400">Implementing RTK (Real-Time Kinematic) technology to achieve sub-decimeter positioning, enabling professional-grade trajectory mapping and analysis.</p>
                  </div>
                </div>
              </div>
