@@ -1,10 +1,10 @@
 import React from 'react';
-import MokartMain from './components/MokartMain';
+import Navigation from './components/Navigation';
 import './styles/App.css';
 
 const App: React.FC = () => {
   return (
-    <MokartMain />
+    <Navigation />
   );
 };
 
