@@ -21,11 +21,13 @@
 
 **Access the Application**
 - Development :
-   - Web App: [http://localhost:8080](http://localhost:8080)
+   - App: [http://localhost:8000](http://localhost:8000)
+   - Web: [http://localhost:8080](http://localhost:8080)
    - API: [http://localhost:8081](http://localhost:8081)
 
 - Production :
-   - Web App: [http://localhost:9980](http://localhost:9980)
+   - App: [http://localhost:9979](http://localhost:9979)
+   - Web: [http://localhost:9980](http://localhost:9980)
    - API: [http://localhost:9981](http://localhost:9981)
 
 ## Team

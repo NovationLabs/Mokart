@@ -1,4 +1,14 @@
 services:
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.prod
+    container_name: mokart-app-prod
+    ports:
+      - "9979:80"
+    restart: always
+
   web:
     build:
       context: ./web
@@ -7,8 +17,6 @@ services:
     ports:
       - "9980:80"
     restart: always
-    depends_on:
-      - api
 
   api:
     build:

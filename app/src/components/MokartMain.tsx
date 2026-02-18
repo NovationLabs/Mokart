@@ -99,10 +99,10 @@ const MokartMain: React.FC = () => {
       {/*
         Tab Content
       */}
-      <div className="content-area">
+      {/* <div className="content-area">
           <h3>{activeTab} View</h3>
           <p>Content for {activeTab} goes here.</p>
-      </div>
+      </div> */}
 
     </div>
   );
