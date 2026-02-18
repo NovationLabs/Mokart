@@ -23,3 +23,15 @@ services:
     env_file:
       - ./api/.env
     restart: unless-stopped
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: mokart-app
+    ports:
+      - "8000:3000"
+    volumes:
+      - ./app/src:/app/src
+      - ./app/public:/app/public
+    restart: unless-stopped

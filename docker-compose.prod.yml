@@ -20,3 +20,12 @@ services:
     volumes:
       - ./api:/app
     restart: always
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.prod
+    container_name: mokart-app-prod
+    ports:
+      - "9979:80"
+    restart: always
