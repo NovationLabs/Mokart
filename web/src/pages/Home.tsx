@@ -105,7 +105,7 @@ const Home: React.FC = () => {
                         <button onClick={() => scrollToSection('comparison')} className="hover:text-white transition-colors">Comparison</button>
                     </div>
 
-                    <a href={process.env.REACT_APP_PLATFORM_URL || 'http://localhost:8000'} className="text-xs font-bold uppercase tracking-widest text-[#A3E635] border border-[#A3E635]/30 px-4 py-2 rounded hover:bg-[#A3E635]/10 transition-colors">
+                    <a href="https://app.novationlabs.fr" className="text-xs font-bold uppercase tracking-widest text-[#A3E635] border border-[#A3E635]/30 px-4 py-2 rounded hover:bg-[#A3E635]/10 transition-colors">
                         Get Access
                     </a>
                 </div>
@@ -410,8 +410,8 @@ const Home: React.FC = () => {
                             <div>
                                 <h5 className="text-white font-bold mb-4 text-sm">Product</h5>
                                 <ul className="space-y-2 text-sm text-gray-500">
-                                    <li><a href="/soon" className="hover:text-[#A3E635]">Hardware</a></li>
-                                    <li><a href="http://localhost:8000" className="hover:text-[#A3E635]">Software</a></li>
+                                    <li><a href="/soon" className="hover:text-[#A3E635]">Hardware</a></li> 
+                                    <li><a href="https://app.novationlabs.fr" className="hover:text-[#A3E635]">Software</a></li>
                                     <li><a href="/soon" className="hover:text-[#A3E635]">Pricing</a></li>
                                 </ul>
                             </div>

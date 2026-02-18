@@ -29,7 +29,7 @@ const TermsOfService: React.FC = () => {
                             <h2 className="text-2xl font-bold text-white">Project Status</h2>
                         </div>
                         <p className="text-gray-300 leading-relaxed">
-                            Mokart is currently a <strong className="text-[#22D3EE]">prototype</strong> developed as part of the Epitech Innovative Project (EIP) 2024-2027. The hardware and software are in active development and may be subject to updates, interruptions, or feature changes without notice.
+                            Mokart is currently a <strong className="text-[#22D3EE]">prototype</strong> developed as part of the Epitech Innovative Project (EIP) 2026-2028. The hardware and software are in active development and may be subject to updates, interruptions, or feature changes without notice.
                         </p>
                     </div>
 
