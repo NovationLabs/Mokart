@@ -10,6 +10,27 @@
 
 ## Quick Start
 
+**Script de démarrage recommandé**
+   ```bash
+   # Démarrage rapide (développement)
+   ./start.sh
+
+   # Construction et démarrage
+   ./start.sh build
+
+   # Reconstruction complète
+   ./start.sh rebuild
+
+   # Mode production
+   ./start.sh prod
+
+   # Arrêter les services
+   ./start.sh stop
+
+   # Nettoyage complet
+   ./start.sh clean
+   ```
+
 **Run with Docker Compose**
    ```bash
    # Development
@@ -21,13 +42,11 @@
 
 **Access the Application**
 - Development :
-   - App: [http://localhost:8000](http://localhost:8000)
-   - Web: [http://localhost:8080](http://localhost:8080)
+   - Web App: [http://localhost:8080](http://localhost:8080)
    - API: [http://localhost:8081](http://localhost:8081)
 
 - Production :
-   - App: [http://localhost:9979](http://localhost:9979)
-   - Web: [http://localhost:9980](http://localhost:9980)
+   - Web App: [http://localhost:9980](http://localhost:9980)
    - API: [http://localhost:9981](http://localhost:9981)
 
 ## Team
@@ -36,4 +55,3 @@
 - **Clément DORGE**
 - **Selim BOUASKER**
 - **Anthony COLOMBANI-GAILLEUR**
-
