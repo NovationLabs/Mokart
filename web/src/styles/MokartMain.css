@@ -2,27 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
-.text-gradient {
-  background: linear-gradient(to right, #00f0ff, #00ff41);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.font-display {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    letter-spacing: -0.02em;
 }
 
+.font-mono-data {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Subtle gradient background for depth without chaos */
+.bg-deep-space {
+    background: radial-gradient(circle at top center, #1a1a1a 0%, #050505 100%);
+}
+
+/* Glassmorphism - Clean & Subtle */
 .glass-panel {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.glow-hover:hover {
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+.glass-header {
+    background: rgba(5, 5, 5, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Animation de grille en fond */
-.bg-grid {
-  background-size: 50px 50px;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+/* Lime Accent Gradient for Text */
+.text-lime-gradient {
+    background: linear-gradient(to right, #A3E635, #bef264);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Button Styles - Clean Rectangles with Slight rounding */
+.btn-primary {
+    @apply bg-[#A3E635] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#84cc16] transition-colors duration-200 flex items-center gap-2;
+}
+
+.btn-secondary {
+    @apply bg-white/10 text-white font-medium px-6 py-3 rounded-lg border border-white/10 hover:bg-white/20 transition-colors duration-200;
+}
+
+/* Grid Pattern Overlay - Extremely faint */
+.bg-grid-minimal {
+    background-size: 40px 40px;
+    background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
 }
