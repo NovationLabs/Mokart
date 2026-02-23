@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/MokartMain.css';
+import '../styles/Main.css';
 import {
     BarChart3,
     MapPin,

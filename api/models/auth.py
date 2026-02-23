@@ -8,7 +8,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: str
     password: str
-    vehicle_model: Optional[str] = None
+    kart: Optional[str] = None
 
 class AuthResponse(BaseModel):
     user: dict

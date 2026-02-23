@@ -1,4 +1,17 @@
 services:
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: mokart-app
+    ports:
+      - "8000:3000"
+    volumes:
+      - ./app/src:/app/src
+      - ./app/public:/app/public
+    restart: unless-stopped
+
   web:
     build:
       context: ./web
@@ -20,18 +33,39 @@ services:
       - "8081:5000"
     volumes:
       - ./api:/app
-    env_file:
-      - ./api/.env
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+    depends_on:
+      - db
     restart: unless-stopped
 
-  app:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    container_name: mokart-app
+  pgadmin:
+      image: dpage/pgadmin4
+      container_name: mokart-pgadmin
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+        - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+      ports:
+        - "5050:80"
+      depends_on:
+        - db
+      restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: mokart-db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    env_file: .env
     ports:
-      - "8000:3000"
+      - "5432:5432"
     volumes:
-      - ./app/src:/app/src
-      - ./app/public:/app/public
+      - postgres_data:/var/lib/postgresql/data
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
+
+volumes:
+  postgres_data:

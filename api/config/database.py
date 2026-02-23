@@ -1,36 +1,29 @@
-from supabase import create_client, Client
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+db_user = os.getenv('DB_USER')
+db_pass = os.getenv('DB_PASSWORD')
+db_name = os.getenv('DB_NAME')
+# Database URL format: postgresql://user:password@host:port/dbname
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"postgresql://{db_user}:{db_pass}@db:5432/{db_name}"
+)
 
-class SupabaseConfig:
-    def __init__(self):
-        self.supabase_url = os.getenv("SUPABASE_URL", "https://qqjzcohrjhcambgulhae.supabase.co")
-        self.supabase_key = os.getenv("SUPABASE_KEY_SECRET")
-        self.client: Client = None
-        self._connect()
+# Create the SQLAlchemy engine
+engine = create_engine(DATABASE_URL)
 
-    def _connect(self):
-        """Initialiser la connexion Supabase"""
-        if self.supabase_key and self.supabase_url:
-            try:
-                self.client = create_client(self.supabase_url, self.supabase_key)
-                print("✅ Supabase connecté")
-                print(f"🔑 URL: {self.supabase_url}")
-                print(f"🔑 Key type: {type(self.supabase_key)}")
-                print(f"🔑 Key length: {len(self.supabase_key)}")
-            except Exception as e:
-                print(f"⚠️ Erreur de connexion Supabase: {e}")
-                self.client = None
-        else:
-            print("⚠️ SUPABASE_KEY_SECRET ou SUPABASE_URL non configuré")
-            self.client = None
+# Create a SessionLocal class
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    def get_client(self) -> Client:
-        """Retourner le client Supabase"""
-        return self.client
+# Base class for models
+Base = declarative_base()
 
-# Instance globale
-supabase_config = SupabaseConfig()
-supabase = supabase_config.get_client()
+# Dependency to get a DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

@@ -3,7 +3,7 @@ from .auth import LoginRequest, RegisterRequest, AuthResponse
 
 __all__ = [
     "Session",
-    "SensorData", 
+    "SensorData",
     "TrajectoryPoint",
     "LoginRequest",
     "RegisterRequest",

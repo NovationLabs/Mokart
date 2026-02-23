@@ -1,20 +1,27 @@
-from fastapi import APIRouter, HTTPException
-from supabase import create_client
-from config.database import supabase_config
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session as DbSession
+from config.database import get_db
+from models import sql_models
 from models.auth import LoginRequest, RegisterRequest, AuthResponse
+import hashlib
+import uuid
+import datetime
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
 @router.post("/login", response_model=AuthResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, db: DbSession = Depends(get_db)):
     print(f"🔐 Tentative de connexion pour: {request.email}")
 
-    # Mode démo pour contourner les problèmes Supabase
+    # Mode démo
     if request.email == "demo@mokart.com" and request.password == "demo123456":
         fake_user = {
             "id": "demo-user-123",
             "email": "demo@mokart.com",
-            "user_metadata": {"vehicle_model": "Demo Kart"}
+            "user_metadata": {"kart": "Demo Kart"}
         }
         fake_session = {
             "access_token": "demo-token",
@@ -26,152 +33,103 @@ async def login(request: LoginRequest):
             message="Connexion démo réussie"
         )
 
-    # Pour les autres emails, essayer Supabase
-    client = supabase_config.get_client()
-    if not client:
-        raise HTTPException(status_code=500, detail="Supabase non connecté")
-
     try:
-        # Créer une nouvelle instance du client pour éviter les problèmes d'état
-        client = create_client(supabase_config.supabase_url, supabase_config.supabase_key)
-        print("📤 Appel à supabase.auth.sign_in_with_password...")
-        response = client.auth.sign_in_with_password({
-            "email": request.email,
-            "password": request.password
-        })
+        # Chercher l'utilisateur dans la DB locale
+        user = db.query(sql_models.User).filter(sql_models.User.email == request.email).first()
 
-        print(f"✅ Réponse Supabase: {type(response)}")
-        print(f"👤 User: {response.user}")
-        print(f"🔑 Session: {response.session}")
+        hashed_pw = hash_password(request.password)
 
-        if response.user:
-            return AuthResponse(
-                user=response.user.model_dump(),
-                session=response.session.model_dump() if response.session else None,
-                message="Connexion réussie"
+        if user:
+            # Vérifier le mot de passe
+            if user.password_hash == hashed_pw:
+                user_dict = {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "user_metadata": {"kart": user.kart}
+                }
+                session_dict = {
+                    "access_token": f"local-token-{user.id}",
+                    "refresh_token": "local-refresh-token",
+                    "expires_at": (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
+                }
+                return AuthResponse(
+                    user=user_dict,
+                    session=session_dict,
+                    message="Connexion réussie"
+                )
+            else:
+                raise HTTPException(status_code=401, detail="Identifiants invalides")
+        else:
+            # Auto-signup si l'utilisateur n'existe pas
+            print("🔄 Création automatique de l'utilisateur...")
+            new_user = sql_models.User(
+                email=request.email,
+                password_hash=hashed_pw,
+                kart="Default Kart"
             )
-        else:
-            raise HTTPException(status_code=401, detail="Identifiants invalides")
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
 
+            user_dict = {
+                "id": str(new_user.id),
+                "email": new_user.email,
+                "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
+                "user_metadata": {"kart": new_user.kart}
+            }
+            session_dict = {
+                "access_token": f"local-token-{new_user.id}",
+                "refresh_token": "local-refresh-token",
+                "expires_at": (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
+            }
+
+            return AuthResponse(
+                user=user_dict,
+                session=session_dict,
+                message="Inscription et connexion réussies"
+            )
+
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        print(f"❌ Erreur complète: {repr(e)}")
-        print(f"📝 Type d'erreur: {type(e)}")
-
-        # Si l'utilisateur n'existe pas, essayer de le créer
-        if "Invalid login credentials" in str(e):
-            print("🔄 Tentative de création automatique...")
-            try:
-                # Créer l'utilisateur automatiquement
-                client = create_client(supabase_config.supabase_url, supabase_config.supabase_key)
-                signup_response = client.auth.sign_up({
-                    "email": request.email,
-                    "password": request.password,
-                    "options": {
-                        "data": {},
-                        "email_confirm": False  # Désactiver la confirmation email
-                    }
-                })
-
-                print(f"✅ Inscription: {signup_response.user}")
-
-                if signup_response.user:
-                    # Connecter automatiquement après l'inscription
-                    login_response = client.auth.sign_in_with_password({
-                        "email": request.email,
-                        "password": request.password
-                    })
-
-                    return AuthResponse(
-                        user=login_response.user.model_dump(),
-                        session=login_response.session.model_dump() if login_response.session else None,
-                        message="Compte créé et connexion réussie"
-                    )
-                else:
-                    raise HTTPException(status_code=400, detail="Erreur lors de la création du compte")
-            except Exception as signup_error:
-                print(f"❌ Erreur inscription: {repr(signup_error)}")
-                # Si l'email n'est pas confirmé, on retourne un message spécial
-                if "email confirmation" in str(signup_error).lower():
-                    return AuthResponse(
-                        user={"id": "temp", "email": request.email, "user_metadata": {}},
-                        session={"access_token": "temp", "refresh_token": "temp"},
-                        message="Compte créé (en attente de confirmation email)"
-                    )
-                raise HTTPException(status_code=400, detail=f"Erreur de création: {str(signup_error)}")
-        else:
-            raise HTTPException(status_code=401, detail=f"Erreur de connexion: {str(e)}")
+        print(f"❌ Erreur: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/register", response_model=AuthResponse)
-async def register(request: RegisterRequest):
-    client = supabase_config.get_client()
-    if not client:
-        raise HTTPException(status_code=500, detail="Supabase non connecté")
-
+async def register(request: RegisterRequest, db: DbSession = Depends(get_db)):
     try:
-        # Créer l'utilisateur
-        response = client.auth.sign_up({
-            "email": request.email,
-            "password": request.password,
-            "options": {
-                "data": {
-                    "vehicle_model": request.vehicle_model or "Unknown"
-                }
-            }
-        })
+        # Vérifier si l'utilisateur existe déjà
+        if db.query(sql_models.User).filter(sql_models.User.email == request.email).first():
+            raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
 
-        if response.user:
-            return AuthResponse(
-                user=response.user.model_dump(),
-                session=response.session.model_dump() if response.session else None,
-                message="Compte créé avec succès"
-            )
-        else:
-            raise HTTPException(status_code=400, detail="Erreur lors de la création du compte")
+        hashed_pw = hash_password(request.password)
 
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Erreur d'inscription: {str(e)}")
+        new_user = sql_models.User(
+            email=request.email,
+            password_hash=hashed_pw,
+            kart=request.kart or "Default Kart"
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
 
-@router.post("/logout")
-async def logout():
-    return {"message": "Déconnexion réussie"}
-
-@router.get("/me")
-async def get_current_user():
-    client = supabase_config.get_client()
-    if not client:
-        raise HTTPException(status_code=500, detail="Supabase non connecté")
-
-    try:
-        response = client.auth.get_user()
-        if response.user:
-            return {"user": response.user.model_dump()}
-        else:
-            raise HTTPException(status_code=401, detail="Non authentifié")
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Erreur d'authentification: {str(e)}")
-
-@router.get("/test")
-async def test_auth():
-    client = supabase_config.get_client()
-    if not client:
-        raise HTTPException(status_code=500, detail="Supabase non connecté")
-
-    try:
-        # Créer un utilisateur de test
-        response = client.auth.sign_up({
-            "email": "demo@mokart.com",
-            "password": "demo123456",
-            "options": {
-                "data": {
-                    "vehicle_model": "Demo Kart"
-                }
-            }
-        })
-
-        return {
-            "message": "Utilisateur de test créé",
-            "user": response.user.model_dump() if response.user else None,
-            "session": response.session.model_dump() if response.session else None
+        user_dict = {
+            "id": str(new_user.id),
+            "email": new_user.email,
+            "created_at": new_user.created_at.isoformat() if new_user.created_at else None,
+            "user_metadata": {"kart": new_user.kart}
         }
+        session_dict = {
+            "access_token": f"local-token-{new_user.id}",
+            "refresh_token": "local-refresh-token",
+            "expires_at": (datetime.datetime.now() + datetime.timedelta(days=1)).timestamp()
+        }
+
+        return AuthResponse(
+            user=user_dict,
+            session=session_dict,
+            message="Compte créé avec succès"
+        )
     except Exception as e:
-        return {"error": str(e), "message": "L'utilisateur existe peut-être déjà"}
+        raise HTTPException(status_code=400, detail=str(e))
