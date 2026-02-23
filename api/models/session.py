@@ -1,12 +1,16 @@
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class Session(BaseModel):
-    id: Optional[str] = None
-    user_id: Optional[str] = None
-    vehicle_model: Optional[str] = None
+    id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
+    kart: Optional[str] = None
     created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 class SensorData(BaseModel):
     session_id: str
@@ -21,6 +25,9 @@ class SensorData(BaseModel):
     imu_gy: Optional[float] = None
     imu_gz: Optional[float] = None
     steering_angle: Optional[float] = None
+
+    class Config:
+        from_attributes = True
 
 class TrajectoryPoint(BaseModel):
     x: float
