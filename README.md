@@ -1,4 +1,5 @@
-[![Mokart CI](https://github.com/novationlabs/mokart/actions/workflows/build.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
+[![Mokart Dev CI](https://github.com/novationlabs/mokart/actions/workflows/build_dev.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
+[![Mokart Prod CI](https://github.com/novationlabs/mokart/actions/workflows/build_prod.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 
 
 ##  Stack

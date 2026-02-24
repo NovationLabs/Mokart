@@ -1,4 +1,4 @@
-name: Docker Build
+name: Docker Build Dev
 
 on:
   push:
@@ -34,6 +34,7 @@ jobs:
     needs: check-commits
     if: needs.check-commits.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
