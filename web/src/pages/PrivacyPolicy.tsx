@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoveLeft, Shield, Database, LayoutDashboard, Share2, Server } from 'lucide-react';
+import { MoveLeft, Database, LayoutDashboard, Share2, Server } from 'lucide-react';
 
 const PrivacyPolicy: React.FC = () => {
     return (

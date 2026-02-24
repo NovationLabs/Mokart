@@ -8,7 +8,6 @@ import {
     Cpu,
     Wifi,
     Smartphone,
-    ArrowRight,
     TrendingUp,
     Award,
     ShieldCheck,

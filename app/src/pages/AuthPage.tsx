@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // Global style import handled in index.tsx
-import { Mail, Lock, User, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface AuthResponse {
   user: {
@@ -16,6 +16,8 @@ interface AuthResponse {
   };
   message: string;
 }
+
+const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
 
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -38,7 +40,7 @@ const AuthPage: React.FC = () => {
         ? { email, password }
         : { email, password, kart };
 
-      const response = await fetch(`http://localhost:8081${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +75,7 @@ const AuthPage: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:8081/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'demo@mokart.com', password: 'demo123456' }),
