@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Global style import handled in index.tsx
 import Sidebar from '../components/Sidebar';
-import { User, Map, Smartphone, Search, Bell, Settings } from 'lucide-react';
+import { User, Smartphone, Search, Bell } from 'lucide-react';
 
 const Home: React.FC = () => {
   const [userName, setUserName] = useState('');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { Activity, Clock, Map as MapIcon, RotateCw, AlertCircle, ChevronDown } from 'lucide-react';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Cell } from 'recharts';
+import { Activity, Clock, RotateCw, ChevronDown } from 'lucide-react';
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis } from 'recharts';
 
 interface Session {
   id: string;
@@ -46,6 +46,8 @@ const StatItem = ({ label, value, unit, icon: Icon }: any) => (
   </div>
 );
 
+const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
+
 const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<string>('');
@@ -57,6 +59,7 @@ const AnalysisPage: React.FC = () => {
   // Load sessions on mount
   useEffect(() => {
     fetchSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load trajectory when session changes
@@ -84,7 +87,7 @@ const AnalysisPage: React.FC = () => {
 
   const fetchSessions = async () => {
     try {
-      const response = await fetch('http://localhost:8081/sessions/');
+      const response = await fetch(`${API_BASE_URL}/sessions/`);
       const data = await response.json();
       setSessions(data);
       if (data.length > 0 && !selectedSession) {
@@ -98,7 +101,7 @@ const AnalysisPage: React.FC = () => {
   const fetchTrajectory = async (sessionId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8081/sessions/${sessionId}/trajectory`);
+      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/trajectory`);
       const data = await response.json();
       setTrajectory(data);
     } catch (error) {
@@ -110,7 +113,7 @@ const AnalysisPage: React.FC = () => {
 
   const fetchStats = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:8081/sessions/${sessionId}/stats`);
+      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/stats`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
