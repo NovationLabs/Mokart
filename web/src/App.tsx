@@ -1,5 +1,6 @@
 import React from 'react';
 import Home from './pages/Home';
+import About from './pages/About';
 import Soon from './pages/Soon';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
@@ -10,6 +11,8 @@ const App: React.FC = () => {
   const path = window.location.pathname;
 
   switch (path) {
+    case '/about':
+      return <About />;
     case '/soon':
       return <Soon />;
     case '/privacy-policy':
