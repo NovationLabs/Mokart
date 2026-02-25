@@ -166,7 +166,7 @@ const Home: React.FC = () => {
                     <FeatureCard
                         icon="Cpu"
                         title="Embedded Unit"
-                        desc="Raspberry Pi Zero 2W & ESP32 core working in tandem. Handles sensor fusion and high-frequency data logging autonomously."
+                        desc="64-bit Raspberry Pi core. Orchestrates real-time sensor fusion and professional grade GNSS processing to deliver sub-decimeter trajectory accuracy."
                         badge="Hardware"
                     />
                     <FeatureCard
@@ -417,7 +417,7 @@ const Home: React.FC = () => {
                             <div>
                                 <h5 className="text-white font-bold mb-4 text-sm">Company</h5>
                                 <ul className="space-y-2 text-sm text-gray-500">
-                                    <li><a href="/soon" className="hover:text-[#A3E635]">About</a></li>
+                                    <li><a href="/about" className="hover:text-[#A3E635]">About</a></li>
                                     <li><a href="/soon" className="hover:text-[#A3E635]">Contact</a></li>
                                 </ul>
                             </div>
