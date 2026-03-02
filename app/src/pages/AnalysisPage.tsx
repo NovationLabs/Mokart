@@ -73,15 +73,6 @@ const AnalysisPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load trajectory when session changes
-  useEffect(() => {
-    if (selectedSession) {
-      fetchTrajectory(selectedSession);
-      fetchStats(selectedSession);
-      fetchCircuitBoundaries(selectedSession);
-    }
-  }, [selectedSession]);
-
   const fetchCircuitBoundaries = async (sessionId: string) => {
     try {
       // Get circuit_id from session
@@ -95,6 +86,15 @@ const AnalysisPage: React.FC = () => {
       console.error('Error loading circuit boundaries:', error);
     }
   };
+
+  // Load trajectory when session changes
+  useEffect(() => {
+    if (selectedSession) {
+      fetchTrajectory(selectedSession);
+      fetchStats(selectedSession);
+      fetchCircuitBoundaries(selectedSession);
+    }
+  }, [selectedSession]);
 
   useEffect(() => {
     if (trajectory.length > 0 || circuitBoundaries.length > 0) {
