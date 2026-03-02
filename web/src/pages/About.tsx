@@ -117,9 +117,9 @@ const About: React.FC = () => {
                          {/* Anthony */}
                          <div>
                             <div className="aspect-square rounded-xl overflow-hidden mb-4 border border-white/10 bg-white/5">
-                                <img src="/team/anthony.png" alt="Anthony Colombani" className="w-full h-full object-cover grayscale" />
+                                <img src="/team/anthony.png" alt="Anthony Colombani-Gailleur" className="w-full h-full object-cover grayscale" />
                             </div>
-                            <h3 className="text-white font-bold text-lg">Anthony COLOMBANI</h3>
+                            <h3 className="text-white font-bold text-lg">Anthony COLOMBANI-GAILLEUR</h3>
                             <p className="text-[#A3E635] text-xs uppercase tracking-widest font-mono">Software Engineer</p>
                         </div>
 
