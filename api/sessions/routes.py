@@ -13,7 +13,20 @@ async def get_sessions(db: DbSession = Depends(get_db)):
     """Récupérer toutes les sessions"""
     try:
         sessions = db.query(sql_models.Session).all()
-        return sessions
+
+        # Convertir les objets SQLAlchemy en dictionnaires puis en modèles Pydantic
+        session_list = []
+        for session in sessions:
+            session_dict = {
+                "id": str(session.id),
+                "user_id": str(session.user_id) if session.user_id else None,
+                "kart": session.kart,
+                "circuit_id": str(session.circuit_id) if session.circuit_id else None,
+                "created_at": session.created_at.isoformat() if session.created_at else None
+            }
+            session_list.append(Session(**session_dict))
+
+        return session_list
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
