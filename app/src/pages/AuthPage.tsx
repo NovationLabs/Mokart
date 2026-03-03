@@ -100,28 +100,42 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen bg-[#050505] text-gray-100 font-display selection:bg-[#A3E635] selection:text-black antialiased flex items-center justify-center p-4 relative overflow-hidden">
+
+      {/* Grid overlay */}
+      <div className="fixed inset-0 bg-grid-minimal opacity-20 pointer-events-none" />
+
+      {/* Ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[260px] bg-[#A3E635]/5 blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="w-full max-w-sm relative z-10">
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-white text-black text-xl font-bold rounded-lg flex items-center justify-center mx-auto mb-4">M</div>
-          <h1 className="text-2xl font-bold tracking-tight mb-2">Welcome to Mokart</h1>
-          <p className="text-[#737373] text-sm">Enter your credentials to access the platform.</p>
+
+          <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
+            {isLogin ? 'Welcome back.' : 'Create your account.'}
+          </h1>
+          <p className="text-gray-500 text-sm">
+            {isLogin
+              ? 'Enter your credentials to access the platform.'
+              : 'Join MoKart and start analysing your laps.'}
+          </p>
         </div>
 
         {/* Auth Card */}
-        <div className="bg-[#171717] p-8 rounded-lg border border-[#262626]">
+        <div className="glass-panel rounded-xl p-8 border border-white/8">
+
+          {/* Alerts */}
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-sm text-red-400 flex items-center gap-2">
-              <AlertCircle size={16} />
+            <div className="mb-5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0" />
               {error}
             </div>
           )}
-
           {success && (
-            <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded text-sm text-emerald-400 flex items-center gap-2">
-              <CheckCircle2 size={16} />
+            <div className="mb-5 p-3 bg-[#A3E635]/10 border border-[#A3E635]/20 rounded-lg text-sm text-[#A3E635] flex items-center gap-2">
+              <CheckCircle2 size={15} className="shrink-0" />
               {success}
             </div>
           )}
@@ -129,24 +143,24 @@ const AuthPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#a3a3a3]">Email</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-[#262626] rounded px-3 py-2 text-white placeholder-[#404040] focus:outline-none focus:border-white transition-colors text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
                 placeholder="name@example.com"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-[#a3a3a3]">Password</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-[#262626] rounded px-3 py-2 text-white placeholder-[#404040] focus:outline-none focus:border-white transition-colors text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
                 placeholder="••••••••"
                 required
               />
@@ -154,12 +168,12 @@ const AuthPage: React.FC = () => {
 
             {!isLogin && (
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[#a3a3a3]">Kart</label>
+                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Kart</label>
                 <input
                   type="text"
                   value={kart}
                   onChange={(e) => setKart(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded px-3 py-2 text-white placeholder-[#404040] focus:outline-none focus:border-white transition-colors text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
                   placeholder="Sodi RT8 v2"
                 />
               </div>
@@ -168,36 +182,43 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-white text-black font-medium py-2 rounded hover:bg-[#e5e5e5] transition-colors text-sm mt-2"
+              className="w-full bg-[#A3E635] text-black font-semibold py-3 rounded-lg transition-all duration-300 text-sm mt-1
+                hover:shadow-[0_0_18px_rgba(163,230,53,0.5),0_0_60px_rgba(163,230,53,0.2)]
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
           </form>
 
-          <div className="mt-6 flex flex-col gap-3 text-center">
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-[#262626]"></span>
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-[#171717] px-2 text-[#525252]">OR</span>
-              </div>
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="relative flex justify-center">
+              <span className="bg-transparent px-3 text-[10px] font-bold uppercase tracking-widest text-gray-600">or</span>
             </div>
+          </div>
 
-            <button
-              onClick={handleDemoLogin}
-              disabled={loading}
-              className="w-full border border-[#262626] bg-transparent hover:bg-[#262626] text-white font-medium py-2 rounded transition-colors text-sm"
-            >
-              Demo Mode
-            </button>
+          {/* Demo */}
+          <button
+            onClick={handleDemoLogin}
+            disabled={loading}
+            className="w-full bg-white/5 border border-white/10 text-white font-medium py-3 rounded-lg text-sm
+              hover:bg-white/10 hover:border-white/20 transition-all
+              disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Demo Mode
+          </button>
 
+          {/* Toggle sign-in / register */}
+          <div className="mt-5 text-center">
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-xs text-[#737373] hover:text-white transition-colors mt-2"
+              className="text-xs text-gray-600 hover:text-[#A3E635] transition-colors"
             >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <span className="font-semibold text-gray-400 hover:text-[#A3E635]">
+                {isLogin ? 'Sign up' : 'Sign in'}
+              </span>
             </button>
           </div>
         </div>

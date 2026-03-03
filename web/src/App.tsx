@@ -4,6 +4,7 @@ import About from './pages/About';
 import Soon from './pages/Soon';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
+import StyleGuide from './pages/StyleGuide';
 import './styles/App.css';
 
 const App: React.FC = () => {
@@ -19,6 +20,8 @@ const App: React.FC = () => {
       return <PrivacyPolicy />;
     case '/terms-of-service':
       return <TermsOfService />;
+    case '/style-guide':
+      return <StyleGuide />;
     default:
       return <Home />;
   }
