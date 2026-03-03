@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Activity, Clock, RotateCw, ChevronDown } from 'lucide-react';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis } from 'recharts';
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
+
+interface CircuitBoundary {
+  id: string;
+  circuit_id: string;
+  side: string;
+  point_order: number;
+  x: number;
+  y: number;
+}
 
 interface Session {
   id: string;
   user_id?: string;
   kart?: string;
+  circuit_id?: string;
   created_at?: string;
 }
 
@@ -52,9 +62,10 @@ const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<string>('');
   const [trajectory, setTrajectory] = useState<TrajectoryPoint[]>([]);
+  const [circuitBoundaries, setCircuitBoundaries] = useState<CircuitBoundary[]>([]);
   const [stats, setStats] = useState<SessionStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [maxGraphBound, setMaxGraphBound] = useState<number>(20); // Default to 20m
+  const [maxGraphBound, setMaxGraphBound] = useState<number>(20);
 
   // Load sessions on mount
   useEffect(() => {
@@ -62,28 +73,54 @@ const AnalysisPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const fetchCircuitBoundaries = async (sessionId: string) => {
+    try {
+      // Get circuit_id from session
+      const session = sessions.find((s: Session) => s.id === sessionId);
+      if (session?.circuit_id) {
+        const response = await fetch(`${API_BASE_URL}/circuits/${session.circuit_id}/boundaries`);
+        const data = await response.json();
+        setCircuitBoundaries(data);
+      }
+    } catch (error) {
+      console.error('Error loading circuit boundaries:', error);
+    }
+  };
+
   // Load trajectory when session changes
   useEffect(() => {
     if (selectedSession) {
       fetchTrajectory(selectedSession);
       fetchStats(selectedSession);
+      fetchCircuitBoundaries(selectedSession);
     }
   }, [selectedSession]);
 
   useEffect(() => {
-    if (trajectory.length > 0) {
-      // Find the absolute maximum value across all X and Y coordinates
+    if (trajectory.length > 0 || circuitBoundaries.length > 0) {
+      // Find the absolute maximum value across trajectory and circuit boundaries
       let maxVal = 0;
+
+      // Check trajectory points
       for (const p of trajectory) {
         const absX = Math.abs(p.x);
         const absY = Math.abs(p.y);
         if (absX > maxVal) maxVal = absX;
         if (absY > maxVal) maxVal = absY;
       }
+
+      // Check circuit boundary points
+      for (const b of circuitBoundaries) {
+        const absX = Math.abs(b.x);
+        const absY = Math.abs(b.y);
+        if (absX > maxVal) maxVal = absX;
+        if (absY > maxVal) maxVal = absY;
+      }
+
       // Add 10% padding
       setMaxGraphBound(maxVal * 1.1);
     }
-  }, [trajectory]);
+  }, [trajectory, circuitBoundaries]);
 
   const fetchSessions = async () => {
     try {
@@ -141,11 +178,11 @@ const AnalysisPage: React.FC = () => {
             <div className="relative flex-1 md:flex-none">
               <select
                 value={selectedSession}
-                onChange={(e) => setSelectedSession(e.target.value)}
+                onChange={(e: any) => setSelectedSession(e.target.value)}
                 className="w-full md:w-auto appearance-none bg-[#171717] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
               >
                 <option value="" disabled>Select Session</option>
-                {sessions.map(s => (
+                {sessions.map((s: Session) => (
                   <option key={s.id} value={s.id}>
                     {new Date(s.created_at || '').toLocaleDateString()} - {s.kart || 'Kart'}
                   </option>
@@ -245,6 +282,30 @@ const AnalysisPage: React.FC = () => {
                         contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#262626', color: '#fff' }}
                         itemStyle={{ color: '#fff' }}
                       />
+
+                      {/* Circuit boundaries - left side */}
+                      <Scatter
+                        name="Circuit Left"
+                        data={[...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'left').map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 })),
+                              ...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'left').slice(0, 1).map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 }))]}
+                        fill="none"
+                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                        lineType="joint"
+                        shape={<circle r={0} />}
+                      />
+
+                      {/* Circuit boundaries - right side */}
+                      <Scatter
+                        name="Circuit Right"
+                        data={[...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'right').map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 })),
+                              ...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'right').slice(0, 1).map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 }))]}
+                        fill="none"
+                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                        lineType="joint"
+                        shape={<circle r={0} />}
+                      />
+
+                      {/* Trajectory */}
                       <Scatter
                         name="Trajectory"
                         data={trajectory}
