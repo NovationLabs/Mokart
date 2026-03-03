@@ -7,6 +7,7 @@ class Session(BaseModel):
     id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     kart: Optional[str] = None
+    circuit_id: Optional[UUID] = None
     created_at: Optional[datetime] = None
 
     class Config:
