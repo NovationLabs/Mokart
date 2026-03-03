@@ -55,3 +55,13 @@ class CircuitBoundary(Base):
     point_order = Column(Integer, nullable=False)
     x = Column(FLOAT(precision=4), nullable=False)
     y = Column(FLOAT(precision=4), nullable=False)
+
+class OptimalTrajectory(Base):
+    __tablename__ = "optimal_trajectories"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    circuit_id = Column(UUID(as_uuid=True), ForeignKey("circuits.id"), nullable=False)
+    point_order = Column(Integer, nullable=False)
+    x = Column(FLOAT(precision=4), nullable=False)
+    y = Column(FLOAT(precision=4), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

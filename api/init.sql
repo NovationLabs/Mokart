@@ -19,6 +19,16 @@ CREATE TABLE IF NOT EXISTS circuit_boundaries (
     UNIQUE(circuit_id, side, point_order)
 );
 
+CREATE TABLE IF NOT EXISTS optimal_trajectories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    circuit_id UUID REFERENCES circuits(id) ON DELETE CASCADE,
+    point_order INTEGER NOT NULL,
+    x FLOAT4 NOT NULL,
+    y FLOAT4 NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(circuit_id, point_order)
+);
+
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
@@ -468,7 +478,9 @@ INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 126, 275.558715983101, 153.48780117994133),
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 127, 264.97959188207835, 141.97298026896158),
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 128, 255.5863992662776, 127.00878384641737),
-(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 129, 251.97455783272807, 113.49623977048218)
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 129, 251.97455783272807, 113.49623977048218),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'left', 130, 252.9860533294998, 97.37319190155196)
+
 ON CONFLICT DO NOTHING;
 
 
@@ -602,7 +614,8 @@ INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 126, 268.441284016899, 160.51219882005867),
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 127, 257.02040811792165, 148.02701973103842),
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 128, 246.4136007337224, 130.99121615358263),
-(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 129, 242.02544216727193, 114.50376022951782)
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 129, 242.02544216727193, 114.50376022951782),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440012', 'right', 130, 243.0139466705002, 96.62680809844804)
 ON CONFLICT DO NOTHING;
 
 -- NOUVELLE SESSION POUR WEEK CIRCUIT
