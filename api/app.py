@@ -4,6 +4,7 @@ from sqlalchemy import text
 from config.database import get_db, engine, Base
 from auth.routes import router as auth_router
 from sessions.routes import router as sessions_router
+from circuits.routes import router as circuits_router
 from sqlalchemy.orm import Session
 
 # Create tables if not exists (although init.sql should handle it)
@@ -24,6 +25,7 @@ app.add_middleware(
 # Inclure les routes
 app.include_router(auth_router)
 app.include_router(sessions_router)
+app.include_router(circuits_router)
 
 @app.get("/")
 async def main():
