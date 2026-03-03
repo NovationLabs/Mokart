@@ -67,7 +67,7 @@ def get_wifi_info():
         cmd = r"nmcli -t -f IN-USE,SSID,BARS device wifi list | grep '^\*'"
         output = subprocess.check_output(cmd, shell=True, text=True).strip()
         parts = output.split(':')
-        return f"{parts[1]} — {parts[2]}"
+        return f"{parts[1]} - {parts[2]}"
     except:
         return "Disconnected"
 
