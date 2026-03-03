@@ -87,13 +87,21 @@ if [ "$1" = "build" ]; then
 
     if [ "$FREE_MB" -lt "$THRESHOLD_MB" ]; then
         echo "⚠️  ATTENTION: Moins de 1Go d'espace disque disponible (${FREE_MB}Mo)"
-        read -r -p "⚠️  Espace limité ! Voulez-vous continuer, cela entrainera la suppression des anciennes images Docker ? (Entrée pour continuer, Ctrl+C pour annuler) "
-        echo "🔧 Nettoyage des images dangling..."
-        docker-compose down --rmi all --volumes --remove-orphans
-        docker system prune -af
-        docker volume prune -f
-        echo ""
-        echo ""
+        echo "🔧 Appuyez sur Entrée pour nettoyer et continuer, ou 'c' pour continuer sans nettoyage..."
+        read -n 1 -s bypass_key
+
+        # Vérifier si c'est 'c' ou 'C' pour bypasser sans nettoyage
+        if [[ "$bypass_key" =~ ^[cC]$ ]]; then
+            echo ""
+            echo "✅ Bypass sans nettoyage confirmé !"
+        else
+            echo ""
+            echo "✅ Nettoyage des images dangling..."
+            docker-compose down --rmi all --volumes --remove-orphans
+            docker system prune -af
+            docker volume prune -f
+            echo ""
+        fi
     else
         echo "✅ Espace suffisant → aucun prune nécessaire"
     fi
@@ -124,7 +132,34 @@ echo "🌐 Frontend: http://localhost:8080"
 echo "🔧 Backend API: http://localhost:8081"
 echo ""
 
-read -r -p "Appuyez sur Entrée pour arrêter tous les services..."
+# Boucle d'attente avec gestion des touches a-z
+while true; do
+    echo "Appuyez sur une touche (r pour redémarrer avec suppression BDD, Entrée pour arrêter)..."
+    read -n 1 -s key
+
+    # Vérifier si c'est une lettre entre a-z ou A-Z
+    if [[ "$key" =~ ^[rR]$ ]]; then
+        echo ""
+        echo "🔄 Redémarrage avec suppression du volume PostgreSQL..."
+        docker-compose down
+        docker volume rm mokart_postgres_data
+        docker-compose up -d
+
+        echo "⏳ Attente du redémarrage des services..."
+        sleep 5
+
+        echo "📊 État des services:"
+        docker-compose ps
+        echo ""
+        echo "✅ Services redémarrés !"
+        echo "🌐 Frontend: http://localhost:8080"
+        echo "🔧 Backend API: http://localhost:8081"
+        echo ""
+    else
+        echo ""
+        break
+    fi
+done
 
 echo "🛑 Arrêt des services..."
 docker-compose down
