@@ -10,7 +10,8 @@ const SettingsPage: React.FC = () => {
     email: '',
     first_name: '',
     last_name: '',
-    phone: ''
+    phone: '',
+    created_at: ''
   });
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
