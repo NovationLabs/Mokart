@@ -5,6 +5,7 @@ import api, { Notification, UserProfile } from '../services/api';
 const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userId, setUserId] = useState<string>('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -13,11 +14,25 @@ const Header: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // ID utilisateur fixe pour la démo (à remplacer par l'authentification réelle)
-  const userId = '550e8400-e29b-41d4-a716-446655440001';
+  const getStoredUserId = () => {
+    try {
+      const storedUser = localStorage.getItem('mokart_user');
+      if (!storedUser) return '';
+      const parsed = JSON.parse(storedUser);
+      return typeof parsed?.id === 'string' ? parsed.id : '';
+    } catch {
+      return '';
+    }
+  };
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUserProfile();
+    setUserId(getStoredUserId());
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mokart_user') {
+        setUserId(getStoredUserId());
+      }
+    };
 
     // Fermer les menus quand on clique ailleurs
     const handleClickOutside = (event: MouseEvent) => {
@@ -30,21 +45,35 @@ const Header: React.FC = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
-  const fetchNotifications = async () => {
+  useEffect(() => {
+    if (!userId) {
+      setUserProfile(null);
+      setNotifications([]);
+      return;
+    }
+    fetchNotifications(userId);
+    fetchUserProfile(userId);
+  }, [userId]);
+
+  const fetchNotifications = async (uid: string) => {
     try {
-      const data = await api.users.getNotifications(userId);
+      const data = await api.users.getNotifications(uid);
       setNotifications(data);
     } catch (error) {
       console.error('Erreur lors de la récupération des notifications:', error);
     }
   };
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = async (uid: string) => {
     try {
-      const data = await api.users.getProfile(userId);
+      const data = await api.users.getProfile(uid);
       setUserProfile(data);
     } catch (error) {
       console.error('Erreur lors de la récupération du profil:', error);
@@ -52,6 +81,7 @@ const Header: React.FC = () => {
   };
 
   const markNotificationAsRead = async (notificationId: string) => {
+    if (!userId) return;
     try {
       await api.users.markNotificationRead(notificationId, userId);
       setNotifications(prev =>
@@ -63,6 +93,7 @@ const Header: React.FC = () => {
   };
 
   const markAllNotificationsAsRead = async () => {
+    if (!userId) return;
     try {
       await api.users.markAllNotificationsRead(userId);
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));

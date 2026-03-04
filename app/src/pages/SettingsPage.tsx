@@ -12,20 +12,40 @@ const SettingsPage: React.FC = () => {
     last_name: '',
     phone: ''
   });
+  const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // ID utilisateur fixe pour la démo (à remplacer par l'authentification réelle)
-  const userId = '550e8400-e29b-41d4-a716-446655440001';
+  const getStoredUserId = () => {
+    try {
+      const storedUser = localStorage.getItem('mokart_user');
+      if (!storedUser) return '';
+      const parsed = JSON.parse(storedUser);
+      return typeof parsed?.id === 'string' ? parsed.id : '';
+    } catch {
+      return '';
+    }
+  };
 
   useEffect(() => {
-    fetchProfile();
+    setUserId(getStoredUserId());
   }, []);
 
-  const fetchProfile = async () => {
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      setMessage({ type: 'error', text: 'Utilisateur non connecté' });
+      return;
+    }
+    setMessage(null); // effacer le message d'erreur si userId est présent
+    fetchProfile(userId);
+  }, [userId]);
+
+  const fetchProfile = async (uid: string) => {
     try {
-      const data = await api.users.getProfile(userId);
+      const data = await api.users.getProfile(uid);
       setProfile(data);
     } catch (error) {
       console.error('Erreur lors de la récupération du profil:', error);

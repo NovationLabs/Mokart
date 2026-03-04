@@ -47,7 +47,7 @@ const Sidebar: React.FC = () => {
                     {/* Brand/Logo */}
                     <div className="w-8 h-8 flex items-center justify-center">
                         <img
-                            src="/icon.svg"
+                            src="/icon_inverse.png"
                             alt="Mokart"
                             className="w-full h-full object-contain opacity-90"
                         />
