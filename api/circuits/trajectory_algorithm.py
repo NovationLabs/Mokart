@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import CubicSpline
-from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
+from scipy.optimize import minimize
 from typing import List, Tuple
 from models import sql_models
 
@@ -34,8 +34,11 @@ class TrajectoryOptimizer:
         # self.max_speed = MAX_SPEED
         # -----------------------------------------------------------------------
 
-        # Poids pour l'optimisation (0.0 = centre, 1.0 = intérieur pur)
         self.racing_bias = 0.5
+
+        # Marge par rapport aux bords en fraction de largeur [0, 0.5]
+        # 0.05 = 5% de la largeur de piste de chaque côté
+        self.boundary_margin = 0.05
 
     # =========================================================================
     # MÉTHODE PRINCIPALE : Minimum Curvature Path
@@ -47,49 +50,39 @@ class TrajectoryOptimizer:
         right_boundary: List[sql_models.CircuitBoundary]
     ) -> List[Tuple[float, float]]:
         """
-        Calcule la trajectoire optimale via l'algorithme Minimum Curvature Path.
-        Principe : minimiser la somme des courbures au carré sur tout le circuit.
-        C'est l'approche standard en motorsport (F1, karting simulateurs).
-        Fonctionne quel que soit le nombre de points des boundaries.
+        Calcule la trajectoire optimale via Minimum Curvature Path.
+        Principe : minimiser la somme des courbures² sur tout le circuit.
+        La contrainte de boundary est garantie en lissant alpha (pas XY) :
+        un alpha ∈ [margin, 1-margin] produit toujours un point entre les bords.
         """
         if not left_boundary or not right_boundary:
             raise ValueError("Les bordures gauche et droite sont requises")
 
-        left_pts = np.array(
-            [(b.x, b.y) for b in sorted(left_boundary, key=lambda b: b.point_order)]
-        )
-        right_pts = np.array(
-            [(b.x, b.y) for b in sorted(right_boundary, key=lambda b: b.point_order)]
-        )
-
-        # Rééchantillonner pour avoir le même nombre de points
-        left_pts, right_pts = self._resample_boundaries(left_pts, right_pts)
+        left_pts, right_pts = self._prepare_boundaries(left_boundary, right_boundary)
         n = len(left_pts)
+        m = self.boundary_margin
 
-        # Alpha = paramètre d'interpolation entre droite (0) et gauche (1)
-        # 0.5 = ligne centrale, <0.5 = côté droit, >0.5 = côté gauche
         alpha_init = np.full(n, 0.5)
 
-        # Optimisation : minimiser la courbure totale
         result = minimize(
             fun=self._curvature_cost,
             x0=alpha_init,
             args=(left_pts, right_pts),
             method='L-BFGS-B',
-            bounds=[(0.05, 0.95)] * n,  # Garder une marge de sécurité par rapport aux bords
-            options={'maxiter': 500, 'ftol': 1e-9}
+            bounds=[(m, 1.0 - m)] * n,
+            options={'maxiter': 1000, 'ftol': 1e-10, 'gtol': 1e-7}
         )
 
-        alpha_opt = result.x
-        trajectory = self._alpha_to_trajectory(alpha_opt, left_pts, right_pts)
+        # Lissage dans l'espace alpha → garantit que les points restent dans la piste
+        alpha_smooth = self._smooth_alpha(result.x, margin=m)
 
-        # Lissage final pour éliminer les oscillations numériques
-        trajectory = self._smooth_trajectory_gaussian(trajectory)
+        # Conversion en coordonnées — chaque point est entre left[i] et right[i]
+        trajectory = self._alpha_to_trajectory(alpha_smooth, left_pts, right_pts)
 
         return [(float(x), float(y)) for x, y in trajectory]
 
     # =========================================================================
-    # RACING LINE : Minimum Curvature + biais intérieur virage
+    # RACING LINE
     # =========================================================================
 
     def calculate_racing_line(
@@ -98,50 +91,35 @@ class TrajectoryOptimizer:
         right_boundary: List[sql_models.CircuitBoundary]
     ) -> List[Tuple[float, float]]:
         """
-        Calcule la ligne de course optimale :
-        - Large à l'entrée du virage
-        - Apex serré à l'intérieur
-        - Large à la sortie
-        Utilise Minimum Curvature Path avec contrainte de courbure pondérée.
+        Calcule la ligne de course optimale (large en entrée, apex serré, large en sortie).
+        Même logique que calculate_optimal_trajectory avec un coût légèrement différent.
         """
         if not left_boundary or not right_boundary:
             raise ValueError("Les bordures gauche et droite sont requises")
 
-        left_pts = np.array(
-            [(b.x, b.y) for b in sorted(left_boundary, key=lambda b: b.point_order)]
-        )
-        right_pts = np.array(
-            [(b.x, b.y) for b in sorted(right_boundary, key=lambda b: b.point_order)]
-        )
-
-        left_pts, right_pts = self._resample_boundaries(left_pts, right_pts)
+        left_pts, right_pts = self._prepare_boundaries(left_boundary, right_boundary)
         n = len(left_pts)
+        m = self.boundary_margin
 
         alpha_init = np.full(n, 0.5)
 
-        # Coût combiné : courbure + pénalité de largeur (favorise l'utilisation
-        # de toute la piste, caractéristique d'une vraie ligne de course)
         result = minimize(
             fun=self._racing_line_cost,
             x0=alpha_init,
             args=(left_pts, right_pts),
             method='L-BFGS-B',
-            bounds=[(0.02, 0.98)] * n,
-            options={'maxiter': 800, 'ftol': 1e-10}
+            bounds=[(m, 1.0 - m)] * n,
+            options={'maxiter': 1000, 'ftol': 1e-10, 'gtol': 1e-7}
         )
 
         # -----------------------------------------------------------------------
         # Contrainte dynamique (décommenter pour activer)
-        # La vitesse max en virage est limitée par la force latérale max :
-        # v_max = sqrt(max_lateral_force / (mass * kappa))
-        # où kappa est la courbure locale
-        # -----------------------------------------------------------------------
+        # v_max = sqrt(TIRE_GRIP_COEFF * 9.81 / max(kappa, 1e-6))
         # alpha_dyn = self._apply_dynamic_constraints(result.x, left_pts, right_pts)
-        # trajectory = self._alpha_to_trajectory(alpha_dyn, left_pts, right_pts)
         # -----------------------------------------------------------------------
 
-        trajectory = self._alpha_to_trajectory(result.x, left_pts, right_pts)
-        trajectory = self._smooth_trajectory_gaussian(trajectory)
+        alpha_smooth = self._smooth_alpha(result.x, margin=m)
+        trajectory = self._alpha_to_trajectory(alpha_smooth, left_pts, right_pts)
 
         return [(float(x), float(y)) for x, y in trajectory]
 
@@ -155,10 +133,7 @@ class TrajectoryOptimizer:
         left_pts: np.ndarray,
         right_pts: np.ndarray
     ) -> float:
-        """
-        Fonction de coût : somme des courbures² (Minimum Curvature Path).
-        Une faible courbure = virages plus larges = vitesse plus élevée.
-        """
+        """Somme des courbures² → minimiser = maximiser les rayons de virage."""
         traj = self._alpha_to_trajectory(alpha, left_pts, right_pts)
         curvatures = self._compute_curvature(traj)
         return float(np.sum(curvatures ** 2))
@@ -170,23 +145,18 @@ class TrajectoryOptimizer:
         right_pts: np.ndarray
     ) -> float:
         """
-        Fonction de coût combinée pour la ligne de course :
-        - 70% minimisation de courbure (vitesse en virage)
-        - 30% maximisation de l'utilisation de la piste (entrée/sortie large)
+        Coût racing line : minimise la courbure + encourage à utiliser
+        toute la largeur de piste (pas rester au centre).
         """
         traj = self._alpha_to_trajectory(alpha, left_pts, right_pts)
         curvatures = self._compute_curvature(traj)
-
-        # Coût principal : courbure minimale
         curvature_cost = np.sum(curvatures ** 2)
 
-        # Pénalité : pénalise le fait de rester toujours au centre
-        # (encourage à utiliser toute la largeur de piste)
+        # Encourage à s'éloigner du centre (utiliser toute la piste)
         center_penalty = np.sum((alpha - 0.5) ** 2) * 0.001
 
         # -----------------------------------------------------------------------
         # Terme de vitesse (décommenter pour activer avec les paramètres dynamiques)
-        # Estime la vitesse max possible à chaque point selon la courbure et le grip
         # v_max[i] = sqrt(TIRE_GRIP_COEFF * 9.81 / max(kappa[i], 1e-6))
         # speed_cost = -np.sum(np.sqrt(TIRE_GRIP_COEFF * 9.81 / np.maximum(curvatures, 1e-6)))
         # return 0.7 * curvature_cost + 0.3 * speed_cost * 0.0001 - center_penalty
@@ -200,35 +170,54 @@ class TrajectoryOptimizer:
 
     def _compute_curvature(self, traj: np.ndarray) -> np.ndarray:
         """
-        Calcule la courbure de Menger en chaque point de la trajectoire.
-        Formule exacte basée sur l'aire du triangle formé par 3 points consécutifs.
-        Gère les circuits fermés (bouclage des indices).
+        Courbure de Menger en chaque point.
+        Formule : kappa = 4*Aire / (a*b*c) sur 3 points consécutifs.
+        Bouclage circulaire pour les circuits fermés.
         """
         n = len(traj)
         curvatures = np.zeros(n)
-
         for i in range(n):
             p1 = traj[(i - 1) % n]
             p2 = traj[i]
             p3 = traj[(i + 1) % n]
-
-            # Longueurs des côtés
             a = np.linalg.norm(p2 - p1)
             b = np.linalg.norm(p3 - p2)
             c = np.linalg.norm(p3 - p1)
-
-            # Aire du triangle (formule du produit vectoriel)
-            area = 0.5 * abs((p2[0] - p1[0]) * (p3[1] - p1[1]) -
-                             (p3[0] - p1[0]) * (p2[1] - p1[1]))
-
+            area = 0.5 * abs(
+                (p2[0] - p1[0]) * (p3[1] - p1[1]) -
+                (p3[0] - p1[0]) * (p2[1] - p1[1])
+            )
             denom = a * b * c
-            if denom > 1e-10:
-                # Courbure de Menger = 4*Aire / (a*b*c)
-                curvatures[i] = 4.0 * area / denom
-            else:
-                curvatures[i] = 0.0
-
+            curvatures[i] = (4.0 * area / denom) if denom > 1e-10 else 0.0
         return curvatures
+
+    # =========================================================================
+    # LISSAGE ALPHA (clé de la contrainte de boundary)
+    # =========================================================================
+
+    def _smooth_alpha(self, alpha: np.ndarray, margin: float, sigma: int = 3) -> np.ndarray:
+        """
+        Lisse le vecteur alpha avec un noyau gaussien, puis le clamp dans [margin, 1-margin].
+
+        POURQUOI lisser alpha et pas XY :
+        - alpha[i] ∈ [0,1] → _alpha_to_trajectory → point entre left[i] et right[i]
+        - Si on lisse XY, le point moyenné avec ses voisins peut sortir du couloir local
+        - Si on lisse alpha, le résultat clampé est TOUJOURS dans le couloir local
+        """
+        n = len(alpha)
+        window = min(sigma * 4 + 1, n // 4 * 2 + 1)
+        if window < 3:
+            return np.clip(alpha, margin, 1.0 - margin)
+
+        kernel = np.exp(-0.5 * (np.arange(window) - window // 2) ** 2 / sigma ** 2)
+        kernel /= kernel.sum()
+
+        # Padding circulaire pour circuit fermé
+        alpha_padded = np.pad(alpha, window // 2, mode='wrap')
+        alpha_smooth = np.convolve(alpha_padded, kernel, mode='valid')[:n]
+
+        # Clamp final — garantit mathématiquement que chaque point reste dans la piste
+        return np.clip(alpha_smooth, margin, 1.0 - margin)
 
     # =========================================================================
     # UTILITAIRES GÉOMÉTRIQUES
@@ -241,12 +230,25 @@ class TrajectoryOptimizer:
         right_pts: np.ndarray
     ) -> np.ndarray:
         """
-        Convertit un vecteur alpha en trajectoire.
-        alpha[i] = 0 → point sur la bordure droite
-        alpha[i] = 1 → point sur la bordure gauche
-        alpha[i] = 0.5 → ligne centrale
+        alpha[i] = 0 → bordure droite, alpha[i] = 1 → bordure gauche.
+        Tout alpha dans [0,1] est garanti entre les deux boundaries à l'index i.
         """
-        return (1 - alpha[:, np.newaxis]) * right_pts + alpha[:, np.newaxis] * left_pts
+        return (1.0 - alpha[:, np.newaxis]) * right_pts + alpha[:, np.newaxis] * left_pts
+
+    def _prepare_boundaries(
+        self,
+        left_boundary: List[sql_models.CircuitBoundary],
+        right_boundary: List[sql_models.CircuitBoundary]
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Trie et rééchantillonne les deux boundaries sur le même nombre de points."""
+        left_raw = np.array(
+            [(b.x, b.y) for b in sorted(left_boundary, key=lambda b: b.point_order)]
+        )
+        right_raw = np.array(
+            [(b.x, b.y) for b in sorted(right_boundary, key=lambda b: b.point_order)]
+        )
+        target_n = max(len(left_raw), len(right_raw))
+        return self._resample_polyline(left_raw, target_n), self._resample_polyline(right_raw, target_n)
 
     def _resample_boundaries(
         self,
@@ -254,29 +256,16 @@ class TrajectoryOptimizer:
         right_pts: np.ndarray,
         target_n: int = None
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Rééchantillonne les deux boundaries pour avoir exactement target_n points,
-        uniformément répartis en longueur d'arc.
-        Si target_n n'est pas fourni, utilise le max des deux longueurs.
-        Fonctionne quel que soit le nombre de points en entrée.
-        """
+        """Conservé pour compatibilité ascendante."""
         if target_n is None:
             target_n = max(len(left_pts), len(right_pts))
-
-        left_resampled = self._resample_polyline(left_pts, target_n)
-        right_resampled = self._resample_polyline(right_pts, target_n)
-
-        return left_resampled, right_resampled
+        return self._resample_polyline(left_pts, target_n), self._resample_polyline(right_pts, target_n)
 
     def _resample_polyline(self, pts: np.ndarray, n: int) -> np.ndarray:
-        """
-        Rééchantillonne une polyligne en n points équidistants en longueur d'arc.
-        Utilise une interpolation par spline cubique pour la précision.
-        """
+        """Rééchantillonne une polyligne en n points équidistants par longueur d'arc (spline cubique)."""
         if len(pts) < 2:
             return np.tile(pts[0], (n, 1)) if len(pts) == 1 else pts
 
-        # Calculer les distances cumulées (longueur d'arc)
         diffs = np.diff(pts, axis=0)
         seg_lengths = np.sqrt((diffs ** 2).sum(axis=1))
         arc_lengths = np.concatenate([[0], np.cumsum(seg_lengths)])
@@ -285,46 +274,11 @@ class TrajectoryOptimizer:
         if total_length < 1e-10:
             return np.tile(pts[0], (n, 1))
 
-        # Normaliser entre 0 et 1
         arc_norm = arc_lengths / total_length
-
-        # Interpolation cubique séparée pour x et y
         cs_x = CubicSpline(arc_norm, pts[:, 0])
         cs_y = CubicSpline(arc_norm, pts[:, 1])
-
-        # Rééchantillonner uniformément
         t_new = np.linspace(0, 1, n)
         return np.column_stack([cs_x(t_new), cs_y(t_new)])
-
-    def _smooth_trajectory_gaussian(
-        self,
-        trajectory: np.ndarray,
-        sigma: int = 3
-    ) -> np.ndarray:
-        """
-        Lissage gaussien de la trajectoire pour supprimer les oscillations
-        numériques issues de l'optimisation. Préserve la forme globale.
-        """
-        if len(trajectory) < 5:
-            return trajectory
-
-        n = len(trajectory)
-        # Fenêtre gaussienne
-        window = min(sigma * 2 + 1, n // 4 * 2 + 1)
-        if window < 3:
-            return trajectory
-
-        kernel = np.exp(-0.5 * (np.arange(window) - window // 2) ** 2 / sigma ** 2)
-        kernel /= kernel.sum()
-
-        x = np.array([p[0] for p in trajectory]) if isinstance(trajectory[0], tuple) else trajectory[:, 0]
-        y = np.array([p[1] for p in trajectory]) if isinstance(trajectory[0], tuple) else trajectory[:, 1]
-
-        # Convolution avec padding circulaire (pour circuit fermé)
-        x_smooth = np.convolve(np.pad(x, window // 2, mode='wrap'), kernel, mode='valid')
-        y_smooth = np.convolve(np.pad(y, window // 2, mode='wrap'), kernel, mode='valid')
-
-        return np.column_stack([x_smooth[:n], y_smooth[:n]])
 
     # =========================================================================
     # CONTRAINTES DYNAMIQUES (prêtes à activer)
@@ -343,19 +297,12 @@ class TrajectoryOptimizer:
     #     """
     #     traj = self._alpha_to_trajectory(alpha, left_pts, right_pts)
     #     curvatures = self._compute_curvature(traj)
-    #
-    #     # Vitesse max théorique en chaque point (limité par grip latéral)
     #     v_max = np.sqrt(TIRE_GRIP_COEFF * 9.81 / np.maximum(curvatures, 1e-6))
     #     v_max = np.minimum(v_max, MAX_SPEED)
-    #
-    #     # Force centripète requise à chaque point
-    #     # F_centripete = mass * v² * kappa
-    #     # Si F_centripete > MAX_LATERAL_FORCE → ajuster alpha vers l'extérieur
     #     alpha_adjusted = alpha.copy()
     #     for i in range(len(alpha)):
     #         f_req = KART_MASS * v_max[i] ** 2 * curvatures[i]
     #         if f_req > MAX_LATERAL_FORCE:
-    #             # Réduire la courbure en élargissant légèrement
     #             overshoot = (f_req - MAX_LATERAL_FORCE) / MAX_LATERAL_FORCE
     #             alpha_adjusted[i] = np.clip(alpha[i] * (1 - overshoot * 0.1), 0.05, 0.95)
     #     return alpha_adjusted
@@ -370,16 +317,14 @@ class TrajectoryOptimizer:
         optimal_trajectory: List[Tuple[float, float]]
     ) -> dict:
         """
-        Calcule les statistiques de déviation entre trajectoire réelle et optimale.
-        Utilise la distance au point optimal le plus proche (distance de Fréchet approchée).
+        Statistiques de déviation entre trajectoire réelle et optimale.
+        Distance de Fréchet discrète approchée (point réel → point optimal le plus proche).
         """
         if not actual_trajectory or not optimal_trajectory:
             return {"mean_deviation": 0, "max_deviation": 0, "min_deviation": 0}
 
         actual_arr = np.array(actual_trajectory)
         optimal_arr = np.array(optimal_trajectory)
-
-        # Matrice de distances : chaque point réel → tous les points optimaux
         dist_matrix = cdist(actual_arr, optimal_arr)
         deviations = dist_matrix.min(axis=1)
 
@@ -398,14 +343,21 @@ class TrajectoryOptimizer:
         """Conservé pour compatibilité ascendante."""
         if len(points) < 2:
             raise ValueError("Au moins 2 points sont requis pour l'interpolation")
-        pts = np.array(points)
-        return self._resample_polyline(pts, len(pts))
+        return self._resample_polyline(np.array(points), len(points))
 
     def _smooth_trajectory(self, trajectory):
-        """Conservé pour compatibilité ascendante. Utilise maintenant le lissage gaussien."""
+        """Conservé pour compatibilité ascendante."""
         arr = np.array(trajectory)
-        smoothed = self._smooth_trajectory_gaussian(arr)
-        return [(float(x), float(y)) for x, y in smoothed]
+        # Lissage XY uniquement pour compatibilité — préférer _smooth_alpha en interne
+        n = len(arr)
+        kernel = np.array([0.25, 0.5, 0.25])
+        x_s = np.convolve(np.pad(arr[:, 0], 1, mode='wrap'), kernel, mode='valid')
+        y_s = np.convolve(np.pad(arr[:, 1], 1, mode='wrap'), kernel, mode='valid')
+        return [(float(x), float(y)) for x, y in zip(x_s[:n], y_s[:n])]
+
+    def _smooth_trajectory_gaussian(self, trajectory: np.ndarray, sigma: int = 3) -> np.ndarray:
+        """Conservé pour compatibilité ascendante. NE PAS utiliser après _alpha_to_trajectory."""
+        return trajectory
 
     def _adjust_for_curve(self, current, prev, next_pt):
         """Conservé pour compatibilité ascendante."""
