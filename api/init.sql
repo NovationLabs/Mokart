@@ -31,9 +31,24 @@ CREATE TABLE IF NOT EXISTS optimal_trajectories (
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    phone TEXT,
     kart TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'info',
+    read BOOLEAN DEFAULT FALSE,
+    read_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -244,8 +259,8 @@ INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES
 ON CONFLICT DO NOTHING;
 
 -- INSERTION D'UNE SESSION DE TEST (Pour ne pas avoir un site vide)
-INSERT INTO users (id, email, password_hash, kart, created_at)
-VALUES ('550e8400-e29b-41d4-a716-446655440001', 'pilot@mokart.com', 'hash', 'SodiKart RT8', NOW())
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, kart, created_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440001', 'pilot', 'pilot@mokart.com', 'hash', 'Jean', 'Pilot', '0612345678', 'SodiKart RT8', NOW())
 ON CONFLICT DO NOTHING;
 
 INSERT INTO sessions (id, user_id, circuit_id, kart, created_at)
@@ -265,8 +280,17 @@ FROM generate_series(1, 100) gs
 ON CONFLICT DO NOTHING;
 
 -- INSERTION D'UN DEUXIÈME USER POUR LA SESSION TECHNIQUE
-INSERT INTO users (id, email, password_hash, kart, created_at)
-VALUES ('550e8400-e29b-41d4-a716-446655440002', 'expert@mokart.com', 'hash', 'TonyKart Racer', NOW())
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, kart, created_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440002', 'expert', 'expert@mokart.com', 'hash', 'Marc', 'Expert', '0698765432', 'TonyKart Racer', NOW())
+ON CONFLICT DO NOTHING;
+
+-- NOTIFICATIONS DE TEST
+INSERT INTO notifications (id, user_id, title, message, type, read, created_at) VALUES
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440001', 'Nouveau record personnel', 'Vous avez battu votre meilleur temps sur le Circuit Weekend !', 'success', FALSE, NOW() - INTERVAL '2 hours'),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440001', 'Session disponible', 'Une nouvelle session est programmée pour demain à 14h', 'info', FALSE, NOW() - INTERVAL '1 day'),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440001', 'Maintenance système', 'Le système sera en maintenance ce soir de 22h à minuit', 'warning', TRUE, NOW() - INTERVAL '3 days'),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440002', 'Analyse disponible', 'L''analyse de votre dernière session est maintenant disponible', 'info', FALSE, NOW() - INTERVAL '6 hours'),
+(uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440002', 'Nouveau circuit', 'Le circuit "Week Circuit" a été ajouté à la plateforme', 'success', TRUE, NOW() - INTERVAL '2 days')
 ON CONFLICT DO NOTHING;
 
 -- Session technique avec trajectoire optimisée sur le circuit serpentin

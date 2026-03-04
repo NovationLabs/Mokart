@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
@@ -311,64 +312,67 @@ const AnalysisPage: React.FC = () => {
   }, [selectedSession, sessions]);
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden">
+    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 sm:p-6 p-4 h-screen flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 shrink-0 border-b border-[#262626] pb-4 gap-4 md:gap-0">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
-              Telemetry Analysis
-            </h1>
-            <p className="text-[#737373] text-xs mt-1 font-mono flex items-center gap-2">
-              SESSION: <span className="text-white">{selectedSession || 'NONE'}</span>
-            </p>
-          </div>
+      <main className="flex-1 md:ml-16 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+        <Header />
 
-          <div className="flex gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:flex-none">
-              <select
-                value={selectedSession}
-                onChange={(e: any) => setSelectedSession(e.target.value)}
-                className="w-full md:w-auto appearance-none bg-[#171717] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
-              >
-                <option value="" disabled>Select Session</option>
-                {sessions.map((s: Session) => (
-                  <option key={s.id} value={s.id}>
-                    {new Date(s.created_at || '').toLocaleDateString()} - {s.kart || 'Kart'}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2 top-2 text-[#737373] pointer-events-none" size={14} />
+        <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
+          {/* Top Bar */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 shrink-0 border-b border-[#262626] pb-4 gap-4 md:gap-0">
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+                Telemetry Analysis
+              </h1>
+              <p className="text-[#737373] text-xs mt-1 font-mono flex items-center gap-2">
+                SESSION: <span className="text-white">{selectedSession || 'NONE'}</span>
+              </p>
             </div>
 
-            <button
-              onClick={() => selectedSession && fetchTrajectory(selectedSession)}
-              className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
-              title="Refresh Data"
-            >
-              <RotateCw size={14} />
-            </button>
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-none">
+                <select
+                  value={selectedSession}
+                  onChange={(e: any) => setSelectedSession(e.target.value)}
+                  className="w-full md:w-auto appearance-none bg-[#171717] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
+                >
+                  <option value="" disabled>Select Session</option>
+                  {sessions.map((s: Session) => (
+                    <option key={s.id} value={s.id}>
+                      {new Date(s.created_at || '').toLocaleDateString()} - {s.kart || 'Kart'}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-2 text-[#737373] pointer-events-none" size={14} />
+              </div>
 
-            <button
-              onClick={calculateOptimalTrajectory}
-              disabled={calculatingTrajectory || !selectedSession}
-              className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Calculate Optimal Trajectory"
-            >
-              <Target size={14} />
-            </button>
+              <button
+                onClick={() => selectedSession && fetchTrajectory(selectedSession)}
+                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                title="Refresh Data"
+              >
+                <RotateCw size={14} />
+              </button>
 
-            <button
-              onClick={() => setShowOptimalTrajectory(!showOptimalTrajectory)}
-              className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
-              title={showOptimalTrajectory ? "Hide Optimal Trajectory" : "Show Optimal Trajectory"}
-            >
-              {showOptimalTrajectory ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
+              <button
+                onClick={calculateOptimalTrajectory}
+                disabled={calculatingTrajectory || !selectedSession}
+                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Calculate Optimal Trajectory"
+              >
+                <Target size={14} />
+              </button>
+
+              <button
+                onClick={() => setShowOptimalTrajectory(!showOptimalTrajectory)}
+                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                title={showOptimalTrajectory ? "Hide Optimal Trajectory" : "Show Optimal Trajectory"}
+              >
+                {showOptimalTrajectory ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
           </div>
-        </div>
 
         {/* Content Grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
@@ -583,6 +587,7 @@ const AnalysisPage: React.FC = () => {
             </div>
           </div>
 
+        </div>
         </div>
       </main>
     </div>
