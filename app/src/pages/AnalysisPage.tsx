@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
-import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
 
@@ -27,6 +27,13 @@ interface TrajectoryPoint {
   y: number;
   timestamp: number;
   steering_angle?: number;
+  uwb_z?: number;
+  imu_ax?: number;
+  imu_ay?: number;
+  imu_az?: number;
+  imu_gx?: number;
+  imu_gy?: number;
+  imu_gz?: number;
 }
 
 interface SessionStats {
@@ -42,6 +49,15 @@ interface SessionStats {
     min_y: number;
     max_y: number;
   };
+}
+
+interface PointInfo {
+  point: TrajectoryPoint;
+  index: number;
+  speed?: number;
+  acceleration?: number;
+  distance_from_start?: number;
+  time_from_start?: number;
 }
 
 const StatItem = ({ label, value, unit, icon: Icon }: any) => (
@@ -77,7 +93,31 @@ const AnalysisPage: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
+  const [selectedPoint, setSelectedPoint] = useState<PointInfo | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hoveredPoint, setHoveredPoint] = useState<PointInfo | null>(null);
+  const [showPoints, setShowPoints] = useState<boolean>(false);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [closestPoint, setClosestPoint] = useState<PointInfo | null>(null);
   const chartRef = useRef<any>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        closePopup();
+      }
+    };
+
+    if (selectedPoint) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedPoint]);
 
   // Load sessions on mount
   useEffect(() => {
@@ -165,7 +205,31 @@ const AnalysisPage: React.FC = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/trajectory`);
       const data = await response.json();
-      setTrajectory(data);
+
+      // Fetch complete sensor data for detailed information
+      const sensorResponse = await fetch(`${API_BASE_URL}/sessions/${sessionId}/sensor-data`);
+      if (sensorResponse.ok) {
+        const sensorData = await sensorResponse.json();
+
+        // Merge trajectory data with sensor data
+        const enrichedTrajectory = data.map((point: TrajectoryPoint) => {
+          const sensorPoint = sensorData.find((s: any) => s.timestamp === point.timestamp);
+          return {
+            ...point,
+            uwb_z: sensorPoint?.uwb_z,
+            imu_ax: sensorPoint?.imu_ax,
+            imu_ay: sensorPoint?.imu_ay,
+            imu_az: sensorPoint?.imu_az,
+            imu_gx: sensorPoint?.imu_gx,
+            imu_gy: sensorPoint?.imu_gy,
+            imu_gz: sensorPoint?.imu_gz
+          };
+        });
+
+        setTrajectory(enrichedTrajectory);
+      } else {
+        setTrajectory(data);
+      }
     } catch (error) {
       console.error('Error loading trajectory:', error);
     } finally {
@@ -279,6 +343,325 @@ const AnalysisPage: React.FC = () => {
 
   const zoomOut = () => {
     setZoomLevel(prev => Math.max(0.1, prev / 1.2));
+  };
+
+  // Calculate point information
+  const calculatePointInfo = (point: TrajectoryPoint, index: number): PointInfo => {
+    const speed = index > 0 ? calculateSpeed(trajectory[index - 1], point) : 0;
+    const acceleration = index > 1 ? calculateAcceleration(trajectory[index - 2], trajectory[index - 1], point) : 0;
+    const distance_from_start = calculateDistanceFromStart(trajectory.slice(0, index + 1));
+    const time_from_start = point.timestamp - trajectory[0]?.timestamp || 0;
+
+    return {
+      point,
+      index,
+      speed,
+      acceleration,
+      distance_from_start,
+      time_from_start
+    };
+  };
+
+  const calculateSpeed = (point1: TrajectoryPoint, point2: TrajectoryPoint): number => {
+    const distance = Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
+    const timeDiff = point2.timestamp - point1.timestamp;
+    return timeDiff > 0 ? (distance / timeDiff) * 1000 : 0; // Convert to m/s
+  };
+
+  const calculateAcceleration = (point1: TrajectoryPoint, point2: TrajectoryPoint, point3: TrajectoryPoint): number => {
+    const speed1 = calculateSpeed(point1, point2);
+    const speed2 = calculateSpeed(point2, point3);
+    const timeDiff = point3.timestamp - point1.timestamp;
+    return timeDiff > 0 ? (speed2 - speed1) / (timeDiff / 1000) : 0; // m/s²
+  };
+
+  const calculateDistanceFromStart = (points: TrajectoryPoint[]): number => {
+    let totalDistance = 0;
+    for (let i = 1; i < points.length; i++) {
+      totalDistance += Math.sqrt(Math.pow(points[i].x - points[i - 1].x, 2) + Math.pow(points[i].y - points[i - 1].y, 2));
+    }
+    return totalDistance;
+  };
+
+  const handlePointClick = (data: any, index: number) => {
+    if (data && data.payload) {
+      const pointInfo = calculatePointInfo(data.payload, index);
+      setSelectedPoint(pointInfo);
+
+      // Calculate popup position relative to the chart
+      const chartElement = chartRef.current;
+      if (chartElement) {
+        const rect = chartElement.getBoundingClientRect();
+        const bounds = getCurrentBounds();
+        const x = ((data.payload.x - bounds.minX) / (bounds.maxX - bounds.minX)) * rect.width;
+        const y = rect.height - ((data.payload.y - bounds.minY) / (bounds.maxY - bounds.minY)) * rect.height;
+
+        setPopupPosition({
+          x: rect.left + x,
+          y: rect.top + y
+        });
+      }
+    }
+  };
+
+  const handlePointMouseEnter = (data: any, index: number) => {
+    if (data && data.payload) {
+      const pointInfo = calculatePointInfo(data.payload, index);
+      setHoveredPoint(pointInfo);
+      setShowPoints(true);
+    }
+  };
+
+  const handlePointMouseLeave = () => {
+    setHoveredPoint(null);
+    setShowPoints(false);
+    setClosestPoint(null);
+    setMousePosition(null);
+  };
+
+  // Find closest point to mouse position
+  const findClosestPoint = (mouseX: number, mouseY: number): PointInfo | null => {
+    if (trajectory.length === 0) return null;
+
+    const chartElement = chartRef.current;
+    if (!chartElement) return null;
+
+    const rect = chartElement.getBoundingClientRect();
+    const bounds = getCurrentBounds();
+
+    // Convert mouse position to chart coordinates
+    // Note: Recharts uses a different coordinate system
+    const chartX = ((mouseX - rect.left) / rect.width) * (bounds.maxX - bounds.minX) + bounds.minX;
+    const chartY = bounds.maxY - ((mouseY - rect.top) / rect.height) * (bounds.maxY - bounds.minY);
+
+    // Find closest point
+    let minDistance = Infinity;
+    let closestIndex = -1;
+
+    trajectory.forEach((point, index) => {
+      const distance = Math.sqrt(Math.pow(point.x - chartX, 2) + Math.pow(point.y - chartY, 2));
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    if (closestIndex >= 0 && minDistance < 3) { // Increased threshold to 3 units
+      return calculatePointInfo(trajectory[closestIndex], closestIndex);
+    }
+
+    return null;
+  };
+
+  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    setMousePosition({ x: mouseX, y: mouseY });
+
+    const closest = findClosestPoint(mouseX, mouseY);
+    setClosestPoint(closest);
+
+    if (closest) {
+      setShowPoints(true);
+      setHoveredPoint(closest);
+    } else {
+      setShowPoints(false);
+      setHoveredPoint(null);
+    }
+  };
+
+  const handleChartClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    const closest = findClosestPoint(mouseX, mouseY);
+    if (closest) {
+      setSelectedPoint(closest);
+
+      // Calculate popup position relative to the chart
+      const chartElement = chartRef.current;
+      if (chartElement) {
+        const rect = chartElement.getBoundingClientRect();
+        const bounds = getCurrentBounds();
+        const x = ((closest.point.x - bounds.minX) / (bounds.maxX - bounds.minX)) * rect.width;
+        const y = rect.height - ((closest.point.y - bounds.minY) / (bounds.maxY - bounds.minY)) * rect.height;
+
+        setPopupPosition({
+          x: rect.left + x,
+          y: rect.top + y
+        });
+      }
+    }
+  };
+
+  const handleChartMouseLeave = () => {
+    setMousePosition(null);
+    setClosestPoint(null);
+    setShowPoints(false);
+    setHoveredPoint(null);
+  };
+
+  const closePopup = () => {
+    setSelectedPoint(null);
+  };
+
+  // Popup component
+  const PointPopup = () => {
+    if (!selectedPoint) return null;
+
+    return (
+      <div
+        ref={popupRef}
+        className="fixed z-50 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl p-4 min-w-[280px] max-w-[320px]"
+        style={{
+          left: `${popupPosition.x}px`,
+          top: `${popupPosition.y}px`,
+          transform: 'translate(-50%, -100%)'
+        }}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Navigation size={14} className="text-[#22D3EE]" />
+            Point #{selectedPoint.index}
+          </h3>
+          <button
+            onClick={closePopup}
+            className="text-[#737373] hover:text-white transition-colors"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="space-y-3 text-xs">
+          {/* Position */}
+          <div className="pb-2 border-b border-[#262626]">
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#737373]">Position</span>
+              <span className="text-white font-mono">
+                X: {selectedPoint.point.x.toFixed(2)}, Y: {selectedPoint.point.y.toFixed(2)}
+              </span>
+            </div>
+            {selectedPoint.point.uwb_z !== undefined && selectedPoint.point.uwb_z !== null && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#737373]">Altitude (Z)</span>
+                <span className="text-white font-mono">
+                  {selectedPoint.point.uwb_z.toFixed(3)} m
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Temps et Mouvement */}
+          <div className="pb-2 border-b border-[#262626]">
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#737373] flex items-center gap-1">
+                <Timer size={12} />
+                Temps
+              </span>
+              <span className="text-white font-mono">
+                {(selectedPoint.time_from_start / 1000).toFixed(2)}s
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#737373] flex items-center gap-1">
+                <Gauge size={12} />
+                Vitesse
+              </span>
+              <span className="text-white font-mono">
+                {(selectedPoint.speed || 0).toFixed(2)} m/s
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#737373]">Accélération</span>
+              <span className="text-white font-mono">
+                {(selectedPoint.acceleration || 0).toFixed(2)} m/s²
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#737373]">Distance</span>
+              <span className="text-white font-mono">
+                {(selectedPoint.distance_from_start || 0).toFixed(2)} m
+              </span>
+            </div>
+
+            {selectedPoint.point.steering_angle !== undefined && selectedPoint.point.steering_angle !== null && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#737373]">Direction</span>
+                <span className="text-white font-mono">
+                  {selectedPoint.point.steering_angle.toFixed(1)}°
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* IMU - Accéléromètre */}
+          {(selectedPoint.point.imu_ax !== undefined && selectedPoint.point.imu_ax !== null ||
+            selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null ||
+            selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null) && (
+            <div className="pb-2 border-b border-[#262626]">
+              <h4 className="text-[#22D3EE] font-medium mb-2">IMU - Accéléromètre</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {selectedPoint.point.imu_ax !== undefined && selectedPoint.point.imu_ax !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_ax.toFixed(3)}</div>
+                    <div className="text-[#737373]">X (g)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_ay.toFixed(3)}</div>
+                    <div className="text-[#737373]">Y (g)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_az.toFixed(3)}</div>
+                    <div className="text-[#737373]">Z (g)</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* IMU - Gyroscope */}
+          {(selectedPoint.point.imu_gx !== undefined && selectedPoint.point.imu_gx !== null ||
+            selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null ||
+            selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null) && (
+            <div>
+              <h4 className="text-[#22D3EE] font-medium mb-2">IMU - Gyroscope</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {selectedPoint.point.imu_gx !== undefined && selectedPoint.point.imu_gx !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gx.toFixed(1)}</div>
+                    <div className="text-[#737373]">X (°/s)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gy.toFixed(1)}</div>
+                    <div className="text-[#737373]">Y (°/s)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gz.toFixed(1)}</div>
+                    <div className="text-[#737373]">Z (°/s)</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Calculate current bounds based on zoom and pan
@@ -487,7 +870,7 @@ const AnalysisPage: React.FC = () => {
             </div>
 
             <div
-              className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center bg-[#101010]"
+              className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center bg-[#101010] relative"
               onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
@@ -495,6 +878,14 @@ const AnalysisPage: React.FC = () => {
               onMouseLeave={handleMouseUp}
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
+              <div
+                className="absolute inset-0"
+                onMouseMove={handleChartMouseMove}
+                onMouseLeave={handleChartMouseLeave}
+                onClick={handleChartClick}
+                style={{ zIndex: 10 }}
+              />
+
               {trajectory.length > 0 ? (
                 <div className="w-full h-full p-2 flex items-center justify-center">
                   <div
@@ -505,6 +896,7 @@ const AnalysisPage: React.FC = () => {
                       maxWidth: '100%',
                       maxHeight: '100%'
                     }}
+                    ref={chartRef}
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
@@ -560,7 +952,28 @@ const AnalysisPage: React.FC = () => {
                         fill="#22D3EE"
                         line={{ stroke: '#22D3EE', strokeWidth: 1.5 }}
                         lineType="joint"
-                        shape={<circle r={0} />}
+                        shape={(props: any) => {
+                          const isClosest = closestPoint && props.index === closestPoint.index;
+                          const isHovered = hoveredPoint && props.index === hoveredPoint.index;
+                          const radius = isClosest ? 6 : (showPoints ? 4 : 3);
+                          const fill = isClosest ? '#10b981' : (showPoints ? '#22D3EE' : 'rgba(34, 211, 238, 0.3)');
+
+                          return (
+                            <circle
+                              cx={props.cx}
+                              cy={props.cy}
+                              r={radius}
+                              fill={fill}
+                              stroke={isClosest ? '#10b981' : '#22D3EE'}
+                              strokeWidth={isClosest ? 2 : 1}
+                              className="cursor-pointer transition-all duration-150"
+                              style={{
+                                filter: isClosest ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.8))' : 'none'
+                              }}
+                            />
+                          );
+                        }}
+                        onClick={handlePointClick}
                       />
 
                       {/* Optimal Trajectory */}
@@ -586,10 +999,12 @@ const AnalysisPage: React.FC = () => {
               )}
             </div>
           </div>
-
         </div>
         </div>
       </main>
+
+      {/* Point Popup */}
+      <PointPopup />
     </div>
   );
 };

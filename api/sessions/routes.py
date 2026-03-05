@@ -136,6 +136,42 @@ async def create_session(session: Session, db: DbSession = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/{session_id}/sensor-data", response_model=list[SensorData])
+async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_db)):
+    """Récupérer toutes les données de capteur d'une session"""
+    try:
+        # Récupérer toutes les données de capteur de la session
+        data = db.query(sql_models.SensorData)\
+            .filter(sql_models.SensorData.session_id == session_id)\
+            .order_by(sql_models.SensorData.timestamp)\
+            .all()
+
+        if not data:
+            raise HTTPException(status_code=404, detail="Session non trouvée")
+
+        # Convertir en modèles Pydantic
+        sensor_data_list = []
+        for d in data:
+            sensor_dict = {
+                "session_id": str(d.session_id),
+                "timestamp": d.timestamp,
+                "uwb_x": d.uwb_x,
+                "uwb_y": d.uwb_y,
+                "uwb_z": d.uwb_z,
+                "imu_ax": d.imu_ax,
+                "imu_ay": d.imu_ay,
+                "imu_az": d.imu_az,
+                "imu_gx": d.imu_gx,
+                "imu_gy": d.imu_gy,
+                "imu_gz": d.imu_gz,
+                "steering_angle": d.steering_angle
+            }
+            sensor_data_list.append(SensorData(**sensor_dict))
+
+        return sensor_data_list
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/{session_id}/sensor-data", response_model=SensorData)
 async def add_sensor_data(session_id: str, sensor_data: SensorData, db: DbSession = Depends(get_db)):
     """Ajouter des données de capteur à une session"""
