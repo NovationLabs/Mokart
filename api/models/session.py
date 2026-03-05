@@ -35,3 +35,17 @@ class TrajectoryPoint(BaseModel):
     y: float
     timestamp: int
     steering_angle: Optional[float] = None
+
+class OptimalTrajectoryPoint(BaseModel):
+    id: str
+    circuit_id: str
+    point_order: int
+    x: float
+    y: float
+    created_at: str
+
+class TrajectoryComparison(BaseModel):
+    session_id: str
+    optimal_trajectory: List[TrajectoryPoint]
+    actual_trajectory: List[TrajectoryPoint]
+    deviation_stats: dict

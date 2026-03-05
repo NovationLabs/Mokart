@@ -1,53 +1,56 @@
 import React, { useState, useEffect } from 'react';
 // Global style import handled in index.tsx
 import Sidebar from '../components/Sidebar';
-import { User, Smartphone, Search, Bell } from 'lucide-react';
+import Header from '../components/Header';
+import { User, Smartphone } from 'lucide-react';
 
 const Home: React.FC = () => {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const user = localStorage.getItem('mokart_user');
-    if (user) {
-      try {
-        const userData = JSON.parse(user);
-        const email = userData.email || '';
-        const firstName = email.split('@')[0];
-        setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
-      } catch (e) {
-        setUserName('Driver');
+    const updateUserName = () => {
+      const user = localStorage.getItem('mokart_user');
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          const email = userData.email || '';
+          const firstName = email.split('@')[0];
+          setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+        } catch (e) {
+          setUserName('Driver');
+        }
       }
-    }
+    };
+
+    updateUserName();
+
+    // Écouter les changements de localStorage pour rafraîchir quand on revient des settings
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mokart_user') {
+        updateUserName();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   return (
     <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 md:p-6 p-4 relative z-10 overflow-y-auto h-screen pb-20 md:pb-0">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-8 pb-4 border-b border-[#262626]">
-          <div>
+      <main className="flex-1 md:ml-16 ml-0 relative z-10 overflow-y-auto h-screen">
+        <Header />
+
+        <div className="md:p-6 p-4 pb-20 md:pb-0">
+          {/* Welcome Section */}
+          <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
             <p className="text-[#737373] text-sm mt-1">Overview for <span className="text-white font-medium">{userName}</span></p>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg text-[#737373] hover:text-white hover:bg-[#171717] transition-colors">
-              <Search size={18} />
-            </button>
-            <button className="p-2 rounded-lg text-[#737373] hover:text-white hover:bg-[#171717] transition-colors relative">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-[#22D3EE] rounded-full"></span>
-            </button>
-            <div className="w-px h-5 bg-[#262626] mx-1"></div>
-            <div className="flex items-center gap-2 pr-3 pl-1 py-1 rounded-full border border-[#262626] bg-[#171717] hover:border-[#404040] transition-colors cursor-pointer">
-              <div className="w-6 h-6 rounded-full bg-[#262626] flex items-center justify-center text-xs font-medium text-white">
-                {userName.charAt(0) || 'U'}
-              </div>
-              <span className="text-xs font-medium text-[#d4d4d4] hidden md:block">{userName || 'User'}</span>
-            </div>
-          </div>
-        </header>
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -92,17 +95,17 @@ const Home: React.FC = () => {
             {/* Simulated Map Graphic (Clean Line) */}
             <div className="flex-1 relative w-full h-full min-h-[120px] rounded border border-[#262626] bg-[#0a0a0a] flex items-center justify-center">
                <svg className="w-full h-full p-4" viewBox="0 0 800 400">
-                  <path 
-                    d="M100,200 Q200,100 400,250 T700,300 M50,300 Q150,50 350,150 T600,350" 
-                    fill="none" 
-                    stroke="#262626" 
-                    strokeWidth="1" 
+                  <path
+                    d="M100,200 Q200,100 400,250 T700,300 M50,300 Q150,50 350,150 T600,350"
+                    fill="none"
+                    stroke="#262626"
+                    strokeWidth="1"
                   />
-                  <path 
-                    d="M100,200 Q200,100 400,250 T700,300" 
-                    fill="none" 
-                    stroke="#22D3EE" 
-                    strokeWidth="1.5" 
+                  <path
+                    d="M100,200 Q200,100 400,250 T700,300"
+                    fill="none"
+                    stroke="#22D3EE"
+                    strokeWidth="1.5"
                   />
                </svg>
             </div>
@@ -164,10 +167,10 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
+        </div>
       </main>
     </div>
   );
 };
 
 export default Home;
-
