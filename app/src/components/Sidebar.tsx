@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Activity, LogOut } from 'lucide-react';
+import { Home, Activity, LogOut, Users, Settings } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
     const navigate = useNavigate();
@@ -32,6 +32,22 @@ const Sidebar: React.FC = () => {
                     }
                 >
                     <Activity size={24} strokeWidth={1.5} />
+                </NavLink>
+                <NavLink
+                    to="/users"
+                    className={({ isActive }) =>
+                        `p-2 rounded-lg transition-colors ${isActive ? 'text-white bg-[#171717]' : 'text-[#737373]'}`
+                    }
+                >
+                    <Users size={24} strokeWidth={1.5} />
+                </NavLink>
+                <NavLink
+                    to="/settings"
+                    className={({ isActive }) =>
+                        `p-2 rounded-lg transition-colors ${isActive ? 'text-white bg-[#171717]' : 'text-[#737373]'}`
+                    }
+                >
+                    <Settings size={24} strokeWidth={1.5} />
                 </NavLink>
                 <button
                     onClick={handleLogout}
@@ -79,6 +95,30 @@ const Sidebar: React.FC = () => {
                         }
                     >
                         <Activity size={20} />
+                    </NavLink>
+
+                    <NavLink
+                        to="/users"
+                        className={({ isActive }) =>
+                            `p-2 rounded-lg transition-all duration-200 flex justify-center group relative ${isActive
+                                ? 'bg-[#171717] text-white'
+                                : 'text-[#737373] hover:text-white hover:bg-[#171717]'
+                            }`
+                        }
+                    >
+                        <Users size={20} />
+                    </NavLink>
+
+                    <NavLink
+                        to="/settings"
+                        className={({ isActive }) =>
+                            `p-2 rounded-lg transition-all duration-200 flex justify-center group relative ${isActive
+                                ? 'bg-[#171717] text-white'
+                                : 'text-[#737373] hover:text-white hover:bg-[#171717]'
+                            }`
+                        }
+                    >
+                        <Settings size={20} />
                     </NavLink>
                 </nav>
 

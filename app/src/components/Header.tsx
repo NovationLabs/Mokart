@@ -13,26 +13,52 @@ const Header: React.FC = () => {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // ID utilisateur fixe pour la démo (à remplacer par l'authentification réelle)
+  // ID utilisateur pour la démo (à remplacer par l'authentification réelle)
   const getStoredUserId = () => {
     try {
       const storedUser = localStorage.getItem('mokart_user');
-      if (!storedUser) return '';
+      if (!storedUser) {
+        // Utiliser l'ID du user pilot par défaut pour la démo
+        const defaultUser = {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          username: 'pilot',
+          role: 'admin'
+        };
+        localStorage.setItem('mokart_user', JSON.stringify(defaultUser));
+        return defaultUser.id;
+      }
       const parsed = JSON.parse(storedUser);
-      return typeof parsed?.id === 'string' ? parsed.id : '';
+      return typeof parsed?.id === 'string' ? parsed.id : '550e8400-e29b-41d4-a716-446655440001';
     } catch {
-      return '';
+      return '550e8400-e29b-41d4-a716-446655440001';
     }
   };
 
   useEffect(() => {
-    setUserId(getStoredUserId());
+    const userId = getStoredUserId();
+    console.log('User ID utilisé:', userId);
+    setUserId(userId);
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'mokart_user') {
-        setUserId(getStoredUserId());
+        const newUserId = getStoredUserId();
+        console.log('User ID changé:', newUserId);
+        setUserId(newUserId);
       }
     };
+
+    // Fonction pour nettoyer et réinitialiser l'utilisateur
+    const clearUserSession = () => {
+      localStorage.removeItem('mokart_user');
+      localStorage.removeItem('mokart_session');
+      setUserId('');
+      setUserProfile(null);
+      setNotifications([]);
+      console.log('Session utilisateur nettoyée');
+    };
+
+    // Exposer la fonction globalement pour pouvoir l'utiliser depuis la console
+    (window as any).clearUserSession = clearUserSession;
 
     // Fermer les menus quand on clique ailleurs
     const handleClickOutside = (event: MouseEvent) => {

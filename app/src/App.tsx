@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import AnalysisPage from './pages/AnalysisPage';
 import AuthPage from './pages/AuthPage';
 import SettingsPage from './pages/SettingsPage';
+import UserManagementPage from './pages/UserManagementPage';
 // Removed: import './styles/App.css';
 
 const App: React.FC = () => {
@@ -17,6 +18,7 @@ const App: React.FC = () => {
         <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
         <Route path="/analysis" element={isAuthenticated ? <AnalysisPage /> : <Navigate to="/login" />} />
         <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
+        <Route path="/users" element={isAuthenticated ? <UserManagementPage /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
