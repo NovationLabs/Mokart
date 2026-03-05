@@ -6,6 +6,7 @@ from auth.routes import router as auth_router
 from sessions.routes import router as sessions_router
 from circuits.routes import router as circuits_router
 from users.routes import router as users_router, admin_router
+from dashboard.routes import router as dashboard_router
 from sqlalchemy.orm import Session
 
 # Create tables if not exists (although init.sql should handle it)
@@ -19,6 +20,7 @@ app.include_router(sessions_router)
 app.include_router(circuits_router)
 app.include_router(users_router)
 app.include_router(admin_router)
+app.include_router(dashboard_router)
 
 # Configuration CORS APRÈS les routes
 app.add_middleware(
