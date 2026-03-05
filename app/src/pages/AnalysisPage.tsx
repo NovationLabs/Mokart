@@ -564,7 +564,7 @@ const AnalysisPage: React.FC = () => {
                 Temps
               </span>
               <span className="text-white font-mono">
-                {(selectedPoint.time_from_start / 1000).toFixed(2)}s
+                {((selectedPoint.time_from_start || 0) / 1000).toFixed(2)}s
               </span>
             </div>
 
