@@ -202,7 +202,8 @@ const Header: React.FC = () => {
     { id: 'admin', name: 'Admin', icon: '👑' },
     { id: 'pilot', name: 'Pilote', icon: '🏎️' },
     { id: 'mechanic', name: 'Mécanicien', icon: '🔧' },
-    { id: 'observer', name: 'Observateur', icon: '👁️' }
+    { id: 'observer', name: 'Observateur', icon: '👁️' },
+    { id: 'commissaire_piste', name: 'Commissaire', icon: '🏁️' }
   ];
 
   return (

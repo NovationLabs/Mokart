@@ -182,9 +182,9 @@ async def get_dashboard_data(user_id: str = None, role: str = None, db: DbSessio
             circuit_info=circuit_info
         )
 
-    else:  # observer
-        # Observateur voit uniquement les infos du circuit
+    else:  # commissaire_piste
         return DashboardData(
             user_role=user_role,
+            karts_status=generate_fake_karts_status(),
             circuit_info=circuit_info
         )

@@ -416,6 +416,111 @@ const Home: React.FC = () => {
     );
   };
 
+  const renderCommissaireDashboard = () => {
+    if (!dashboardData) return null;
+
+    return (
+      <div className="space-y-6">
+        {/* Karts Status - vue commissaire */}
+        {dashboardData.karts_status && (
+          <div>
+            <h2 className="text-lg font-semibold text-white mb-4">Contrôle des Karts</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboardData.karts_status.map((kart) => (
+                <div key={kart.id} className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-sm font-medium text-white">{kart.name}</h3>
+                      <p className="text-xs text-[#737373]">{kart.driver || 'Non assigné'}</p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs font-bold uppercase rounded ${
+                      kart.status === 'online' ? 'bg-emerald-900 text-emerald-300' :
+                      kart.status === 'charging' ? 'bg-blue-900 text-blue-300' :
+                      kart.status === 'maintenance' ? 'bg-yellow-900 text-yellow-300' :
+                      'bg-red-900 text-red-300'
+                    }`}>
+                      {kart.status}
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[#737373]">N° Kart</span>
+                      <span className="text-xs text-white font-mono">{kart.id}</span>
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-[#737373]">Batterie</span>
+                        <span className="text-xs text-white">{kart.battery_level}%</span>
+                      </div>
+                      <div className="w-full bg-[#262626] rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${
+                            kart.battery_level > 60 ? 'bg-emerald-500' :
+                            kart.battery_level > 30 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                          style={{ width: `${kart.battery_level}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    {kart.last_seen && (
+                      <div className="text-xs text-[#737373]">
+                        Dernière activité: {new Date(kart.last_seen).toLocaleTimeString()}
+                      </div>
+                    )}
+                    {kart.location && (
+                      <div className="text-xs text-[#737373]">
+                        Position: X:{kart.location.x.toFixed(1)}, Y:{kart.location.y.toFixed(1)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Circuit Info */}
+        {dashboardData.circuit_info && (
+          <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-1">État du Circuit</h3>
+                <div className="text-lg font-bold text-white">{dashboardData.circuit_info.name}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  dashboardData.circuit_info.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'
+                }`}></span>
+                <span className="text-[10px] font-medium text-emerald-500 uppercase tracking-wider">
+                  {dashboardData.circuit_info.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.temperature}°C</div>
+                <div className="text-xs text-[#737373]">Température</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.humidity}%</div>
+                <div className="text-xs text-[#737373]">Humidité</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-[#22D3EE]">{dashboardData.circuit_info.grip_level}</div>
+                <div className="text-xs text-[#737373]">Adhérence</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.active_karts}</div>
+                <div className="text-xs text-[#737373]">Karts Actifs</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderDashboard = () => {
     if (loading) {
       return (
@@ -450,6 +555,8 @@ const Home: React.FC = () => {
         return renderMechanicDashboard();
       case 'observer':
         return renderObserverDashboard();
+      case 'commissaire_piste':
+        return renderCommissaireDashboard();
       default:
         return renderPilotDashboard(); // Fallback
     }

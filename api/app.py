@@ -65,7 +65,7 @@ async def fix_database(db: Session = Depends(get_db)):
                     WHERE conname = 'users_role_check'
                 ) THEN
                     ALTER TABLE users ADD CONSTRAINT users_role_check
-                    CHECK (role IN ('admin', 'commissaire', 'mechanic', 'instructor', 'driver', 'spectator'));
+                    CHECK (role IN ('admin', 'commissaire', 'mechanic', 'instructor', 'driver', 'spectator', 'commissaire_piste'));
                 END IF;
             END $$
         """))

@@ -15,7 +15,7 @@ class User(Base):
     last_name = Column(String)
     phone = Column(String)
     kart = Column(String)
-    role = Column(String, default="pilot")  # admin, pilot, mechanic, observer
+    role = Column(String, default="pilot")  # admin, pilot, mechanic, observer, commissaire
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Session(Base):
