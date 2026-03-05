@@ -42,10 +42,11 @@ const Home: React.FC = () => {
     <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 relative z-10 overflow-y-auto h-screen">
-        <Header />
+      <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
+        <Header className="flex-shrink-0" />
 
-        <div className="md:p-6 p-4 pb-20 md:pb-0">
+        <main className="flex-1 overflow-y-auto">
+          <div className="md:p-6 p-4 pb-20 md:pb-0">
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
@@ -167,8 +168,9 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
