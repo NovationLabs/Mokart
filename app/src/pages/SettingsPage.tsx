@@ -86,10 +86,10 @@ const SettingsPage: React.FC = () => {
       <div className="absolute inset-0 bg-grid-minimal opacity-40 pointer-events-none" />
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen overflow-y-auto pb-20 md:pb-0 relative z-10">
+      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen relative z-10">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-20 px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-3 border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 px-4 sm:px-6 flex-shrink-0 h-14 sm:h-16 flex items-center gap-3 border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
           <button
             onClick={() => window.history.back()}
             className="p-1.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/5 transition-all"
@@ -102,7 +102,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6 space-y-4 animate-fade-in max-w-2xl">
+        <div className="flex-1 overflow-y-auto pb-20 md:pb-0 p-4 sm:p-6 space-y-4 animate-fade-in max-w-2xl">
 
           {/* Alert */}
           {message && (

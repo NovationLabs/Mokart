@@ -67,8 +67,16 @@ const CustomTooltip = ({ active, payload }: any) => {
 
 const AnalysisPage: React.FC = () => {
   // Mock-data state
-  const [selectedSession, setSelectedSession] = useState(MOCK_SESSIONS[0].id);
-  const [activeTab, setActiveTab] = useState<'laps' | 'speed' | 'sectors' | 'trajectory'>('laps');
+  const [selectedSession, setSelectedSession] = useState<string>(() => {
+    const saved = localStorage.getItem('analysis_session');
+    return saved && MOCK_SESSIONS.some(s => s.id === saved) ? saved : MOCK_SESSIONS[0].id;
+  });
+  const [activeTab, setActiveTab] = useState<'laps' | 'speed' | 'sectors' | 'trajectory'>(() => {
+    const saved = localStorage.getItem('analysis_tab');
+    return (['laps', 'speed', 'sectors', 'trajectory'] as const).includes(saved as any)
+      ? (saved as 'laps' | 'speed' | 'sectors' | 'trajectory')
+      : 'laps';
+  });
   const [userName, setUserName] = useState(MOCK_DRIVER.name.split(' ')[0]);
   const [selectedPoint, setSelectedPoint] = useState<PointInfo | null>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -114,9 +122,10 @@ const AnalysisPage: React.FC = () => {
 
   // ── Graph bounds from trajectory data ─────────────────────────────────────
   useEffect(() => {
-    if (trajectory.length === 0 && circuitBoundaries.length === 0) return;
+    const safeBounds = Array.isArray(circuitBoundaries) ? circuitBoundaries : [];
+    if (trajectory.length === 0 && safeBounds.length === 0) return;
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const p of [...trajectory, ...circuitBoundaries]) {
+    for (const p of [...trajectory, ...safeBounds]) {
       minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
       minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
     }
@@ -182,7 +191,8 @@ const AnalysisPage: React.FC = () => {
   const fetchCircuitBoundaries = async (id: string) => {
     try {
       const res = await fetch(`${API_BASE_URL}/sessions/${id}/circuit-boundaries`);
-      setCircuitBoundaries(await res.json());
+      const data = await res.json();
+      setCircuitBoundaries(Array.isArray(data) ? data : []);
     } catch { setCircuitBoundaries([]); }
   };
 
@@ -372,10 +382,10 @@ const AnalysisPage: React.FC = () => {
       <div className="absolute inset-0 bg-grid-minimal opacity-40 pointer-events-none" />
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen overflow-y-auto pb-20 md:pb-0 relative z-10">
+      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen relative z-10">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-20 px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 px-4 sm:px-6 flex-shrink-0 h-14 sm:h-16 flex items-center justify-between border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
           <div>
             <h1 className="text-sm sm:text-base font-semibold tracking-tight">Analyse</h1>
             <p className="text-[10px] sm:text-[11px] text-[#94a3b8]">
@@ -402,14 +412,14 @@ const AnalysisPage: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6 space-y-4 animate-fade-in">
+        <div className="flex-1 overflow-y-auto pb-20 md:pb-0 p-4 sm:p-6 space-y-4 animate-fade-in">
 
           {/* ── Session selector bar ──────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-3">
             <div className="relative">
               <select
                 value={selectedSession}
-                onChange={e => setSelectedSession(e.target.value)}
+                onChange={e => { setSelectedSession(e.target.value); localStorage.setItem('analysis_session', e.target.value); }}
                 className="appearance-none bg-white/[0.04] border border-[#262626] text-[#a3a3a3] text-xs pl-3 pr-7 py-2 rounded-lg focus:outline-none focus:border-[#7bf8ac]/40 focus:text-white transition-all cursor-pointer"
               >
                 {MOCK_SESSIONS.map(s => (
@@ -447,7 +457,7 @@ const AnalysisPage: React.FC = () => {
             {(['laps', 'speed', 'sectors', 'trajectory'] as const).map(tab => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => { setActiveTab(tab); localStorage.setItem('analysis_tab', tab); }}
                 className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                   activeTab === tab ? 'bg-white/10 text-white' : 'text-[#94a3b8] hover:text-white'
                 }`}
