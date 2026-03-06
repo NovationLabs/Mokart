@@ -45,7 +45,9 @@ const AuthPage: React.FC = () => {
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(body),
       });
 
@@ -56,10 +58,13 @@ const AuthPage: React.FC = () => {
           localStorage.setItem('mokart_session', JSON.stringify(data.session));
           localStorage.setItem('mokart_user', JSON.stringify(data.user));
         }
-        setTimeout(() => { window.location.href = '/'; }, 1500);
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       } else {
         const errorData = await response.json();
         if (response.status === 404 && errorData.detail?.includes("n'existe pas")) {
+          // Si le compte n'existe pas, basculer vers register
           setIsLogin(false);
           setError("Ce compte n'existe pas. Veuillez vous inscrire.");
         } else {
@@ -116,6 +121,7 @@ const AuthPage: React.FC = () => {
 
         {/* Header */}
         <div className="text-center mb-8">
+
           <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
             {isLogin ? 'Welcome back!' : 'Create your account.'}
           </h1>
@@ -161,7 +167,7 @@ const AuthPage: React.FC = () => {
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Password</label>
               <div className="relative">
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
@@ -171,7 +177,7 @@ const AuthPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -184,7 +190,7 @@ const AuthPage: React.FC = () => {
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Confirm Password</label>
                   <div className="relative">
                     <input
-                      type={showConfirmPassword ? 'text' : 'password'}
+                      type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
@@ -194,7 +200,7 @@ const AuthPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -217,7 +223,9 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full justify-center py-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full bg-[#7bf8ac] text-black font-semibold py-3 rounded-lg transition-all duration-300 text-sm mt-1
+                hover:shadow-[0_0_18px_rgba(163,230,53,0.5),0_0_60px_rgba(163,230,53,0.2)]
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
@@ -234,7 +242,9 @@ const AuthPage: React.FC = () => {
           <button
             onClick={handleDemoLogin}
             disabled={loading}
-            className="btn-secondary w-full justify-center py-3 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-white/5 border border-white/10 text-white font-medium py-3 rounded-lg text-sm
+              hover:bg-white/10 hover:border-white/20 transition-all
+              disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Demo Mode
           </button>

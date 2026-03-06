@@ -212,7 +212,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
   return (
     <header className={`flex-shrink-0 h-16 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-6 backdrop-blur-xl ${className || ''}`}>
-      <div className="flex items-center justify-between w-full">
+      <div className="flex items-center justify-between">
         {/* Barre de recherche */}
         <div className="flex-1 max-w-xl">
           <div className="relative">
@@ -222,7 +222,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#171717] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-[#737373] focus:outline-none focus:border-[#404040] transition-colors"
+              className="w-full bg-[#16181d] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-[#737373] focus:outline-none focus:border-[#7bf8ac]/50 transition-colors"
             />
           </div>
         </div>
@@ -238,14 +238,14 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                 title="Changer de rôle (démo)"
               >
                 <Shield className="w-5 h-5" />
-                <span className="text-xs px-2 py-1 bg-[#22D3EE] text-white rounded">
+                <span className="text-xs px-2 py-1 bg-[#7bf8ac] text-black rounded">
                   {roles.find(r => r.id === getCurrentRole())?.icon} {getCurrentRole()}
                 </span>
               </button>
 
               {/* Menu switcher de rôle */}
               {showRoleSwitcher && (
-                <div className="absolute right-0 mt-2 w-48 bg-[#171717] border border-[#262626] rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-[#16181d] border border-[#262626] rounded-lg shadow-lg z-50">
                   <div className="p-3 border-b border-[#262626]">
                     <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Changer de Rôle</h3>
                     <p className="text-xs text-[#737373] mt-1">Mode démo uniquement</p>
@@ -257,7 +257,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                         onClick={() => switchRole(role.id)}
                         className={`flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors ${
                           getCurrentRole() === role.id
-                            ? 'bg-[#22D3EE] text-white'
+                            ? 'bg-[#7bf8ac] text-white'
                             : 'text-[#a3a3a3] hover:text-white hover:bg-[#262626]'
                         }`}
                       >
@@ -285,7 +285,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#22D3EE] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-[#7bf8ac] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
@@ -293,13 +293,13 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
             {/* Menu notifications */}
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#171717] border border-[#262626] rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-80 bg-[#16181d] border border-[#262626] rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-[#262626] flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-white">Notifications</h3>
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllNotificationsAsRead}
-                      className="text-xs text-[#22D3EE] hover:text-[#40E0D0] transition-colors"
+                      className="text-xs text-[#7bf8ac] hover:text-[#34d399] transition-colors"
                     >
                       Tout marquer comme lu
                     </button>
@@ -327,7 +327,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                                 {notification.title}
                               </h4>
                               {!notification.read && (
-                                <div className="w-2 h-2 bg-[#22D3EE] rounded-full"></div>
+                                <div className="w-2 h-2 bg-[#7bf8ac] rounded-full"></div>
                               )}
                             </div>
                             <p className="text-xs text-[#a3a3a3] mt-1 line-clamp-2">
@@ -363,7 +363,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
             {/* Menu utilisateur */}
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-[#171717] border border-[#262626] rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-56 bg-[#16181d] border border-[#262626] rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-[#262626]">
                   <p className="text-sm font-medium text-white">
                     {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() || userProfile.username : 'Chargement...'}

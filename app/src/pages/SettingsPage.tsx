@@ -1,33 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Save, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import api, { UserProfile } from '../services/api';
+import { User, Mail, Phone, Save, ArrowLeft } from 'lucide-react';
+import api, { UserProfile, UserProfileUpdate } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 
 const SettingsPage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>({
-    id: '', username: '', email: '',
-    first_name: '', last_name: '', phone: '', created_at: ''
+    id: '',
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    created_at: ''
   });
-  const [userId,  setUserId]  = useState('');
+  const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // ID utilisateur fixe pour la démo (à remplacer par l'authentification réelle)
   const getStoredUserId = () => {
     try {
-      const u = localStorage.getItem('mokart_user');
-      if (!u) return '';
-      const parsed = JSON.parse(u);
+      const storedUser = localStorage.getItem('mokart_user');
+      if (!storedUser) return '';
+      const parsed = JSON.parse(storedUser);
       return typeof parsed?.id === 'string' ? parsed.id : '';
-    } catch { return ''; }
+    } catch {
+      return '';
+    }
   };
 
-  useEffect(() => { setUserId(getStoredUserId()); }, []);
+  useEffect(() => {
+    setUserId(getStoredUserId());
+  }, []);
 
   useEffect(() => {
-    if (!userId) { setLoading(false); setMessage({ type: 'error', text: 'Utilisateur non connecté' }); return; }
-    setMessage(null);
+    if (!userId) {
+      setLoading(false);
+      setMessage({ type: 'error', text: 'Utilisateur non connecté' });
+      return;
+    }
+    setMessage(null); // effacer le message d'erreur si userId est présent
     fetchProfile(userId);
   }, [userId]);
 
@@ -35,7 +49,8 @@ const SettingsPage: React.FC = () => {
     try {
       const data = await api.users.getProfile(uid);
       setProfile(data);
-    } catch {
+    } catch (error) {
+      console.error('Erreur lors de la récupération du profil:', error);
       setMessage({ type: 'error', text: 'Erreur lors du chargement du profil' });
     } finally {
       setLoading(false);
@@ -46,21 +61,37 @@ const SettingsPage: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     setMessage(null);
+
     try {
-      const updated = await api.users.updateProfile(userId, {
+      const updatedProfile = await api.users.updateProfile(userId, {
         first_name: profile.first_name,
-        last_name:  profile.last_name,
-        phone:      profile.phone,
-        email:      profile.email,
+        last_name: profile.last_name,
+        phone: profile.phone,
+        email: profile.email
       });
-      setProfile(updated);
-      const current = JSON.parse(localStorage.getItem('mokart_user') || '{}');
-      const next    = { ...current, email: updated.email, first_name: updated.first_name, last_name: updated.last_name };
-      localStorage.setItem('mokart_user', JSON.stringify(next));
-      window.dispatchEvent(new StorageEvent('storage', { key: 'mokart_user', newValue: JSON.stringify(next) }));
+      setProfile(updatedProfile);
+
+      // Mettre à jour le localStorage avec les nouvelles informations
+      const currentUser = JSON.parse(localStorage.getItem('mokart_user') || '{}');
+      const updatedUser = {
+        ...currentUser,
+        email: updatedProfile.email,
+        first_name: updatedProfile.first_name,
+        last_name: updatedProfile.last_name
+      };
+      localStorage.setItem('mokart_user', JSON.stringify(updatedUser));
+
+      // Déclencher un événement de stockage pour notifier les autres composants
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'mokart_user',
+        newValue: JSON.stringify(updatedUser)
+      }));
+
       setMessage({ type: 'success', text: 'Profil mis à jour avec succès' });
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Erreur lors de la mise à jour' });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la mise à jour du profil';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setSaving(false);
     }
@@ -72,159 +103,160 @@ const SettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-base text-white font-display items-center justify-center">
-        <div className="flex items-center gap-2 text-[#94a3b8] text-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#94a3b8]/60 animate-pulse-dot" />
-          Chargement...
-        </div>
+      <div className="min-h-screen bg-base flex items-center justify-center">
+        <div className="text-white">Chargement...</div>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <div className="absolute inset-0 bg-grid-minimal opacity-40 pointer-events-none" />
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen relative z-10">
+      <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
+        <Header className="flex-shrink-0" />
 
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-20 px-4 sm:px-6 flex-shrink-0 h-14 sm:h-16 flex items-center gap-3 border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
-          <button
-            onClick={() => window.history.back()}
-            className="p-1.5 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/5 transition-all"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-sm sm:text-base font-semibold tracking-tight">Paramètres</h1>
-            <p className="text-[10px] sm:text-[11px] text-[#94a3b8]">Profil &amp; compte</p>
+        <main className="flex-1 overflow-y-auto">
+          <div className="md:p-6 p-4 pb-20 md:pb-0">
+          {/* En-tête */}
+          <div className="flex items-center gap-4 mb-8">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 text-[#94a3b8] hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-white">Paramètres</h1>
           </div>
-        </header>
 
-        <div className="flex-1 overflow-y-auto pb-20 md:pb-0 p-4 sm:p-6 space-y-4 animate-fade-in max-w-2xl">
-
-          {/* Alert */}
+          {/* Message de succès/erreur */}
           {message && (
-            <div className={`flex items-center gap-2.5 px-4 py-3 rounded-lg border text-sm ${
-              message.type === 'success'
-                ? 'bg-[#7bf8ac]/5 border-[#7bf8ac]/20 text-[#7bf8ac]'
-                : 'bg-red-500/5 border-red-500/20 text-red-400'
-            }`}>
-              {message.type === 'success'
-                ? <CheckCircle2 size={15} className="shrink-0" />
-                : <AlertCircle size={15} className="shrink-0" />}
+            <div
+              className={`mb-6 p-4 rounded-lg border ${
+                message.type === 'success'
+                  ? 'bg-green-900/20 border-green-500 text-green-400'
+                  : 'bg-red-900/20 border-red-500 text-red-400'
+              }`}
+            >
               {message.text}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Formulaire */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Informations personnelles */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Informations personnelles
+            </h2>
 
-            {/* ── Informations personnelles ──────────────────────────────── */}
-            <div className="card">
-              <div className="flex items-center gap-2 mb-5">
-                <div className="p-1.5 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
-                  <User size={14} />
-                </div>
-                <h2 className="text-sm font-semibold">Informations personnelles</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  Prénom
+                </label>
+                <input
+                  type="text"
+                  value={profile.first_name || ''}
+                  onChange={handleChange('first_name')}
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                  placeholder="Votre prénom"
+                />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { field: 'first_name' as const, label: 'Prénom',   placeholder: 'Votre prénom' },
-                  { field: 'last_name'  as const, label: 'Nom',      placeholder: 'Votre nom'    },
-                ].map(({ field, label, placeholder }) => (
-                  <div key={field} className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">{label}</label>
-                    <input
-                      type="text"
-                      value={profile[field] || ''}
-                      onChange={handleChange(field)}
-                      className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white placeholder-[#94a3b8]/40 focus:outline-none focus:border-[#7bf8ac]/40 transition-colors"
-                      placeholder={placeholder}
-                    />
-                  </div>
-                ))}
+              <div>
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  Nom
+                </label>
+                <input
+                  type="text"
+                  value={profile.last_name || ''}
+                  onChange={handleChange('last_name')}
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                  placeholder="Votre nom"
+                />
               </div>
             </div>
+          </div>
 
-            {/* ── Coordonnées ───────────────────────────────────────────── */}
-            <div className="card">
-              <div className="flex items-center gap-2 mb-5">
-                <div className="p-1.5 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
-                  <Mail size={14} />
-                </div>
-                <h2 className="text-sm font-semibold">Coordonnées</h2>
+          {/* Coordonnées */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              Coordonnées
+            </h2>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={profile.email}
+                  onChange={handleChange('email')}
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                  placeholder="votre.email@example.com"
+                  required
+                />
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Email</label>
+              <div>
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  Téléphone
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#737373] w-4 h-4" />
                   <input
-                    type="email"
-                    value={profile.email}
-                    onChange={handleChange('email')}
-                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white placeholder-[#94a3b8]/40 focus:outline-none focus:border-[#7bf8ac]/40 transition-colors"
-                    placeholder="votre.email@example.com"
-                    required
+                    type="tel"
+                    value={profile.phone || ''}
+                    onChange={handleChange('phone')}
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                    placeholder="06 12 34 56 78"
                   />
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Téléphone</label>
-                  <div className="relative">
-                    <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94a3b8]/50" />
-                    <input
-                      type="tel"
-                      value={profile.phone || ''}
-                      onChange={handleChange('phone')}
-                      className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-[#94a3b8]/40 focus:outline-none focus:border-[#7bf8ac]/40 transition-colors"
-                      placeholder="06 12 34 56 78"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
+          </div>
 
-            {/* ── Informations système ───────────────────────────────────── */}
-            <div className="card">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Informations système</h2>
-              <div className="divide-y divide-[#262626]">
-                {[
-                  { label: "Nom d'utilisateur", value: profile.username },
-                  { label: 'ID utilisateur',    value: profile.id ? profile.id.slice(0, 8) + '...' : '—' },
-                  { label: 'Membre depuis',     value: profile.created_at ? new Date(profile.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between items-center py-2.5">
-                    <span className="text-[11px] text-[#94a3b8]">{label}</span>
-                    <span className="text-[11px] font-data text-white">{value}</span>
-                  </div>
-                ))}
+          {/* Informations système */}
+          <div className="card">
+            <h2 className="text-lg font-semibold text-white mb-4">Informations système</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-[#94a3b8]">Nom d'utilisateur</span>
+                <span className="text-sm text-white font-mono">{profile.username}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-[#94a3b8]">ID utilisateur</span>
+                <span className="text-sm text-white font-mono">{profile.id.slice(0, 8)}...</span>
               </div>
             </div>
+          </div>
 
-            {/* ── Actions ───────────────────────────────────────────────── */}
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => window.history.back()}
-                className="px-4 py-2 rounded-lg text-sm text-[#94a3b8] border border-[#262626] hover:text-white hover:border-white/20 transition-all"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="btn-primary px-5 py-2 flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Save size={14} />
-                {saving ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-            </div>
-
-          </form>
-        </div>
-      </main>
+          {/* Boutons d'action */}
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="px-6 py-2 border border-[#262626] text-[#94a3b8] rounded-lg hover:text-white hover:border-[#404040] transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2 bg-[#7bf8ac] text-black font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </div>
+        </form>
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

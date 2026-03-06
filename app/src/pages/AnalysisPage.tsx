@@ -1,27 +1,56 @@
-// MOCK DATA — toutes les valeurs sont synthétiques (voir src/data/mock.ts)
-// Onglet Trajectoire connecté à l'API réelle quand disponible.
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Sidebar from '../components/Sidebar';
-import { MOCK_SESSIONS, MOCK_LAPS, MOCK_SPEED_TRACE, MOCK_DRIVER, fmtLap } from '../data/mock';
-import { ChevronDown, Target, Search, Bell, RotateCw, Eye, EyeOff, ZoomIn, ZoomOut, Move, TrendingUp, X, Navigation, Gauge, Timer } from 'lucide-react';
-import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis,
-  Tooltip, CartesianGrid, ReferenceLine,
-  ScatterChart, Scatter, ZAxis,
-} from 'recharts';
+import Header from '../components/Header';
+import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
+import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
 
-// ─── API types ────────────────────────────────────────────────────────────────
+interface CircuitBoundary {
+  id: string;
+  circuit_id: string;
+  side: string;
+  point_order: number;
+  x: number;
+  y: number;
+}
+
+interface Session {
+  id: string;
+  user_id?: string;
+  kart?: string;
+  circuit_id?: string;
+  created_at?: string;
+}
 
 interface TrajectoryPoint {
-  x: number; y: number; timestamp: number;
+  x: number;
+  y: number;
+  timestamp: number;
   steering_angle?: number;
   uwb_z?: number;
-  imu_ax?: number; imu_ay?: number; imu_az?: number;
-  imu_gx?: number; imu_gy?: number; imu_gz?: number;
+  imu_ax?: number;
+  imu_ay?: number;
+  imu_az?: number;
+  imu_gx?: number;
+  imu_gy?: number;
+  imu_gz?: number;
 }
-interface CircuitBoundary  { x: number; y: number; side: 'left' | 'right'; }
-interface Session          { id: string; created_at?: string; kart?: string; circuit_id?: string; }
+
+interface SessionStats {
+  session_id: string;
+  total_points: number;
+  duration_ms: number;
+  uwb_coverage: number;
+  imu_coverage: number;
+  steering_coverage: number;
+  bounds: {
+    min_x: number;
+    max_x: number;
+    min_y: number;
+    max_y: number;
+  };
+}
+
 interface PointInfo {
   point: TrajectoryPoint;
   index: number;
@@ -32,10 +61,12 @@ interface PointInfo {
 }
 
 const StatItem = ({ label, value, unit, icon: Icon }: any) => (
-  <div className="p-4 rounded-lg bg-[#0d0f12] border border-[#262626] flex items-center gap-3">
-    <div className="text-[#94a3b8]"><Icon size={16} /></div>
+  <div className="card flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
+      <Icon size={18} />
+    </div>
     <div>
-      <div className="text-[10px] text-[#94a3b8] uppercase tracking-wider font-bold">{label}</div>
+      <div className="text-[10px] text-[#94a3b8] uppercase tracking-widest font-bold">{label}</div>
       <div className="text-sm font-medium text-white font-data">
         {value} <span className="text-[#94a3b8]/50 text-xs font-normal">{unit}</span>
       </div>
@@ -43,737 +74,932 @@ const StatItem = ({ label, value, unit, icon: Icon }: any) => (
   </div>
 );
 
-const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
-const BEST_LAP_IDX = 9;
-
-// ─── Custom tooltip ───────────────────────────────────────────────────────────
-
-const CustomTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-[#16181d] border border-[#262626] rounded-lg px-3 py-2 text-xs font-data shadow-xl">
-      {payload.map((p: any) => (
-        <div key={p.name} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
-          <span className="text-[#a3a3a3]">{p.name}:</span>
-          <span className="text-white font-bold">{typeof p.value === 'number' ? p.value.toFixed(1) : p.value}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8081`;
 
 const AnalysisPage: React.FC = () => {
-  // Mock-data state
-  const [selectedSession, setSelectedSession] = useState<string>(() => {
-    const saved = localStorage.getItem('analysis_session');
-    return saved && MOCK_SESSIONS.some(s => s.id === saved) ? saved : MOCK_SESSIONS[0].id;
-  });
-  const [activeTab, setActiveTab] = useState<'laps' | 'speed' | 'sectors' | 'trajectory'>(() => {
-    const saved = localStorage.getItem('analysis_tab');
-    return (['laps', 'speed', 'sectors', 'trajectory'] as const).includes(saved as any)
-      ? (saved as 'laps' | 'speed' | 'sectors' | 'trajectory')
-      : 'laps';
-  });
-  const [userName, setUserName] = useState(MOCK_DRIVER.name.split(' ')[0]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>('');
+  const [trajectory, setTrajectory] = useState<TrajectoryPoint[]>([]);
+  const [circuitBoundaries, setCircuitBoundaries] = useState<CircuitBoundary[]>([]);
+  const [stats, setStats] = useState<SessionStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [maxGraphBound, setMaxGraphBound] = useState<number>(20);
+  const [optimalTrajectory, setOptimalTrajectory] = useState<OptimalTrajectoryPoint[]>([]);
+  const [showOptimalTrajectory, setShowOptimalTrajectory] = useState<boolean>(true);
+  const [trajectoryComparison, setTrajectoryComparison] = useState<TrajectoryComparison | null>(null);
+  const [calculatingTrajectory, setCalculatingTrajectory] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
   const [selectedPoint, setSelectedPoint] = useState<PointInfo | null>(null);
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hoveredPoint, setHoveredPoint] = useState<PointInfo | null>(null);
+  const [showPoints, setShowPoints] = useState<boolean>(false);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [closestPoint, setClosestPoint] = useState<PointInfo | null>(null);
+  const chartRef = useRef<any>(null);
   const popupRef = useRef<HTMLDivElement>(null);
 
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
-        setSelectedPoint(null);
+        closePopup();
       }
     };
-    if (selectedPoint) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+
+    if (selectedPoint) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [selectedPoint]);
 
-  // Trajectory / API state
-  const [apiSessions,         setApiSessions]         = useState<Session[]>([]);
-  const [selectedApiSession,  setSelectedApiSession]  = useState<string>('');
-  const [trajectory,          setTrajectory]          = useState<TrajectoryPoint[]>([]);
-  const [circuitBoundaries,   setCircuitBoundaries]   = useState<CircuitBoundary[]>([]);
-  const [optimalTrajectory,   setOptimalTrajectory]   = useState<OptimalTrajectoryPoint[]>([]);
-  const [trajectoryComparison,setTrajectoryComparison]= useState<TrajectoryComparison | null>(null);
-  const [showOptimal,         setShowOptimal]         = useState(true);
-  const [loadingTraj,         setLoadingTraj]         = useState(false);
-  const [calculatingTraj,     setCalculatingTraj]     = useState(false);
-  const [graphBounds,         setGraphBounds]         = useState({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
-  const [zoomLevel,           setZoomLevel]           = useState(1);
-  const [panOffset,           setPanOffset]           = useState({ x: 0, y: 0 });
-  const [isDragging,          setIsDragging]          = useState(false);
-  const [dragStart,           setDragStart]           = useState({ x: 0, y: 0 });
-
-  // ── Auth userName ──────────────────────────────────────────────────────────
+  // Load sessions on mount
   useEffect(() => {
-    const user = localStorage.getItem('mokart_user');
-    if (user) {
-      try {
-        const data = JSON.parse(user);
-        const n = (data.email || '').split('@')[0];
-        setUserName(n.charAt(0).toUpperCase() + n.slice(1));
-      } catch { /* use default */ }
-    }
+    fetchSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Graph bounds from trajectory data ─────────────────────────────────────
-  useEffect(() => {
-    const safeBounds = Array.isArray(circuitBoundaries) ? circuitBoundaries : [];
-    if (trajectory.length === 0 && safeBounds.length === 0) return;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const p of [...trajectory, ...safeBounds]) {
-      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
-      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
-    }
-    const px = (maxX - minX) * 0.1;
-    const py = (maxY - minY) * 0.1;
-    setGraphBounds({ minX: minX - px, maxX: maxX + px, minY: minY - py, maxY: maxY + py });
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  }, [trajectory, circuitBoundaries]);
-
-  // ── Load trajectory + optimal when API session changes ────────────────────
-  useEffect(() => {
-    if (!selectedApiSession) return;
-    fetchTrajectory(selectedApiSession);
-    fetchStats(selectedApiSession);
-    fetchCircuitBoundaries(selectedApiSession);
-    const s = apiSessions.find(s => s.id === selectedApiSession);
-    if (s?.circuit_id) {
-      fetchOptimalTrajectory(s.circuit_id);
-      fetchTrajectoryComparison(s.circuit_id, selectedApiSession);
-    }
-  }, [selectedApiSession, apiSessions]);
-
-  // ── Load API sessions when trajectory tab opens ────────────────────────────
-  useEffect(() => {
-    if (activeTab === 'trajectory') fetchApiSessions();
-  }, [activeTab]);
-
-  // ─── API helpers ───────────────────────────────────────────────────────────
-
-  const fetchApiSessions = async () => {
+  const fetchCircuitBoundaries = async (sessionId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/sessions/`);
-      const data = await res.json();
-      setApiSessions(data);
-      if (data.length > 0 && !selectedApiSession) setSelectedApiSession(data[0].id);
-    } catch { /* silent fail */ }
+      // Get circuit_id from session
+      const session = sessions.find((s: Session) => s.id === sessionId);
+      if (session?.circuit_id) {
+        const response = await fetch(`${API_BASE_URL}/circuits/${session.circuit_id}/boundaries`);
+        const data = await response.json();
+        setCircuitBoundaries(data);
+      }
+    } catch (error) {
+      console.error('Error loading circuit boundaries:', error);
+    }
   };
 
-  const fetchTrajectory = async (id: string) => {
-    setLoadingTraj(true);
+  // Load trajectory when session changes
+  useEffect(() => {
+    if (selectedSession) {
+      fetchTrajectory(selectedSession);
+      fetchStats(selectedSession);
+      fetchCircuitBoundaries(selectedSession);
+    }
+  }, [selectedSession]);
+
+  useEffect(() => {
+    if (trajectory.length > 0 || circuitBoundaries.length > 0) {
+      // Calculate proper bounds based on all data points
+      let minX = Infinity, maxX = -Infinity;
+      let minY = Infinity, maxY = -Infinity;
+
+      // Check trajectory points
+      for (const p of trajectory) {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+      }
+
+      // Check circuit boundary points
+      for (const b of circuitBoundaries) {
+        minX = Math.min(minX, b.x);
+        maxX = Math.max(maxX, b.x);
+        minY = Math.min(minY, b.y);
+        maxY = Math.max(maxY, b.y);
+      }
+
+      // Add padding
+      const paddingX = (maxX - minX) * 0.1;
+      const paddingY = (maxY - minY) * 0.1;
+
+      setGraphBounds({
+        minX: minX - paddingX,
+        maxX: maxX + paddingX,
+        minY: minY - paddingY,
+        maxY: maxY + paddingY
+      });
+
+      // Reset zoom and pan when new data loads
+      setZoomLevel(1);
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, [trajectory, circuitBoundaries]);
+
+  const fetchSessions = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/sessions/${id}/trajectory`);
-      const data = await res.json();
-      // Enrich with sensor data if available
-      const sensorRes = await fetch(`${API_BASE_URL}/sessions/${id}/sensor-data`);
-      if (sensorRes.ok) {
-        const sensorData = await sensorRes.json();
-        setTrajectory(data.map((pt: TrajectoryPoint) => {
-          const sp = sensorData.find((s: any) => s.timestamp === pt.timestamp);
-          return sp ? { ...pt, uwb_z: sp.uwb_z, imu_ax: sp.imu_ax, imu_ay: sp.imu_ay, imu_az: sp.imu_az, imu_gx: sp.imu_gx, imu_gy: sp.imu_gy, imu_gz: sp.imu_gz } : pt;
-        }));
+      const response = await fetch(`${API_BASE_URL}/sessions/`);
+      const data = await response.json();
+      setSessions(data);
+      if (data.length > 0 && !selectedSession) {
+        setSelectedSession(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+    }
+  };
+
+  const fetchTrajectory = async (sessionId: string) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/trajectory`);
+      const data = await response.json();
+
+      // Fetch complete sensor data for detailed information
+      const sensorResponse = await fetch(`${API_BASE_URL}/sessions/${sessionId}/sensor-data`);
+      if (sensorResponse.ok) {
+        const sensorData = await sensorResponse.json();
+
+        // Merge trajectory data with sensor data
+        const enrichedTrajectory = data.map((point: TrajectoryPoint) => {
+          const sensorPoint = sensorData.find((s: any) => s.timestamp === point.timestamp);
+          return {
+            ...point,
+            uwb_z: sensorPoint?.uwb_z,
+            imu_ax: sensorPoint?.imu_ax,
+            imu_ay: sensorPoint?.imu_ay,
+            imu_az: sensorPoint?.imu_az,
+            imu_gx: sensorPoint?.imu_gx,
+            imu_gy: sensorPoint?.imu_gy,
+            imu_gz: sensorPoint?.imu_gz
+          };
+        });
+
+        setTrajectory(enrichedTrajectory);
       } else {
         setTrajectory(data);
       }
-    } catch { setTrajectory([]); } finally { setLoadingTraj(false); }
+    } catch (error) {
+      console.error('Error loading trajectory:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchStats = async (id: string) => {
-    try { await fetch(`${API_BASE_URL}/sessions/${id}/stats`); } catch { /* silent */ }
-  };
-
-  const fetchCircuitBoundaries = async (id: string) => {
+  const fetchStats = async (sessionId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/sessions/${id}/circuit-boundaries`);
-      const data = await res.json();
-      setCircuitBoundaries(Array.isArray(data) ? data : []);
-    } catch { setCircuitBoundaries([]); }
+      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/stats`);
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
   };
 
   const fetchOptimalTrajectory = async (circuitId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/circuits/${circuitId}/optimal-trajectory`);
-      if (res.ok) setOptimalTrajectory(await res.json());
-      else setOptimalTrajectory([]);
-    } catch { setOptimalTrajectory([]); }
+      const response = await fetch(`${API_BASE_URL}/circuits/${circuitId}/optimal-trajectory`);
+      if (response.ok) {
+        const data = await response.json();
+        setOptimalTrajectory(data);
+      } else {
+        setOptimalTrajectory([]);
+      }
+    } catch (error) {
+      console.error('Error loading optimal trajectory:', error);
+      setOptimalTrajectory([]);
+    }
+  };
+
+  const calculateOptimalTrajectory = async () => {
+    if (!selectedSession) return;
+
+    const session = sessions.find(s => s.id === selectedSession);
+    if (!session?.circuit_id) return;
+
+    setCalculatingTrajectory(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/circuits/${session.circuit_id}/optimal-trajectory`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOptimalTrajectory(data);
+        // Fetch comparison data
+        fetchTrajectoryComparison(session.circuit_id, selectedSession);
+      }
+    } catch (error) {
+      console.error('Error calculating optimal trajectory:', error);
+    } finally {
+      setCalculatingTrajectory(false);
+    }
   };
 
   const fetchTrajectoryComparison = async (circuitId: string, sessionId: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/circuits/${circuitId}/trajectory-comparison/${sessionId}`);
-      if (res.ok) setTrajectoryComparison(await res.json());
-    } catch { /* silent */ }
-  };
-
-  const calculateOptimalTrajectory = async () => {
-    if (!selectedApiSession) return;
-    const s = apiSessions.find(s => s.id === selectedApiSession);
-    if (!s?.circuit_id) return;
-    setCalculatingTraj(true);
-    try {
-      const res = await fetch(`${API_BASE_URL}/circuits/${s.circuit_id}/optimal-trajectory`, { method: 'POST' });
-      if (res.ok) {
-        setOptimalTrajectory(await res.json());
-        fetchTrajectoryComparison(s.circuit_id, selectedApiSession);
+      const response = await fetch(`${API_BASE_URL}/circuits/${circuitId}/trajectory-comparison/${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTrajectoryComparison(data);
       }
-    } catch { /* silent */ } finally { setCalculatingTraj(false); }
-  };
-
-  // ─── Zoom / pan ────────────────────────────────────────────────────────────
-
-  const getCurrentBounds = () => {
-    const cx = (graphBounds.minX + graphBounds.maxX) / 2;
-    const cy = (graphBounds.minY + graphBounds.maxY) / 2;
-    const rx = (graphBounds.maxX - graphBounds.minX) / (2 * zoomLevel);
-    const ry = (graphBounds.maxY - graphBounds.minY) / (2 * zoomLevel);
-    const sx = rx * 0.003, sy = ry * 0.003;
-    return {
-      minX: cx - rx + panOffset.x * sx, maxX: cx + rx + panOffset.x * sx,
-      minY: cy - ry + panOffset.y * sy, maxY: cy + ry + panOffset.y * sy,
-    };
+    } catch (error) {
+      console.error('Error loading trajectory comparison:', error);
+    }
   };
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * (e.deltaY > 0 ? 0.9 : 1.1))));
-  };
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) { setIsDragging(true); setDragStart({ x: e.clientX, y: e.clientY }); }
-  };
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    setPanOffset(prev => ({ x: prev.x - (e.clientX - dragStart.x), y: prev.y + (e.clientY - dragStart.y) }));
-    setDragStart({ x: e.clientX, y: e.clientY });
-  };
-  const handleMouseUp = () => setIsDragging(false);
-
-  // ─── Mock derived data ─────────────────────────────────────────────────────
-
-  const session     = MOCK_SESSIONS.find(s => s.id === selectedSession) || MOCK_SESSIONS[0];
-  const bestLap     = MOCK_LAPS[BEST_LAP_IDX];
-  const bestS1      = Math.min(...MOCK_LAPS.map(l => l.s1));
-  const bestS2      = Math.min(...MOCK_LAPS.map(l => l.s2));
-  const bestS3      = Math.min(...MOCK_LAPS.map(l => l.s3));
-  const lapChartData = MOCK_LAPS.map(l => ({ lap: `L${l.lap}`, time: l.time, isBest: l.lap === bestLap.lap }));
-
-  // ─── Point info helpers (from Admin_User_Dashboard) ───────────────────────
-
-  const calculateSpeed = (p1: TrajectoryPoint, p2: TrajectoryPoint): number => {
-    const d = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    const dt = p2.timestamp - p1.timestamp;
-    return dt > 0 ? (d / dt) * 1000 : 0;
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1; // Inversé : deltaY > 0 = zoom avant
+    setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * zoomFactor)));
   };
 
-  const calculateAcceleration = (p1: TrajectoryPoint, p2: TrajectoryPoint, p3: TrajectoryPoint): number => {
-    const s1 = calculateSpeed(p1, p2);
-    const s2 = calculateSpeed(p2, p3);
-    const dt = p3.timestamp - p1.timestamp;
-    return dt > 0 ? (s2 - s1) / (dt / 1000) : 0;
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button === 0) { // Left mouse button
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY }); // Store initial mouse position
+    }
   };
 
-  const calculateDistanceFromStart = (pts: TrajectoryPoint[]): number => {
-    let d = 0;
-    for (let i = 1; i < pts.length; i++)
-      d += Math.sqrt(Math.pow(pts[i].x - pts[i-1].x, 2) + Math.pow(pts[i].y - pts[i-1].y, 2));
-    return d;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) {
+      // Calculate the delta movement
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
+
+      // Update pan offset with the exact mouse movement (inverted X for natural feel)
+      setPanOffset(prev => ({
+        x: prev.x - deltaX, // Inverted X for natural pan direction
+        y: prev.y + deltaY
+      }));
+
+      // Update drag start to current position for continuous tracking
+      setDragStart({ x: e.clientX, y: e.clientY });
+    }
   };
 
-  const calculatePointInfo = (point: TrajectoryPoint, index: number): PointInfo => ({
-    point,
-    index,
-    speed: index > 0 ? calculateSpeed(trajectory[index - 1], point) : 0,
-    acceleration: index > 1 ? calculateAcceleration(trajectory[index - 2], trajectory[index - 1], point) : 0,
-    distance_from_start: calculateDistanceFromStart(trajectory.slice(0, index + 1)),
-    time_from_start: point.timestamp - (trajectory[0]?.timestamp || 0),
-  });
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  const resetView = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
 
-  // Point info popup (trajectory tab)
+  const zoomIn = () => {
+    setZoomLevel(prev => Math.min(10, prev * 1.2));
+  };
+
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(0.1, prev / 1.2));
+  };
+
+  // Calculate point information
+  const calculatePointInfo = (point: TrajectoryPoint, index: number): PointInfo => {
+    const speed = index > 0 ? calculateSpeed(trajectory[index - 1], point) : 0;
+    const acceleration = index > 1 ? calculateAcceleration(trajectory[index - 2], trajectory[index - 1], point) : 0;
+    const distance_from_start = calculateDistanceFromStart(trajectory.slice(0, index + 1));
+    const time_from_start = point.timestamp - trajectory[0]?.timestamp || 0;
+
+    return {
+      point,
+      index,
+      speed,
+      acceleration,
+      distance_from_start,
+      time_from_start
+    };
+  };
+
+  const calculateSpeed = (point1: TrajectoryPoint, point2: TrajectoryPoint): number => {
+    const distance = Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
+    const timeDiff = point2.timestamp - point1.timestamp;
+    return timeDiff > 0 ? (distance / timeDiff) * 1000 : 0; // Convert to m/s
+  };
+
+  const calculateAcceleration = (point1: TrajectoryPoint, point2: TrajectoryPoint, point3: TrajectoryPoint): number => {
+    const speed1 = calculateSpeed(point1, point2);
+    const speed2 = calculateSpeed(point2, point3);
+    const timeDiff = point3.timestamp - point1.timestamp;
+    return timeDiff > 0 ? (speed2 - speed1) / (timeDiff / 1000) : 0; // m/s²
+  };
+
+  const calculateDistanceFromStart = (points: TrajectoryPoint[]): number => {
+    let totalDistance = 0;
+    for (let i = 1; i < points.length; i++) {
+      totalDistance += Math.sqrt(Math.pow(points[i].x - points[i - 1].x, 2) + Math.pow(points[i].y - points[i - 1].y, 2));
+    }
+    return totalDistance;
+  };
+
+  const handlePointClick = (data: any, index: number) => {
+    if (data && data.payload) {
+      const pointInfo = calculatePointInfo(data.payload, index);
+      setSelectedPoint(pointInfo);
+
+      // Calculate popup position relative to the chart
+      const chartElement = chartRef.current;
+      if (chartElement) {
+        const rect = chartElement.getBoundingClientRect();
+        const bounds = getCurrentBounds();
+        const x = ((data.payload.x - bounds.minX) / (bounds.maxX - bounds.minX)) * rect.width;
+        const y = rect.height - ((data.payload.y - bounds.minY) / (bounds.maxY - bounds.minY)) * rect.height;
+
+        setPopupPosition({
+          x: rect.left + x,
+          y: rect.top + y
+        });
+      }
+    }
+  };
+
+  const handlePointMouseEnter = (data: any, index: number) => {
+    if (data && data.payload) {
+      const pointInfo = calculatePointInfo(data.payload, index);
+      setHoveredPoint(pointInfo);
+      setShowPoints(true);
+    }
+  };
+
+  const handlePointMouseLeave = () => {
+    setHoveredPoint(null);
+    setShowPoints(false);
+    setClosestPoint(null);
+    setMousePosition(null);
+  };
+
+  // Find closest point to mouse position
+  const findClosestPoint = (mouseX: number, mouseY: number): PointInfo | null => {
+    if (trajectory.length === 0) return null;
+
+    const chartElement = chartRef.current;
+    if (!chartElement) return null;
+
+    const rect = chartElement.getBoundingClientRect();
+    const bounds = getCurrentBounds();
+
+    // Convert mouse position to chart coordinates
+    // Note: Recharts uses a different coordinate system
+    const chartX = ((mouseX - rect.left) / rect.width) * (bounds.maxX - bounds.minX) + bounds.minX;
+    const chartY = bounds.maxY - ((mouseY - rect.top) / rect.height) * (bounds.maxY - bounds.minY);
+
+    // Find closest point
+    let minDistance = Infinity;
+    let closestIndex = -1;
+
+    trajectory.forEach((point, index) => {
+      const distance = Math.sqrt(Math.pow(point.x - chartX, 2) + Math.pow(point.y - chartY, 2));
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = index;
+      }
+    });
+
+    if (closestIndex >= 0 && minDistance < 3) { // Increased threshold to 3 units
+      return calculatePointInfo(trajectory[closestIndex], closestIndex);
+    }
+
+    return null;
+  };
+
+  const handleChartMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    setMousePosition({ x: mouseX, y: mouseY });
+
+    const closest = findClosestPoint(mouseX, mouseY);
+    setClosestPoint(closest);
+
+    if (closest) {
+      setShowPoints(true);
+      setHoveredPoint(closest);
+    } else {
+      setShowPoints(false);
+      setHoveredPoint(null);
+    }
+  };
+
+  const handleChartClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging) return;
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    const closest = findClosestPoint(mouseX, mouseY);
+    if (closest) {
+      setSelectedPoint(closest);
+
+      // Calculate popup position relative to the chart
+      const chartElement = chartRef.current;
+      if (chartElement) {
+        const rect = chartElement.getBoundingClientRect();
+        const bounds = getCurrentBounds();
+        const x = ((closest.point.x - bounds.minX) / (bounds.maxX - bounds.minX)) * rect.width;
+        const y = rect.height - ((closest.point.y - bounds.minY) / (bounds.maxY - bounds.minY)) * rect.height;
+
+        setPopupPosition({
+          x: rect.left + x,
+          y: rect.top + y
+        });
+      }
+    }
+  };
+
+  const handleChartMouseLeave = () => {
+    setMousePosition(null);
+    setClosestPoint(null);
+    setShowPoints(false);
+    setHoveredPoint(null);
+  };
+
+  const closePopup = () => {
+    setSelectedPoint(null);
+  };
+
+  // Popup component
   const PointPopup = () => {
     if (!selectedPoint) return null;
-    const p = selectedPoint;
 
     return (
-      <div ref={popupRef} className="card p-4 text-xs space-y-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] flex items-center gap-1.5">
-            <Navigation size={12} /> Point #{p.index}
-          </span>
-          <button onClick={() => setSelectedPoint(null)} className="text-[#94a3b8] hover:text-white transition-colors">
-            <X size={13} />
+      <div
+        ref={popupRef}
+        className="fixed z-50 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl p-4 min-w-[280px] max-w-[320px]"
+        style={{
+          left: `${popupPosition.x}px`,
+          top: `${popupPosition.y}px`,
+          transform: 'translate(-50%, -100%)'
+        }}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <Navigation size={14} className="text-[#7bf8ac]" />
+            Point #{selectedPoint.index}
+          </h3>
+          <button
+            onClick={closePopup}
+            className="text-[#94a3b8] hover:text-white transition-colors"
+          >
+            <X size={14} />
           </button>
         </div>
-        <div className="space-y-1 pb-2 border-b border-[#262626]">
-          <div className="flex justify-between">
-            <span className="text-[#94a3b8]">Position</span>
-            <span className="font-mono text-white">X:{p.point.x.toFixed(2)} Y:{p.point.y.toFixed(2)}</span>
-          </div>
-          {p.point.uwb_z != null && (
-            <div className="flex justify-between">
-              <span className="text-[#94a3b8]">Altitude Z</span>
-              <span className="font-mono text-white">{p.point.uwb_z.toFixed(3)} m</span>
-            </div>
-          )}
-        </div>
-        <div className="space-y-1 pb-2 border-b border-[#262626]">
-          <div className="flex justify-between">
-            <span className="text-[#94a3b8] flex items-center gap-1"><Timer size={11} /> Temps</span>
-            <span className="font-mono text-white">{((p.time_from_start || 0) / 1000).toFixed(2)}s</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#94a3b8] flex items-center gap-1"><Gauge size={11} /> Vitesse</span>
-            <span className="font-mono text-[#7bf8ac]">{(p.speed || 0).toFixed(2)} m/s</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#94a3b8]">Accélération</span>
-            <span className="font-mono text-white">{(p.acceleration || 0).toFixed(2)} m/s²</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#94a3b8]">Distance</span>
-            <span className="font-mono text-white">{(p.distance_from_start || 0).toFixed(2)} m</span>
-          </div>
-          {p.point.steering_angle != null && (
-            <div className="flex justify-between">
-              <span className="text-[#94a3b8]">Direction</span>
-              <span className="font-mono text-white">{p.point.steering_angle.toFixed(1)}°</span>
-            </div>
-          )}
-        </div>
-        {(p.point.imu_ax != null || p.point.imu_ay != null || p.point.imu_az != null) && (
+
+        <div className="space-y-3 text-xs">
+          {/* Position */}
           <div className="pb-2 border-b border-[#262626]">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2">IMU Accéléro</div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {(['imu_ax', 'imu_ay', 'imu_az'] as const).map(k => p.point[k] != null && (
-                <div key={k}>
-                  <div className="font-mono text-white">{(p.point[k] as number).toFixed(3)}</div>
-                  <div className="text-[#94a3b8]">{k.split('_')[1].toUpperCase()} (g)</div>
-                </div>
-              ))}
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#94a3b8]">Position</span>
+              <span className="text-white font-mono">
+                X: {selectedPoint.point.x.toFixed(2)}, Y: {selectedPoint.point.y.toFixed(2)}
+              </span>
             </div>
+            {selectedPoint.point.uwb_z !== undefined && selectedPoint.point.uwb_z !== null && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#94a3b8]">Altitude (Z)</span>
+                <span className="text-white font-mono">
+                  {selectedPoint.point.uwb_z.toFixed(3)} m
+                </span>
+              </div>
+            )}
           </div>
-        )}
-        {(p.point.imu_gx != null || p.point.imu_gy != null || p.point.imu_gz != null) && (
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2">IMU Gyro</div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              {(['imu_gx', 'imu_gy', 'imu_gz'] as const).map(k => p.point[k] != null && (
-                <div key={k}>
-                  <div className="font-mono text-white">{(p.point[k] as number).toFixed(1)}</div>
-                  <div className="text-[#94a3b8]">{k.split('_')[1].toUpperCase()} (°/s)</div>
-                </div>
-              ))}
+
+          {/* Temps et Mouvement */}
+          <div className="pb-2 border-b border-[#262626]">
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#94a3b8] flex items-center gap-1">
+                <Timer size={12} />
+                Temps
+              </span>
+              <span className="text-white font-mono">
+                {((selectedPoint.time_from_start || 0) / 1000).toFixed(2)}s
+              </span>
             </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#94a3b8] flex items-center gap-1">
+                <Gauge size={12} />
+                Vitesse
+              </span>
+              <span className="text-white font-mono">
+                {(selectedPoint.speed || 0).toFixed(2)} m/s
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#94a3b8]">Accélération</span>
+              <span className="text-white font-mono">
+                {(selectedPoint.acceleration || 0).toFixed(2)} m/s²
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-1">
+              <span className="text-[#94a3b8]">Distance</span>
+              <span className="text-white font-mono">
+                {(selectedPoint.distance_from_start || 0).toFixed(2)} m
+              </span>
+            </div>
+
+            {selectedPoint.point.steering_angle !== undefined && selectedPoint.point.steering_angle !== null && (
+              <div className="flex justify-between items-center py-1">
+                <span className="text-[#94a3b8]">Direction</span>
+                <span className="text-white font-mono">
+                  {selectedPoint.point.steering_angle.toFixed(1)}°
+                </span>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* IMU - Accéléromètre */}
+          {(selectedPoint.point.imu_ax !== undefined && selectedPoint.point.imu_ax !== null ||
+            selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null ||
+            selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null) && (
+            <div className="pb-2 border-b border-[#262626]">
+              <h4 className="text-[#7bf8ac] font-medium mb-2">IMU - Accéléromètre</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {selectedPoint.point.imu_ax !== undefined && selectedPoint.point.imu_ax !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_ax.toFixed(3)}</div>
+                    <div className="text-[#94a3b8]">X (g)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_ay.toFixed(3)}</div>
+                    <div className="text-[#94a3b8]">Y (g)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_az.toFixed(3)}</div>
+                    <div className="text-[#94a3b8]">Z (g)</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* IMU - Gyroscope */}
+          {(selectedPoint.point.imu_gx !== undefined && selectedPoint.point.imu_gx !== null ||
+            selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null ||
+            selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null) && (
+            <div>
+              <h4 className="text-[#7bf8ac] font-medium mb-2">IMU - Gyroscope</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {selectedPoint.point.imu_gx !== undefined && selectedPoint.point.imu_gx !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gx.toFixed(1)}</div>
+                    <div className="text-[#94a3b8]">X (°/s)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gy.toFixed(1)}</div>
+                    <div className="text-[#94a3b8]">Y (°/s)</div>
+                  </div>
+                )}
+                {selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null && (
+                  <div className="text-center">
+                    <div className="text-white font-mono">{selectedPoint.point.imu_gz.toFixed(1)}</div>
+                    <div className="text-[#94a3b8]">Z (°/s)</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
 
+  // Calculate current bounds based on zoom and pan
+  const getCurrentBounds = () => {
+    const centerX = (graphBounds.minX + graphBounds.maxX) / 2;
+    const centerY = (graphBounds.minY + graphBounds.maxY) / 2;
+    const rangeX = (graphBounds.maxX - graphBounds.minX) / (2 * zoomLevel);
+    const rangeY = (graphBounds.maxY - graphBounds.minY) / (2 * zoomLevel);
+
+    // Apply pan offset with more responsive scaling
+    const panScaleX = rangeX * 0.003; // Increased scale factor for more responsive pan
+    const panScaleY = rangeY * 0.003;
+
+    return {
+      minX: centerX - rangeX + panOffset.x * panScaleX,
+      maxX: centerX + rangeX + panOffset.x * panScaleX,
+      minY: centerY - rangeY + panOffset.y * panScaleY,
+      maxY: centerY + rangeY + panOffset.y * panScaleY
+    };
+  };
+
+  // Load optimal trajectory when session changes
+  useEffect(() => {
+    if (selectedSession) {
+      const session = sessions.find(s => s.id === selectedSession);
+      if (session?.circuit_id) {
+        fetchOptimalTrajectory(session.circuit_id);
+        fetchTrajectoryComparison(session.circuit_id, selectedSession);
+      }
+    }
+  }, [selectedSession, sessions]);
 
   return (
     <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <div className="absolute inset-0 bg-grid-minimal opacity-40 pointer-events-none" />
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen relative z-10">
+      <main className="flex-1 md:ml-16 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+        <Header />
 
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="sticky top-0 z-20 px-4 sm:px-6 flex-shrink-0 h-14 sm:h-16 flex items-center justify-between border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
-          <div>
-            <h1 className="text-sm sm:text-base font-semibold tracking-tight">Analyse</h1>
-            <p className="text-[10px] sm:text-[11px] text-[#94a3b8]">
-              {session.circuit.replace('SpeedKart ', '')}
-              <span className="mx-1.5 text-white/20">·</span>
-              {new Date(session.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <button className="hidden sm:flex p-2 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/5 transition-all">
-              <Search size={16} />
-            </button>
-            <button className="p-2 rounded-lg text-[#94a3b8] hover:text-white hover:bg-white/5 transition-all">
-              <Bell size={15} className="sm:hidden" />
-              <Bell size={16} className="hidden sm:block" />
-            </button>
-            <div className="w-px h-4 bg-white/10 mx-0.5 sm:mx-1" />
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full border border-white/5 bg-white/[0.02] hover:border-white/10 cursor-pointer transition-all">
-              <div className="w-6 h-6 rounded-full bg-white/[0.06] border border-white/10 flex items-center justify-center text-[10px] font-bold text-[#a3a3a3]">
-                {MOCK_DRIVER.initials}
-              </div>
-              <span className="text-xs font-medium text-[#a3a3a3] hidden md:block">{userName}</span>
+        <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
+          {/* Top Bar */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 shrink-0 border-b border-[#262626] pb-4 gap-4 md:gap-0">
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
+                Telemetry Analysis
+              </h1>
+              <p className="text-[#94a3b8] text-xs mt-1 font-mono flex items-center gap-2">
+                SESSION: <span className="text-white">{selectedSession || 'NONE'}</span>
+              </p>
             </div>
-          </div>
-        </header>
 
-        <div className="flex-1 overflow-y-auto pb-20 md:pb-0 p-4 sm:p-6 space-y-4 animate-fade-in">
-
-          {/* ── Session selector bar ──────────────────────────────────────── */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="relative">
-              <select
-                value={selectedSession}
-                onChange={e => { setSelectedSession(e.target.value); localStorage.setItem('analysis_session', e.target.value); }}
-                className="appearance-none bg-white/[0.04] border border-[#262626] text-[#a3a3a3] text-xs pl-3 pr-7 py-2 rounded-lg focus:outline-none focus:border-[#7bf8ac]/40 focus:text-white transition-all cursor-pointer"
-              >
-                {MOCK_SESSIONS.map(s => (
-                  <option key={s.id} value={s.id} style={{ background: '#16181d' }}>
-                    {new Date(s.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })} — {s.kart}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none" />
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.03] border border-[#262626]">
-              <Target size={12} className="text-[#94a3b8]" />
-              <span className="text-xs text-white font-data font-bold">{fmtLap(session.bestLap)}</span>
-              <span className="text-[10px] text-[#94a3b8]">best lap</span>
-            </div>
-          </div>
-
-          {/* ── Session KPIs ──────────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: 'Tours',    value: session.laps.toString() },
-              { label: 'Meilleur', value: fmtLap(session.bestLap), accent: true },
-              { label: 'Moyen',    value: fmtLap(session.avgLap) },
-              { label: 'Vit. max', value: `${session.topSpeed} km/h` },
-            ].map(({ label, value, accent }) => (
-              <div key={label} className={`card text-center py-3 sm:py-4 ${accent ? 'card-brand' : ''}`}>
-                <div className={`text-base sm:text-lg font-bold font-data ${accent ? 'text-[#7bf8ac] glow-brand-text' : 'text-white'}`}>{value}</div>
-                <div className="text-[9px] sm:text-[10px] text-[#94a3b8] mt-1 uppercase tracking-wider">{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Tabs ──────────────────────────────────────────────────────── */}
-          <div className="flex gap-1 p-1 bg-white/[0.02] border border-[#262626] rounded-xl w-full sm:w-fit overflow-x-auto">
-            {(['laps', 'speed', 'sectors', 'trajectory'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); localStorage.setItem('analysis_tab', tab); }}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
-                  activeTab === tab ? 'bg-white/10 text-white' : 'text-[#94a3b8] hover:text-white'
-                }`}
-              >
-                {tab === 'laps' ? 'Tours' : tab === 'speed' ? 'Vitesse' : tab === 'sectors' ? 'Secteurs' : 'Trajectoire'}
-              </button>
-            ))}
-          </div>
-
-          {/* ── TAB: Laps ─────────────────────────────────────────────────── */}
-          {activeTab === 'laps' && (
-            <div className="space-y-4">
-              <div className="card">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                  <h2 className="text-sm font-semibold">Progression des tours</h2>
-                  <div className="flex items-center gap-3 text-[10px] text-[#94a3b8]">
-                    <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-[#7bf8ac] inline-block rounded" /> Tour actuel</span>
-                    <span className="flex items-center gap-1"><span className="w-3 h-0.5 border-t border-dashed border-[#7bf8ac]/30 inline-block" /> Meilleur</span>
-                  </div>
-                </div>
-                <div style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.35))' }}>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={lapChartData} margin={{ top: 5, right: 5, left: -22, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                      <XAxis dataKey="lap" tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} interval={2} />
-                      <YAxis domain={['auto', 'auto']} tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `${v.toFixed(0)}s`} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <ReferenceLine y={bestLap.time} stroke="rgba(123,248,172,0.2)" strokeDasharray="4 4" />
-                      <Line
-                        type="monotone" dataKey="time" name="Temps" stroke="#7bf8ac" strokeWidth={2}
-                        dot={(p: any) => (
-                          <circle key={p.index} cx={p.cx} cy={p.cy}
-                            r={p.index === BEST_LAP_IDX ? 5 : 2.5}
-                            fill={p.index === BEST_LAP_IDX ? '#7bf8ac' : '#16181d'}
-                            stroke={p.index === BEST_LAP_IDX ? '#7bf8ac' : 'rgba(123,248,172,0.35)'}
-                            strokeWidth={2} />
-                        )}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="card overflow-hidden">
-                <div className="overflow-x-auto -mx-1">
-                  <table className="w-full text-left" style={{ minWidth: 340 }}>
-                    <thead>
-                      <tr className="border-b border-white/5">
-                        {['Tour', 'Temps', 'Delta', 'S1', 'S2', 'S3'].map(h => (
-                          <th key={h} className="pb-3 text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] pr-3 first:pl-1">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/[0.03]">
-                      {MOCK_LAPS.map((l) => {
-                        const isBest = l.lap === bestLap.lap;
-                        const delta  = l.time - bestLap.time;
-                        return (
-                          <tr key={l.lap} className={`transition-colors ${isBest ? 'bg-[#7bf8ac]/[0.05]' : 'hover:bg-white/[0.02]'}`}>
-                            <td className="py-2 pr-3 pl-1 text-xs font-data text-[#94a3b8]">
-                              {isBest
-                                ? <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] shrink-0" /><span className="text-[#7bf8ac] font-bold">L{l.lap}</span></span>
-                                : `L${l.lap}`}
-                            </td>
-                            <td className={`py-2 pr-3 text-xs font-data font-bold ${isBest ? 'text-[#7bf8ac]' : 'text-white'}`}>{fmtLap(l.time)}</td>
-                            <td className="py-2 pr-3">
-                              {isBest
-                                ? <span className="text-[10px] font-bold uppercase tracking-wider text-[#7bf8ac] bg-[#7bf8ac]/10 px-1.5 py-0.5 rounded">BEST</span>
-                                : <span className={`text-xs font-data font-bold ${delta < 2 ? 'text-emerald-400' : 'text-[#a3a3a3]'}`}>+{delta.toFixed(3)}s</span>}
-                            </td>
-                            <td className={`py-2 pr-3 text-xs font-data ${l.s1 === bestS1 ? 'text-emerald-400 font-bold' : 'text-[#a3a3a3]'}`}>{l.s1.toFixed(1)}</td>
-                            <td className={`py-2 pr-3 text-xs font-data ${l.s2 === bestS2 ? 'text-emerald-400 font-bold' : 'text-[#a3a3a3]'}`}>{l.s2.toFixed(1)}</td>
-                            <td className={`py-2      text-xs font-data ${l.s3 === bestS3 ? 'text-emerald-400 font-bold' : 'text-[#a3a3a3]'}`}>{l.s3.toFixed(1)}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-[10px] text-[#94a3b8] mt-3 pt-3 border-t border-white/5">
-                  <span className="text-emerald-400 font-bold">Vert</span> = meilleur secteur · meilleur tour
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB: Speed ────────────────────────────────────────────────── */}
-          {activeTab === 'speed' && (
-            <div className="card">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                <div>
-                  <h2 className="text-sm font-semibold">Trace de vitesse</h2>
-                  <p className="text-[11px] text-[#94a3b8] mt-0.5">Tour 10 (best) vs référence session précédente</p>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] text-[#94a3b8] shrink-0">
-                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-[#7bf8ac] inline-block rounded" /> Tour 10</span>
-                  <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-white/30 inline-block rounded" /> Référence</span>
-                </div>
-              </div>
-              <div style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.35))' }}>
-                <ResponsiveContainer width="100%" height={240}>
-                  <LineChart data={MOCK_SPEED_TRACE} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="dist" tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={v => `${v}m`} />
-                    <YAxis domain={[20, 95]} tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} tickLine={false} unit=" km/h" />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="speed" name="Tour 10"   stroke="#7bf8ac"               strokeWidth={2.5} dot={false} />
-                    <Line type="monotone" dataKey="ref"   name="Référence" stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} dot={false} strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAB: Sectors ──────────────────────────────────────────────── */}
-          {activeTab === 'sectors' && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {(['s1', 's2', 's3'] as const).map((sk, si) => {
-                const times = MOCK_LAPS.map(l => l[sk]);
-                const best  = Math.min(...times);
-                const worst = Math.max(...times);
-                const avg   = times.reduce((a, b) => a + b, 0) / times.length;
-                return (
-                  <div key={sk} className="card">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-6 h-6 rounded-md bg-white/[0.05] border border-[#262626] flex items-center justify-center text-[10px] font-bold text-[#94a3b8]">
-                        S{si + 1}
-                      </div>
-                      <span className="text-sm font-semibold">Secteur {si + 1}</span>
-                    </div>
-                    <div className="space-y-2.5 mb-4">
-                      {[
-                        { label: 'Meilleur', value: best,        color: 'text-emerald-400' },
-                        { label: 'Pire',     value: worst,       color: 'text-red-400' },
-                        { label: 'Moyen',    value: avg,         color: 'text-[#a3a3a3]' },
-                        { label: 'Best lap', value: bestLap[sk], color: 'text-[#7bf8ac]' },
-                      ].map(({ label, value, color }) => (
-                        <div key={label} className="flex justify-between items-center">
-                          <span className="text-[11px] text-[#94a3b8]">{label}</span>
-                          <span className={`text-sm font-bold font-data ${color}`}>{value.toFixed(3)}s</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] text-[#94a3b8] mb-2 uppercase tracking-wider">Distribution</div>
-                      {times.map((t, i) => {
-                        const pct       = ((worst - t) / (worst - best)) * 100;
-                        const isBestLap = i === BEST_LAP_IDX;
-                        return (
-                          <div key={i} className="flex items-center gap-2">
-                            <div className="text-[9px] font-data text-[#94a3b8] w-4 shrink-0">L{i + 1}</div>
-                            <div className="flex-1 bar-track" style={{ height: '6px' }}>
-                              <div className={`bar-fill ${isBestLap ? 'bar-fill-brand' : 'bar-fill-neutral'}`} style={{ width: `${pct}%` }} />
-                            </div>
-                            <div className={`text-[9px] font-data w-9 text-right shrink-0 ${isBestLap ? 'text-[#7bf8ac] font-bold' : 'text-[#94a3b8]'}`}>
-                              {t.toFixed(2)}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ── TAB: Trajectoire (API réelle) ─────────────────────────────── */}
-          {activeTab === 'trajectory' && (
-            <div className="space-y-4">
-              {/* Controls */}
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <select
-                    value={selectedApiSession}
-                    onChange={e => setSelectedApiSession(e.target.value)}
-                    className="appearance-none bg-white/[0.04] border border-[#262626] text-[#a3a3a3] text-xs pl-3 pr-7 py-2 rounded-lg focus:outline-none focus:border-[#7bf8ac]/40 focus:text-white transition-all cursor-pointer min-w-[180px]"
-                  >
-                    <option value="" disabled>Sélectionner une session</option>
-                    {apiSessions.map(s => (
-                      <option key={s.id} value={s.id} style={{ background: '#16181d' }}>
-                        {new Date(s.created_at || '').toLocaleDateString('fr-FR')} — {s.kart || 'Kart'}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#94a3b8] pointer-events-none" />
-                </div>
-                <button onClick={() => selectedApiSession && fetchTrajectory(selectedApiSession)}
-                  className="p-2 rounded-lg bg-white/[0.04] border border-[#262626] text-[#94a3b8] hover:text-white transition-all" title="Rafraîchir">
-                  <RotateCw size={14} />
-                </button>
-                <button onClick={calculateOptimalTrajectory} disabled={calculatingTraj || !selectedApiSession}
-                  className="p-2 rounded-lg bg-white/[0.04] border border-[#262626] text-[#94a3b8] hover:text-white transition-all disabled:opacity-40" title="Calculer trajectoire optimale">
-                  <Target size={14} />
-                </button>
-                <button onClick={() => setShowOptimal(!showOptimal)}
-                  className="p-2 rounded-lg bg-white/[0.04] border border-[#262626] text-[#94a3b8] hover:text-white transition-all" title={showOptimal ? 'Masquer optimale' : 'Afficher optimale'}>
-                  {showOptimal ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-                {/* Status indicators */}
-                {loadingTraj && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-[#262626] text-[10px] text-[#94a3b8]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] animate-pulse" />
-                    Chargement
-                  </div>
-                )}
-                {calculatingTraj && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-[#262626] text-[10px] text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Calcul en cours
-                  </div>
-                )}
-              </div>
-
-              {/* Chart */}
-              <div className="card relative overflow-hidden" style={{ minHeight: 420 }}>
-                {/* Zoom controls */}
-                <div className="absolute top-4 right-4 z-10 flex flex-col gap-1.5">
-                  {[
-                    { icon: <ZoomIn size={13} />, action: () => setZoomLevel(p => Math.min(10, p * 1.2)), title: 'Zoom +' },
-                    { icon: <ZoomOut size={13} />, action: () => setZoomLevel(p => Math.max(0.1, p / 1.2)), title: 'Zoom -' },
-                    { icon: <Move size={13} />, action: () => { setZoomLevel(1); setPanOffset({ x: 0, y: 0 }); }, title: 'Reset' },
-                  ].map(({ icon, action, title }) => (
-                    <button key={title} onClick={action} title={title}
-                      className="p-1.5 rounded-lg bg-[#0d0f12] border border-[#262626] text-[#94a3b8] hover:text-white transition-colors">
-                      {icon}
-                    </button>
+            <div className="flex gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-none">
+                <select
+                  value={selectedSession}
+                  onChange={(e: any) => setSelectedSession(e.target.value)}
+                  className="w-full md:w-auto appearance-none bg-[#16181d] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
+                >
+                  <option value="" disabled>Select Session</option>
+                  {sessions.map((s: Session) => (
+                    <option key={s.id} value={s.id}>
+                      {new Date(s.created_at || '').toLocaleDateString()} - {s.kart || 'Kart'}
+                    </option>
                   ))}
-                  <div className="px-2 py-1 rounded-lg bg-[#0d0f12] border border-[#262626] text-[9px] text-[#94a3b8] text-center font-data">
-                    {(zoomLevel * 100).toFixed(0)}%
-                  </div>
-                </div>
-
-                {trajectory.length > 0 ? (
-                  <div
-                    className="w-full" style={{ height: 400, cursor: isDragging ? 'grabbing' : 'grab' }}
-                    onWheel={handleWheel} onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
-                  >
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 50, bottom: 10, left: 10 }}>
-                        <XAxis type="number" dataKey="x" hide domain={[getCurrentBounds().minX, getCurrentBounds().maxX]} allowDataOverflow />
-                        <YAxis type="number" dataKey="y" hide domain={[getCurrentBounds().minY, getCurrentBounds().maxY]} allowDataOverflow />
-                        <ZAxis type="number" dataKey="timestamp" range={[0, 500]} />
-                        <Tooltip contentStyle={{ backgroundColor: '#16181d', borderColor: '#262626', color: '#fff', fontSize: 11 }} />
-                        {/* Circuit boundaries */}
-                        {['left', 'right'].map(side => (
-                          <Scatter key={side} name={`Limite ${side}`}
-                            data={circuitBoundaries.filter(b => b.side === side).map(b => ({ x: b.x, y: b.y, timestamp: 0 }))}
-                            fill="none" line={{ stroke: 'rgba(239,68,68,0.6)', strokeWidth: 1.5 }} lineType="joint"
-                            shape={<circle r={0} />} />
-                        ))}
-                        {/* Actual trajectory — click for PointInfo */}
-                        <Scatter name="Trajectoire" data={trajectory} fill="#7bf8ac"
-                          line={{ stroke: '#7bf8ac', strokeWidth: 1.5 }} lineType="joint"
-                          shape={<circle r={0} />}
-                          style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.5))' }}
-                          onClick={(data: any, idx: number) => {
-                            if (data?.payload) setSelectedPoint(calculatePointInfo(data.payload, idx));
-                          }} />
-                        {/* Optimal trajectory */}
-                        {showOptimal && optimalTrajectory.length > 0 && (
-                          <Scatter name="Optimale" data={optimalTrajectory.map(p => ({ x: p.x, y: p.y, timestamp: 0 }))}
-                            fill="none" line={{ stroke: 'rgba(16,185,129,0.8)', strokeWidth: 2, strokeDasharray: '5 5' }}
-                            lineType="joint" shape={<circle r={0} />} />
-                        )}
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-64 gap-3 text-center">
-                    <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-[#262626] flex items-center justify-center">
-                      <Target size={18} className="text-[#94a3b8]" />
-                    </div>
-                    <p className="text-sm text-[#94a3b8]">Sélectionne une session pour afficher la trajectoire</p>
-                    <p className="text-[11px] text-[#94a3b8]/50">Données GPS temps réel via l'API</p>
-                  </div>
-                )}
-
-                {/* Legend */}
-                {trajectory.length > 0 && (
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#262626] text-[10px] text-[#94a3b8]">
-                    <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-[#7bf8ac] inline-block rounded" /> Trajectoire</span>
-                    {showOptimal && optimalTrajectory.length > 0 && (
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block" /> Optimale</span>
-                    )}
-                    {circuitBoundaries.length > 0 && (
-                      <span className="flex items-center gap-1.5"><span className="w-3 h-0.5 bg-red-500/60 inline-block rounded" /> Limites</span>
-                    )}
-                  </div>
-                )}
+                </select>
+                <ChevronDown className="absolute right-2 top-2 text-[#94a3b8] pointer-events-none" size={14} />
               </div>
 
-              {/* Trajectory comparison stats */}
-              {trajectoryComparison && (
-                <div className="card">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-3 flex items-center gap-2">
-                    <TrendingUp size={12} />
-                    Analyse de trajectoire
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {[
-                      { label: 'Déviation moy.', value: `${trajectoryComparison.deviation_stats.mean_deviation.toFixed(2)}m` },
-                      { label: 'Déviation max.', value: `${trajectoryComparison.deviation_stats.max_deviation.toFixed(2)}m` },
-                      { label: 'Écart-type',     value: `${trajectoryComparison.deviation_stats.std_deviation.toFixed(2)}m` },
-                    ].map(({ label, value }) => (
-                      <div key={label}>
-                        <div className="text-[10px] text-[#94a3b8] mb-1">{label}</div>
-                        <div className="text-sm font-bold font-data text-white">{value}</div>
-                      </div>
-                    ))}
+              <button
+                onClick={() => selectedSession && fetchTrajectory(selectedSession)}
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                title="Refresh Data"
+              >
+                <RotateCw size={14} />
+              </button>
+
+              <button
+                onClick={calculateOptimalTrajectory}
+                disabled={calculatingTrajectory || !selectedSession}
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Calculate Optimal Trajectory"
+              >
+                <Target size={14} />
+              </button>
+
+              <button
+                onClick={() => setShowOptimalTrajectory(!showOptimalTrajectory)}
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                title={showOptimalTrajectory ? "Hide Optimal Trajectory" : "Show Optimal Trajectory"}
+              >
+                {showOptimalTrajectory ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </div>
+
+        {/* Content Grid */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
+
+          {/* Stats Column */}
+          <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
+            <StatItem
+              label="Data Points"
+              value={stats?.total_points?.toLocaleString() || '0'}
+              unit="pts"
+              icon={Activity}
+            />
+            <StatItem
+              label="Duration"
+              value={((stats?.duration_ms || 0) / 1000).toFixed(1)}
+              unit="s"
+              icon={Clock}
+            />
+
+            <div className="card flex-1">
+              <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Sensor Health</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-[#a3a3a3]">UWB Coverage</span>
+                  <span className="font-mono text-white">{(stats?.uwb_coverage || 0).toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-[#262626] h-1 rounded-full overflow-hidden">
+                  <div className="bg-[#7bf8ac] h-full" style={{ width: `${stats?.uwb_coverage || 0}%` }}></div>
+                </div>
+
+                <div className="flex justify-between items-center text-xs pt-2">
+                  <span className="text-[#a3a3a3]">IMU Data</span>
+                  <span className="font-mono text-white">{(stats?.imu_coverage || 0).toFixed(1)}%</span>
+                </div>
+                <div className="w-full bg-[#262626] h-1 rounded-full overflow-hidden">
+                  <div className="bg-[#7bf8ac] h-full" style={{ width: `${stats?.imu_coverage || 0}%` }}></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Trajectory Comparison Stats */}
+            {trajectoryComparison && (
+              <div className="card">
+                <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                  <TrendingUp size={12} />
+                  Trajectory Analysis
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#a3a3a3]">Mean Deviation</span>
+                    <span className="font-mono text-white">{trajectoryComparison.deviation_stats.mean_deviation.toFixed(2)}m</span>
                   </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#a3a3a3]">Max Deviation</span>
+                    <span className="font-mono text-white">{trajectoryComparison.deviation_stats.max_deviation.toFixed(2)}m</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[#a3a3a3]">Std Deviation</span>
+                    <span className="font-mono text-white">{trajectoryComparison.deviation_stats.std_deviation.toFixed(2)}m</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Map / Visualization Column */}
+          <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
+            <div className="absolute top-4 left-4 z-10 flex gap-2">
+              <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
+                Trajectory View
+              </div>
+              {loading && (
+                <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#7bf8ac] border border-[#262626] rounded flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] animate-pulse"></span>
+                  Loading
+                </div>
+              )}
+              {calculatingTrajectory && (
+                <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#10b981] border border-[#262626] rounded flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
+                  Calculating Trajectory
                 </div>
               )}
             </div>
-          )}
+
+            {/* Zoom Controls */}
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+              <button
+                onClick={zoomIn}
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
+                title="Zoom In"
+              >
+                <ZoomIn size={14} />
+              </button>
+              <button
+                onClick={zoomOut}
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
+                title="Zoom Out"
+              >
+                <ZoomOut size={14} />
+              </button>
+              <button
+                onClick={resetView}
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
+                title="Reset View"
+              >
+                <Move size={14} />
+              </button>
+              <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded text-center">
+                {(zoomLevel * 100).toFixed(0)}%
+              </div>
+            </div>
+
+            <div
+              className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center bg-[#101010] relative"
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+            >
+              <div
+                className="absolute inset-0"
+                onMouseMove={handleChartMouseMove}
+                onMouseLeave={handleChartMouseLeave}
+                onClick={handleChartClick}
+                style={{ zIndex: 10 }}
+              />
+
+              {trajectory.length > 0 ? (
+                <div className="w-full h-full p-2 flex items-center justify-center">
+                  <div
+                    className="bg-[#101010]"
+                    style={{
+                      width: 'min(100%, calc(100vh - 200px))',
+                      height: 'min(100%, calc(100vh - 200px))',
+                      maxWidth: '100%',
+                      maxHeight: '100%'
+                    }}
+                    ref={chartRef}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                      <XAxis
+                        type="number"
+                        dataKey="x"
+                        name="X"
+                        hide
+                        domain={[getCurrentBounds().minX, getCurrentBounds().maxX]}
+                        allowDataOverflow={true}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="y"
+                        name="Y"
+                        hide
+                        domain={[getCurrentBounds().minY, getCurrentBounds().maxY]}
+                        allowDataOverflow={true}
+                      />
+                      <ZAxis type="number" dataKey="timestamp" range={[0, 500]} />
+                      <Tooltip
+                        cursor={{ strokeDasharray: '3 3' }}
+                        contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#262626', color: '#fff' }}
+                        itemStyle={{ color: '#fff' }}
+                      />
+
+                      {/* Circuit boundaries - left side */}
+                      <Scatter
+                        name="Circuit Left"
+                        data={[...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'left').map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 })),
+                              ...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'left').slice(0, 1).map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 }))]}
+                        fill="none"
+                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                        lineType="joint"
+                        shape={<circle r={0} />}
+                      />
+
+                      {/* Circuit boundaries - right side */}
+                      <Scatter
+                        name="Circuit Right"
+                        data={[...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'right').map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 })),
+                              ...circuitBoundaries.filter((b: CircuitBoundary) => b.side === 'right').slice(0, 1).map((b: CircuitBoundary) => ({ x: b.x, y: b.y, timestamp: 0 }))]}
+                        fill="none"
+                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
+                        lineType="joint"
+                        shape={<circle r={0} />}
+                      />
+
+                      {/* Trajectory */}
+                      <Scatter
+                        name="Trajectory"
+                        data={trajectory}
+                        fill="#7bf8ac"
+                        line={{ stroke: '#7bf8ac', strokeWidth: 1.5 }}
+                        lineType="joint"
+                        shape={(props: any) => {
+                          const isClosest = closestPoint && props.index === closestPoint.index;
+                          const isHovered = hoveredPoint && props.index === hoveredPoint.index;
+                          const radius = isClosest ? 6 : (showPoints ? 4 : 3);
+                          const fill = isClosest ? '#10b981' : (showPoints ? '#7bf8ac' : 'rgba(34, 211, 238, 0.3)');
+
+                          return (
+                            <circle
+                              cx={props.cx}
+                              cy={props.cy}
+                              r={radius}
+                              fill={fill}
+                              stroke={isClosest ? '#10b981' : '#7bf8ac'}
+                              strokeWidth={isClosest ? 2 : 1}
+                              className="cursor-pointer transition-all duration-150"
+                              style={{
+                                filter: isClosest ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.8))' : 'none'
+                              }}
+                            />
+                          );
+                        }}
+                        onClick={handlePointClick}
+                      />
+
+                      {/* Optimal Trajectory */}
+                      {showOptimalTrajectory && optimalTrajectory.length > 0 && (
+                        <Scatter
+                          name="Optimal Trajectory"
+                          data={[...optimalTrajectory.map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 })),
+                                ...optimalTrajectory.slice(0, 1).map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 }))]}
+                          fill="none"
+                          line={{ stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5 5' }}
+                          lineType="joint"
+                          shape={<circle r={0} />}
+                        />
+                      )}
+                    </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-[#94a3b8] text-sm">
+                  {loading ? 'Loading visualization...' : 'No trajectory data available'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         </div>
       </main>
 

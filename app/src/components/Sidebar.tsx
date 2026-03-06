@@ -1,14 +1,12 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Activity, List, Radio, LogOut, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, Activity, LogOut, Settings, Users } from 'lucide-react';
 
 const NAV = [
-  { to: '/',          icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/sessions',  icon: List,            label: 'Sessions'             },
-  { to: '/analysis',  icon: Activity,        label: 'Analysis'             },
-  { to: '/live',      icon: Radio,           label: 'Live'                 },
-  { to: '/users',     icon: Users,           label: 'Utilisateurs'         },
-  { to: '/settings',  icon: Settings,        label: 'Settings'             },
+  { to: '/',         icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/analysis', icon: Activity,        label: 'Analysis'             },
+  { to: '/users',    icon: Users,           label: 'Utilisateurs'         },
+  { to: '/settings', icon: Settings,        label: 'Settings'             },
 ];
 
 const Sidebar: React.FC = () => {
