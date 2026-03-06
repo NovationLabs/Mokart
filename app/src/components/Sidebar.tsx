@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Activity, List, Radio, LogOut, Settings } from 'lucide-react';
+import { LayoutDashboard, Activity, List, Radio, LogOut, Settings, Users } from 'lucide-react';
 
 const NAV = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/sessions',  icon: List,            label: 'Sessions'             },
   { to: '/analysis',  icon: Activity,        label: 'Analysis'             },
   { to: '/live',      icon: Radio,           label: 'Live'                 },
+  { to: '/users',     icon: Users,           label: 'Utilisateurs'         },
   { to: '/settings',  icon: Settings,        label: 'Settings'             },
 ];
 
@@ -62,7 +63,6 @@ const Sidebar: React.FC = () => {
             alt="Mokart"
             className="w-7 h-7 object-contain opacity-80"
             onError={(e) => {
-              // Fallback to SVG icon if image not found
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />

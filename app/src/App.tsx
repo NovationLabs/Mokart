@@ -6,6 +6,7 @@ import SessionsPage from './pages/SessionsPage';
 import LivePage from './pages/LivePage';
 import AuthPage from './pages/AuthPage';
 import SettingsPage from './pages/SettingsPage';
+import UserManagementPage from './pages/UserManagementPage';
 
 const App: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('mokart_session');
@@ -13,12 +14,13 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login"    element={!isAuthenticated ? <AuthPage />    : <Navigate to="/" />} />
-        <Route path="/"         element={isAuthenticated  ? <Home />         : <Navigate to="/login" />} />
-        <Route path="/sessions" element={isAuthenticated  ? <SessionsPage /> : <Navigate to="/login" />} />
-        <Route path="/analysis" element={isAuthenticated  ? <AnalysisPage /> : <Navigate to="/login" />} />
-        <Route path="/live"     element={isAuthenticated  ? <LivePage />     : <Navigate to="/login" />} />
-        <Route path="/settings" element={isAuthenticated  ? <SettingsPage /> : <Navigate to="/login" />} />
+        <Route path="/login"    element={!isAuthenticated ? <AuthPage />           : <Navigate to="/" />} />
+        <Route path="/"         element={isAuthenticated  ? <Home />               : <Navigate to="/login" />} />
+        <Route path="/sessions" element={isAuthenticated  ? <SessionsPage />       : <Navigate to="/login" />} />
+        <Route path="/analysis" element={isAuthenticated  ? <AnalysisPage />       : <Navigate to="/login" />} />
+        <Route path="/live"     element={isAuthenticated  ? <LivePage />           : <Navigate to="/login" />} />
+        <Route path="/settings" element={isAuthenticated  ? <SettingsPage />       : <Navigate to="/login" />} />
+        <Route path="/users"    element={isAuthenticated  ? <UserManagementPage /> : <Navigate to="/login" />} />
         <Route path="*"         element={<Navigate to="/" />} />
       </Routes>
     </Router>

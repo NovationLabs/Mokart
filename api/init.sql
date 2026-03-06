@@ -38,7 +38,12 @@ CREATE TABLE IF NOT EXISTS users (
     last_name TEXT,
     phone TEXT,
     kart TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    role TEXT DEFAULT 'driver' CHECK (role IN ('admin', 'commissaire', 'mechanic', 'instructor', 'driver', 'spectator')),
+    is_active BOOLEAN DEFAULT TRUE,
+    license_number TEXT,
+    license_expiry DATE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
@@ -258,10 +263,36 @@ INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES
 (uuid_generate_v4(), '550e8400-e29b-41d4-a716-446655440011', 'left', 64, 194.38418665212936, 256.45338874634183)
 ON CONFLICT DO NOTHING;
 
--- INSERTION D'UNE SESSION DE TEST (Pour ne pas avoir un site vide)
-INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, kart, created_at)
-VALUES ('550e8400-e29b-41d4-a716-446655440001', 'pilot', 'pilot@mokart.com', 'hash', 'Jean', 'Pilot', '0612345678', 'SodiKart RT8', NOW())
+-- INSERTION DES UTILISATEURS DE TEST
+-- User pilote (devient admin pour la démo)
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, kart, role, is_active, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440001', 'pilot', 'pilot@mokart.com', 'hash', 'Jean', 'Pilot', '0612345678', 'SodiKart RT8', 'admin', TRUE, NOW(), NOW())
 ON CONFLICT DO NOTHING;
+
+-- User admin par défaut
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440999', 'admin', 'admin@mokart.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm', 'Admin', 'Mokart', '0600000000', 'admin', TRUE, NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+
+-- Commissaire de piste
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, role, is_active, license_number, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440998', 'commissaire', 'commissaire@mokart.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm', 'Pierre', 'Commissaire', '0611111111', 'commissaire', TRUE, 'COMM001', NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+
+-- Mécanicien
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440997', 'mechanic', 'mechanic@mokart.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm', 'Paul', 'Mécanicien', '0622222222', 'mechanic', TRUE, NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+
+-- Instructeur
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, role, is_active, license_number, license_expiry, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440996', 'instructor', 'instructor@mokart.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm', 'Jacques', 'Instructeur', '0633333333', 'instructor', TRUE, 'INST001', '2025-12-31', NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
+
+-- Spectateur
+INSERT INTO users (id, username, email, password_hash, first_name, last_name, phone, role, is_active, created_at, updated_at)
+VALUES ('550e8400-e29b-41d4-a716-446655440995', 'spectator', 'spectator@mokart.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj6ukx.LrUpm', 'Marie', 'Spectatrice', '0644444444', 'spectator', TRUE, NOW(), NOW())
+ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO sessions (id, user_id, circuit_id, kart, created_at)
 VALUES ('550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440010', 'SodiKart RT8', NOW())

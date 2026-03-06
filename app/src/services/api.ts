@@ -1,5 +1,5 @@
 // Configuration de l'API
-const API_BASE_URL = 'http://localhost:8081';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8081';
 
 // Types pour les réponses API
 export interface ApiResponse<T = any> {
@@ -66,15 +66,31 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       let errorMessage = `Erreur HTTP ${response.status}`;
+      let errorDetails = null;
 
       try {
         const errorData = await response.json();
-        errorMessage = errorData.detail || errorData.message || errorMessage;
+        errorDetails = errorData;
+
+        // Gérer les erreurs de validation Pydantic (422)
+        if (response.status === 422 && errorData.detail) {
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map((err: any) =>
+              `${err.loc?.join('.')} : ${err.msg}`
+            ).join(', ');
+          } else {
+            errorMessage = errorData.detail;
+          }
+        } else {
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        }
       } catch {
         // Si la réponse n'est pas du JSON, on garde le message par défaut
       }
 
-      throw new ApiError(errorMessage, response.status);
+      const error = new ApiError(errorMessage, response.status);
+      (error as any).details = errorDetails;
+      throw error;
     }
 
     // Gérer les réponses vides (comme pour les PUT sans contenu)
@@ -140,6 +156,45 @@ export const api = {
         `/users/notifications/read-all?user_id=${userId}`,
         { method: 'PUT' }
       );
+    },
+
+    // Gestion des utilisateurs (Admin)
+    getAll: (): Promise<any[]> => {
+      return apiRequest('/admin/users');
+    },
+
+    getById: (userId: string): Promise<any> => {
+      return apiRequest(`/admin/users/${userId}`);
+    },
+
+    create: (userData: any): Promise<any> => {
+      return apiRequest('/admin/users', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+    },
+
+    update: (userId: string, userData: any): Promise<any> => {
+      return apiRequest(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      });
+    },
+
+    delete: (userId: string): Promise<{ message: string }> => {
+      return apiRequest(`/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    toggleStatus: (userId: string): Promise<any> => {
+      return apiRequest(`/admin/users/${userId}/toggle-status`, {
+        method: 'PUT',
+      });
+    },
+
+    getStats: (): Promise<any> => {
+      return apiRequest('/admin/users/stats');
     },
   },
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Save, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import api, { UserProfile } from '../services/api';
 import Sidebar from '../components/Sidebar';
+import Header from '../components/Header';
 
 const SettingsPage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>({

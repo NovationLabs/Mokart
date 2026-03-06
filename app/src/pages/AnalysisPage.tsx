@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Sidebar from '../components/Sidebar';
 import { MOCK_SESSIONS, MOCK_LAPS, MOCK_SPEED_TRACE, MOCK_DRIVER, fmtLap } from '../data/mock';
-import { ChevronDown, Target, Search, Bell, RotateCw, Eye, EyeOff, ZoomIn, ZoomOut, Move, TrendingUp } from 'lucide-react';
+import { ChevronDown, Target, Search, Bell, RotateCw, Eye, EyeOff, ZoomIn, ZoomOut, Move, TrendingUp, X, Navigation, Gauge, Timer } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
   Tooltip, CartesianGrid, ReferenceLine,
@@ -13,9 +13,35 @@ import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
 
 // ─── API types ────────────────────────────────────────────────────────────────
 
-interface TrajectoryPoint { x: number; y: number; timestamp: number; }
+interface TrajectoryPoint {
+  x: number; y: number; timestamp: number;
+  steering_angle?: number;
+  uwb_z?: number;
+  imu_ax?: number; imu_ay?: number; imu_az?: number;
+  imu_gx?: number; imu_gy?: number; imu_gz?: number;
+}
 interface CircuitBoundary  { x: number; y: number; side: 'left' | 'right'; }
 interface Session          { id: string; created_at?: string; kart?: string; circuit_id?: string; }
+interface PointInfo {
+  point: TrajectoryPoint;
+  index: number;
+  speed?: number;
+  acceleration?: number;
+  distance_from_start?: number;
+  time_from_start?: number;
+}
+
+const StatItem = ({ label, value, unit, icon: Icon }: any) => (
+  <div className="p-4 rounded-lg bg-[#0d0f12] border border-[#262626] flex items-center gap-3">
+    <div className="text-[#94a3b8]"><Icon size={16} /></div>
+    <div>
+      <div className="text-[10px] text-[#94a3b8] uppercase tracking-wider font-bold">{label}</div>
+      <div className="text-sm font-medium text-white font-data">
+        {value} <span className="text-[#94a3b8]/50 text-xs font-normal">{unit}</span>
+      </div>
+    </div>
+  </div>
+);
 
 const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
 const BEST_LAP_IDX = 9;
@@ -44,6 +70,19 @@ const AnalysisPage: React.FC = () => {
   const [selectedSession, setSelectedSession] = useState(MOCK_SESSIONS[0].id);
   const [activeTab, setActiveTab] = useState<'laps' | 'speed' | 'sectors' | 'trajectory'>('laps');
   const [userName, setUserName] = useState(MOCK_DRIVER.name.split(' ')[0]);
+  const [selectedPoint, setSelectedPoint] = useState<PointInfo | null>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setSelectedPoint(null);
+      }
+    };
+    if (selectedPoint) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedPoint]);
 
   // Trajectory / API state
   const [apiSessions,         setApiSessions]         = useState<Session[]>([]);
@@ -121,7 +160,18 @@ const AnalysisPage: React.FC = () => {
     setLoadingTraj(true);
     try {
       const res = await fetch(`${API_BASE_URL}/sessions/${id}/trajectory`);
-      setTrajectory(await res.json());
+      const data = await res.json();
+      // Enrich with sensor data if available
+      const sensorRes = await fetch(`${API_BASE_URL}/sessions/${id}/sensor-data`);
+      if (sensorRes.ok) {
+        const sensorData = await sensorRes.json();
+        setTrajectory(data.map((pt: TrajectoryPoint) => {
+          const sp = sensorData.find((s: any) => s.timestamp === pt.timestamp);
+          return sp ? { ...pt, uwb_z: sp.uwb_z, imu_ax: sp.imu_ax, imu_ay: sp.imu_ay, imu_az: sp.imu_az, imu_gx: sp.imu_gx, imu_gy: sp.imu_gy, imu_gz: sp.imu_gz } : pt;
+        }));
+      } else {
+        setTrajectory(data);
+      }
     } catch { setTrajectory([]); } finally { setLoadingTraj(false); }
   };
 
@@ -202,7 +252,120 @@ const AnalysisPage: React.FC = () => {
   const bestS3      = Math.min(...MOCK_LAPS.map(l => l.s3));
   const lapChartData = MOCK_LAPS.map(l => ({ lap: `L${l.lap}`, time: l.time, isBest: l.lap === bestLap.lap }));
 
+  // ─── Point info helpers (from Admin_User_Dashboard) ───────────────────────
+
+  const calculateSpeed = (p1: TrajectoryPoint, p2: TrajectoryPoint): number => {
+    const d = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    const dt = p2.timestamp - p1.timestamp;
+    return dt > 0 ? (d / dt) * 1000 : 0;
+  };
+
+  const calculateAcceleration = (p1: TrajectoryPoint, p2: TrajectoryPoint, p3: TrajectoryPoint): number => {
+    const s1 = calculateSpeed(p1, p2);
+    const s2 = calculateSpeed(p2, p3);
+    const dt = p3.timestamp - p1.timestamp;
+    return dt > 0 ? (s2 - s1) / (dt / 1000) : 0;
+  };
+
+  const calculateDistanceFromStart = (pts: TrajectoryPoint[]): number => {
+    let d = 0;
+    for (let i = 1; i < pts.length; i++)
+      d += Math.sqrt(Math.pow(pts[i].x - pts[i-1].x, 2) + Math.pow(pts[i].y - pts[i-1].y, 2));
+    return d;
+  };
+
+  const calculatePointInfo = (point: TrajectoryPoint, index: number): PointInfo => ({
+    point,
+    index,
+    speed: index > 0 ? calculateSpeed(trajectory[index - 1], point) : 0,
+    acceleration: index > 1 ? calculateAcceleration(trajectory[index - 2], trajectory[index - 1], point) : 0,
+    distance_from_start: calculateDistanceFromStart(trajectory.slice(0, index + 1)),
+    time_from_start: point.timestamp - (trajectory[0]?.timestamp || 0),
+  });
+
   // ─── Render ────────────────────────────────────────────────────────────────
+
+  // Point info popup (trajectory tab)
+  const PointPopup = () => {
+    if (!selectedPoint) return null;
+    const p = selectedPoint;
+
+    return (
+      <div ref={popupRef} className="card p-4 text-xs space-y-3">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] flex items-center gap-1.5">
+            <Navigation size={12} /> Point #{p.index}
+          </span>
+          <button onClick={() => setSelectedPoint(null)} className="text-[#94a3b8] hover:text-white transition-colors">
+            <X size={13} />
+          </button>
+        </div>
+        <div className="space-y-1 pb-2 border-b border-[#262626]">
+          <div className="flex justify-between">
+            <span className="text-[#94a3b8]">Position</span>
+            <span className="font-mono text-white">X:{p.point.x.toFixed(2)} Y:{p.point.y.toFixed(2)}</span>
+          </div>
+          {p.point.uwb_z != null && (
+            <div className="flex justify-between">
+              <span className="text-[#94a3b8]">Altitude Z</span>
+              <span className="font-mono text-white">{p.point.uwb_z.toFixed(3)} m</span>
+            </div>
+          )}
+        </div>
+        <div className="space-y-1 pb-2 border-b border-[#262626]">
+          <div className="flex justify-between">
+            <span className="text-[#94a3b8] flex items-center gap-1"><Timer size={11} /> Temps</span>
+            <span className="font-mono text-white">{((p.time_from_start || 0) / 1000).toFixed(2)}s</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[#94a3b8] flex items-center gap-1"><Gauge size={11} /> Vitesse</span>
+            <span className="font-mono text-[#7bf8ac]">{(p.speed || 0).toFixed(2)} m/s</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[#94a3b8]">Accélération</span>
+            <span className="font-mono text-white">{(p.acceleration || 0).toFixed(2)} m/s²</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-[#94a3b8]">Distance</span>
+            <span className="font-mono text-white">{(p.distance_from_start || 0).toFixed(2)} m</span>
+          </div>
+          {p.point.steering_angle != null && (
+            <div className="flex justify-between">
+              <span className="text-[#94a3b8]">Direction</span>
+              <span className="font-mono text-white">{p.point.steering_angle.toFixed(1)}°</span>
+            </div>
+          )}
+        </div>
+        {(p.point.imu_ax != null || p.point.imu_ay != null || p.point.imu_az != null) && (
+          <div className="pb-2 border-b border-[#262626]">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2">IMU Accéléro</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {(['imu_ax', 'imu_ay', 'imu_az'] as const).map(k => p.point[k] != null && (
+                <div key={k}>
+                  <div className="font-mono text-white">{(p.point[k] as number).toFixed(3)}</div>
+                  <div className="text-[#94a3b8]">{k.split('_')[1].toUpperCase()} (g)</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {(p.point.imu_gx != null || p.point.imu_gy != null || p.point.imu_gz != null) && (
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-2">IMU Gyro</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {(['imu_gx', 'imu_gy', 'imu_gz'] as const).map(k => p.point[k] != null && (
+                <div key={k}>
+                  <div className="font-mono text-white">{(p.point[k] as number).toFixed(1)}</div>
+                  <div className="text-[#94a3b8]">{k.split('_')[1].toUpperCase()} (°/s)</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   return (
     <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
@@ -537,11 +700,14 @@ const AnalysisPage: React.FC = () => {
                             fill="none" line={{ stroke: 'rgba(239,68,68,0.6)', strokeWidth: 1.5 }} lineType="joint"
                             shape={<circle r={0} />} />
                         ))}
-                        {/* Actual trajectory */}
+                        {/* Actual trajectory — click for PointInfo */}
                         <Scatter name="Trajectoire" data={trajectory} fill="#7bf8ac"
                           line={{ stroke: '#7bf8ac', strokeWidth: 1.5 }} lineType="joint"
                           shape={<circle r={0} />}
-                          style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.5))' }} />
+                          style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.5))' }}
+                          onClick={(data: any, idx: number) => {
+                            if (data?.payload) setSelectedPoint(calculatePointInfo(data.payload, idx));
+                          }} />
                         {/* Optimal trajectory */}
                         {showOptimal && optimalTrajectory.length > 0 && (
                           <Scatter name="Optimale" data={optimalTrajectory.map(p => ({ x: p.x, y: p.y, timestamp: 0 }))}
@@ -598,9 +764,11 @@ const AnalysisPage: React.FC = () => {
               )}
             </div>
           )}
-
         </div>
       </main>
+
+      {/* Point Popup */}
+      <PointPopup />
     </div>
   );
 };

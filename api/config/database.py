@@ -8,7 +8,7 @@ db_name = os.getenv('DB_NAME')
 # Database URL format: postgresql://user:password@host:port/dbname
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"postgresql://{db_user}:{db_pass}@db:5432/{db_name}"
+    f"postgresql://{db_user}:{db_pass}@{os.getenv('DB_HOST', 'localhost')}:5432/{db_name}"
 )
 
 # Create the SQLAlchemy engine

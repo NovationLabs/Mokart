@@ -34,9 +34,14 @@ async def login(request: LoginRequest, db: DbSession = Depends(get_db)):
     # Mode démo
     if request.email == "demo@mokart.com" and request.password == "demo123456":
         fake_user = {
-            "id": "demo-user-123",
+            "id": "550e8400-e29b-41d4-a716-446655440001",
             "email": "demo@mokart.com",
-            "user_metadata": {"kart": "Demo Kart"}
+            "username": "pilot",
+            "role": "admin",
+            "first_name": "Jean",
+            "last_name": "Pilot",
+            "phone": "0612345678",
+            "user_metadata": {"kart": "SodiKart RT8"}
         }
         fake_session = {
             "access_token": "demo-token",

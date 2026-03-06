@@ -1,38 +1,70 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, User, Settings, LogOut, X, Check, AlertCircle, Info, CheckCircle } from 'lucide-react';
+import { Search, Bell, User, Settings, LogOut, X, Check, AlertCircle, Info, CheckCircle, Shield } from 'lucide-react';
 import api, { Notification, UserProfile } from '../services/api';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  className?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ className }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const roleSwitcherRef = useRef<HTMLDivElement>(null);
 
-  // ID utilisateur fixe pour la démo (à remplacer par l'authentification réelle)
+  // ID utilisateur pour la démo (à remplacer par l'authentification réelle)
   const getStoredUserId = () => {
     try {
       const storedUser = localStorage.getItem('mokart_user');
-      if (!storedUser) return '';
+      if (!storedUser) {
+        // Utiliser l'ID du user pilot par défaut pour la démo
+        const defaultUser = {
+          id: '550e8400-e29b-41d4-a716-446655440001',
+          username: 'pilot',
+          role: 'admin'
+        };
+        localStorage.setItem('mokart_user', JSON.stringify(defaultUser));
+        return defaultUser.id;
+      }
       const parsed = JSON.parse(storedUser);
-      return typeof parsed?.id === 'string' ? parsed.id : '';
+      return typeof parsed?.id === 'string' ? parsed.id : '550e8400-e29b-41d4-a716-446655440001';
     } catch {
-      return '';
+      return '550e8400-e29b-41d4-a716-446655440001';
     }
   };
 
   useEffect(() => {
-    setUserId(getStoredUserId());
+    const userId = getStoredUserId();
+    console.log('User ID utilisé:', userId);
+    setUserId(userId);
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'mokart_user') {
-        setUserId(getStoredUserId());
+        const newUserId = getStoredUserId();
+        console.log('User ID changé:', newUserId);
+        setUserId(newUserId);
       }
     };
+
+    // Fonction pour nettoyer et réinitialiser l'utilisateur
+    const clearUserSession = () => {
+      localStorage.removeItem('mokart_user');
+      localStorage.removeItem('mokart_session');
+      setUserId('');
+      setUserProfile(null);
+      setNotifications([]);
+      console.log('Session utilisateur nettoyée');
+    };
+
+    // Exposer la fonction globalement pour pouvoir l'utiliser depuis la console
+    (window as any).clearUserSession = clearUserSession;
 
     // Fermer les menus quand on clique ailleurs
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,6 +73,9 @@ const Header: React.FC = () => {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
+      }
+      if (roleSwitcherRef.current && !roleSwitcherRef.current.contains(event.target as Node)) {
+        setShowRoleSwitcher(false);
       }
     };
 
@@ -126,8 +161,57 @@ const Header: React.FC = () => {
     window.location.href = '/login';
   };
 
+  const isDemoUser = () => {
+    const storedUser = localStorage.getItem('mokart_user');
+    if (!storedUser) return false;
+    try {
+      const user = JSON.parse(storedUser);
+      return user.id === '550e8400-e29b-41d4-a716-446655440001';
+    } catch {
+      return false;
+    }
+  };
+
+  const switchRole = (newRole: string) => {
+    const storedUser = localStorage.getItem('mokart_user');
+    if (!storedUser) return;
+
+    try {
+      const user = JSON.parse(storedUser);
+      user.role = newRole;
+      localStorage.setItem('mokart_user', JSON.stringify(user));
+
+      // Émettre un événement personnalisé pour que le composant Home puisse l'écouter
+      window.dispatchEvent(new CustomEvent('userRoleChanged', { detail: { role: newRole } }));
+
+      // Forcer le rechargement de la page pour mettre à jour le dashboard
+      window.location.reload();
+    } catch (error) {
+      console.error('Erreur lors du changement de rôle:', error);
+    }
+  };
+
+  const getCurrentRole = () => {
+    const storedUser = localStorage.getItem('mokart_user');
+    if (!storedUser) return 'driver';
+    try {
+      const user = JSON.parse(storedUser);
+      return user.role || 'driver';
+    } catch {
+      return 'driver';
+    }
+  };
+
+  const roles = [
+    { id: 'admin', name: 'Admin', icon: '👑' },
+    { id: 'driver', name: 'Pilote', icon: '🏎️' },
+    { id: 'mechanic', name: 'Mécanicien', icon: '🔧' },
+    { id: 'observer', name: 'Observateur', icon: '👁️' },
+    { id: 'commissaire_piste', name: 'Commissaire', icon: '🏁️' }
+  ];
+
   return (
-    <header className="bg-[#0a0a0a] border-b border-[#262626] px-6 py-4">
+    <header className={`bg-[#0a0a0a] border-b border-[#262626] px-6 py-4 ${className || ''}`}>
       <div className="flex items-center justify-between">
         {/* Barre de recherche */}
         <div className="flex-1 max-w-xl">
@@ -145,6 +229,54 @@ const Header: React.FC = () => {
 
         {/* Actions à droite */}
         <div className="flex items-center gap-4 ml-6">
+          {/* Bouton switcher de rôle - uniquement pour le compte démo */}
+          {isDemoUser() && (
+            <div className="relative" ref={roleSwitcherRef}>
+              <button
+                onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
+                className="flex items-center gap-2 p-2 text-[#a3a3a3] hover:text-white transition-colors"
+                title="Changer de rôle (démo)"
+              >
+                <Shield className="w-5 h-5" />
+                <span className="text-xs px-2 py-1 bg-[#22D3EE] text-white rounded">
+                  {roles.find(r => r.id === getCurrentRole())?.icon} {getCurrentRole()}
+                </span>
+              </button>
+
+              {/* Menu switcher de rôle */}
+              {showRoleSwitcher && (
+                <div className="absolute right-0 mt-2 w-48 bg-[#171717] border border-[#262626] rounded-lg shadow-lg z-50">
+                  <div className="p-3 border-b border-[#262626]">
+                    <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Changer de Rôle</h3>
+                    <p className="text-xs text-[#737373] mt-1">Mode démo uniquement</p>
+                  </div>
+                  <div className="py-2">
+                    {roles.map((role) => (
+                      <button
+                        key={role.id}
+                        onClick={() => switchRole(role.id)}
+                        className={`flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors ${
+                          getCurrentRole() === role.id
+                            ? 'bg-[#22D3EE] text-white'
+                            : 'text-[#a3a3a3] hover:text-white hover:bg-[#262626]'
+                        }`}
+                      >
+                        <span className="text-lg">{role.icon}</span>
+                        <div className="text-left">
+                          <div className="font-medium">{role.name}</div>
+                          <div className="text-xs opacity-75">{role.id}</div>
+                        </div>
+                        {getCurrentRole() === role.id && (
+                          <Check className="w-4 h-4 ml-auto" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Notifications */}
           <div className="relative" ref={notificationsRef}>
             <button

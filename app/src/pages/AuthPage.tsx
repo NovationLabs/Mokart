@@ -17,8 +17,8 @@ interface AuthResponse {
   message: string;
 }
 
-const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
-
+const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8081`;
+console.log(process.env.REACT_APP_API_URL);
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -117,7 +117,7 @@ const AuthPage: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
-            {isLogin ? 'Welcome back.' : 'Create your account.'}
+            {isLogin ? 'Welcome back!' : 'Create your account.'}
           </h1>
           <p className="text-gray-500 text-sm">
             {isLogin
