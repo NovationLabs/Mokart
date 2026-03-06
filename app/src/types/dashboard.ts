@@ -50,7 +50,7 @@ export interface SystemStatus {
 }
 
 export interface DashboardData {
-  user_role: 'admin' | 'pilot' | 'mechanic' | 'observer';
+  user_role: 'admin' | 'driver' | 'mechanic' | 'observer' | 'commissaire_piste';
   user_stats?: UserStats;
   karts_status?: KartStatus[];
   electrical_modules?: ElectricalModule[];

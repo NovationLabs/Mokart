@@ -74,7 +74,7 @@ const StatItem = ({ label, value, unit, icon: Icon }: any) => (
   </div>
 );
 
-const API_BASE_URL = process.env.REACT_API_URL || `http://${window.location.hostname}:8081`;
+const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8081`;
 
 const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);

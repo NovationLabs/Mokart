@@ -10,8 +10,6 @@ services:
     volumes:
       - ./app/src:/app/src
       - ./app/public:/app/public
-    environment:
-      - REACT_API_URL=https://api.novationlabs.fr
     restart: unless-stopped
 
   web:

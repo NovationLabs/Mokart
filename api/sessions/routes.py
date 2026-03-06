@@ -28,7 +28,7 @@ async def get_sessions(db: DbSession = Depends(get_db)):
 
         return session_list
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.get("/{session_id}/stats")
 async def get_session_stats(session_id: str, db: DbSession = Depends(get_db)):
@@ -70,7 +70,7 @@ async def get_session_stats(session_id: str, db: DbSession = Depends(get_db)):
 
         return stats
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.get("/{session_id}/trajectory", response_model=list[TrajectoryPoint])
 async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db)):
@@ -106,7 +106,7 @@ async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db
 
         return trajectory
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.post("/", response_model=Session)
 async def create_session(session: Session, db: DbSession = Depends(get_db)):
@@ -170,7 +170,7 @@ async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_d
 
         return sensor_data_list
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.post("/{session_id}/sensor-data", response_model=SensorData)
 async def add_sensor_data(session_id: str, sensor_data: SensorData, db: DbSession = Depends(get_db)):

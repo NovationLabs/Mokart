@@ -1,6 +1,6 @@
 import { DashboardData } from '../types/dashboard';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL  || 'http://localhost:8081';
 
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
@@ -11,7 +11,7 @@ export const dashboardService = {
 
     const user = JSON.parse(userStr);
     const userId = user.id;
-    const userRole = user.role || 'pilot';
+    const userRole = user.role || 'driver';
 
     try {
       const response = await fetch(`${API_BASE_URL}/dashboard/data?user_id=${userId}&role=${userRole}`, {

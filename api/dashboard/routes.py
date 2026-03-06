@@ -153,7 +153,7 @@ async def get_dashboard_data(user_id: str = None, role: str = None, db: DbSessio
             system_status=system_status
         )
 
-    elif user_role == "pilot":
+    elif user_role == "driver":
         # Pilote voit ses stats et le circuit
         user_stats = UserStats(
             total_laps=1248,

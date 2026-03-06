@@ -31,6 +31,8 @@ import Header from '../components/Header';
 const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { canManageUsers } = usePermissions();
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
 
   // Vérifier les permissions - rediriger si pas admin
   useEffect(() => {
@@ -46,40 +48,13 @@ const UserManagementPage: React.FC = () => {
     };
 
     const role = getUserRole();
+    setUserRole(role);
     if (!canManageUsers() && role !== UserRole.ADMIN) {
       navigate('/');
       return;
     }
 
-    // Afficher un message d'erreur si pas admin
-    if (role && role !== UserRole.ADMIN) {
-      return (
-        <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
-          <Sidebar />
-          <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
-            <Header className="flex-shrink-0" />
-            <main className="flex-1 overflow-y-auto">
-              <div className="md:p-6 p-4 pb-20 md:pb-0">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6">
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                      <div>
-                        <h3 className="text-lg font-semibold text-red-400 mb-1">Accès non autorisé</h3>
-                        <p className="text-red-300">
-                          Seuls les administrateurs peuvent accéder à la gestion des utilisateurs.
-                          Votre rôle actuel : <span className="font-medium">{getRoleLabel(role)}</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </main>
-          </div>
-        </div>
-      );
-    }
+    setIsAuthorized(role === UserRole.ADMIN);
   }, [canManageUsers, navigate]);
 
   const [users, setUsers] = useState<UserType[]>([]);
@@ -145,7 +120,7 @@ const UserManagementPage: React.FC = () => {
       // Nettoyer les données avant envoi
       const cleanFormData = {
         ...formData,
-        license_expiry: formData.license_expiry || null
+        license_expiry: formData.license_expiry || undefined
       };
 
       const newUser = await api.users.create(cleanFormData);
@@ -183,7 +158,7 @@ const UserManagementPage: React.FC = () => {
       if (formData.license_number !== selectedUser.license_number) updateData.license_number = formData.license_number;
       if (formData.license_expiry !== selectedUser.license_expiry) {
         // Envoyer null si la date est vide, sinon la date
-        updateData.license_expiry = formData.license_expiry || null;
+        updateData.license_expiry = formData.license_expiry || undefined;
       }
 
       const updatedUser = await api.users.update(selectedUser.id, updateData);
@@ -303,6 +278,36 @@ const UserManagementPage: React.FC = () => {
           <main className="flex-1 overflow-y-auto">
             <div className="md:p-6 p-4 pb-20 md:pb-0">
               <div className="text-white">Chargement...</div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher un message d'erreur si pas autorisé
+  if (isAuthorized === false && userRole && userRole !== UserRole.ADMIN) {
+    return (
+      <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+        <Sidebar />
+        <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
+          <Header className="flex-shrink-0" />
+          <main className="flex-1 overflow-y-auto">
+            <div className="md:p-6 p-4 pb-20 md:pb-0">
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-red-400 mb-1">Accès non autorisé</h3>
+                      <p className="text-red-300">
+                        Seuls les administrateurs peuvent accéder à la gestion des utilisateurs.
+                        Votre rôle actuel : <span className="font-medium">{getRoleLabel(userRole)}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </main>
         </div>

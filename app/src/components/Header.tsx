@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, User, Settings, LogOut, X, Check, AlertCircle, Info, CheckCircle, Shield } from 'lucide-react';
 import api, { Notification, UserProfile } from '../services/api';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  className?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ className }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string>('');
@@ -189,25 +193,25 @@ const Header: React.FC = () => {
 
   const getCurrentRole = () => {
     const storedUser = localStorage.getItem('mokart_user');
-    if (!storedUser) return 'pilot';
+    if (!storedUser) return 'driver';
     try {
       const user = JSON.parse(storedUser);
-      return user.role || 'pilot';
+      return user.role || 'driver';
     } catch {
-      return 'pilot';
+      return 'driver';
     }
   };
 
   const roles = [
     { id: 'admin', name: 'Admin', icon: '👑' },
-    { id: 'pilot', name: 'Pilote', icon: '🏎️' },
+    { id: 'driver', name: 'Pilote', icon: '🏎️' },
     { id: 'mechanic', name: 'Mécanicien', icon: '🔧' },
     { id: 'observer', name: 'Observateur', icon: '👁️' },
     { id: 'commissaire_piste', name: 'Commissaire', icon: '🏁️' }
   ];
 
   return (
-    <header className="bg-[#0a0a0a] border-b border-[#262626] px-6 py-4">
+    <header className={`bg-[#0a0a0a] border-b border-[#262626] px-6 py-4 ${className || ''}`}>
       <div className="flex items-center justify-between">
         {/* Barre de recherche */}
         <div className="flex-1 max-w-xl">

@@ -211,7 +211,7 @@ const Home: React.FC = () => {
     );
   };
 
-  const renderPilotDashboard = () => {
+  const renderDriverDashboard = () => {
     if (!dashboardData) return null;
 
     return (
@@ -549,8 +549,8 @@ const Home: React.FC = () => {
     switch (dashboardData.user_role) {
       case 'admin':
         return renderAdminDashboard();
-      case 'pilot':
-        return renderPilotDashboard();
+      case 'driver':
+        return renderDriverDashboard();
       case 'mechanic':
         return renderMechanicDashboard();
       case 'observer':
@@ -558,7 +558,7 @@ const Home: React.FC = () => {
       case 'commissaire_piste':
         return renderCommissaireDashboard();
       default:
-        return renderPilotDashboard(); // Fallback
+        return renderDriverDashboard(); // Fallback
     }
   };
 
