@@ -109,13 +109,13 @@ const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-gray-100 font-display selection:bg-[#A3E635] selection:text-black antialiased flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0d0f12] text-gray-100 font-display antialiased flex items-center justify-center p-4 relative overflow-hidden">
 
       {/* Grid overlay */}
       <div className="fixed inset-0 bg-grid-minimal opacity-20 pointer-events-none" />
 
       {/* Ambient glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[260px] bg-[#A3E635]/5 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[260px] bg-[#7bf8ac]/5 blur-[100px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-sm relative z-10">
 
@@ -143,7 +143,7 @@ const AuthPage: React.FC = () => {
             </div>
           )}
           {success && (
-            <div className="mb-5 p-3 bg-[#A3E635]/10 border border-[#A3E635]/20 rounded-lg text-sm text-[#A3E635] flex items-center gap-2">
+            <div className="mb-5 p-3 bg-[#7bf8ac]/10 border border-[#7bf8ac]/20 rounded-lg text-sm text-[#7bf8ac] flex items-center gap-2">
               <CheckCircle2 size={15} className="shrink-0" />
               {success}
             </div>
@@ -157,7 +157,7 @@ const AuthPage: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
                 placeholder="name@example.com"
                 required
               />
@@ -170,7 +170,7 @@ const AuthPage: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -193,7 +193,7 @@ const AuthPage: React.FC = () => {
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
                       placeholder="••••••••"
                       required
                     />
@@ -213,7 +213,7 @@ const AuthPage: React.FC = () => {
                     type="text"
                     value={kart}
                     onChange={(e) => setKart(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#A3E635]/50 focus:ring-1 focus:ring-[#A3E635]/20 transition-all"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
                     placeholder="Sodi RT8 v2"
                   />
                 </div>
@@ -223,7 +223,7 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#A3E635] text-black font-semibold py-3 rounded-lg transition-all duration-300 text-sm mt-1
+              className="w-full bg-[#7bf8ac] text-black font-semibold py-3 rounded-lg transition-all duration-300 text-sm mt-1
                 hover:shadow-[0_0_18px_rgba(163,230,53,0.5),0_0_60px_rgba(163,230,53,0.2)]
                 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
             >
@@ -254,10 +254,10 @@ const AuthPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
-              className="text-xs text-gray-600 hover:text-[#A3E635] transition-colors"
+              className="text-xs text-gray-600 hover:text-[#7bf8ac] transition-colors"
             >
               {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <span className="font-semibold text-gray-400 hover:text-[#A3E635]">
+              <span className="font-semibold text-gray-400 hover:text-[#7bf8ac]">
                 {isLogin ? 'Sign up' : 'Sign in'}
               </span>
             </button>

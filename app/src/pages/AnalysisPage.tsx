@@ -61,14 +61,14 @@ interface PointInfo {
 }
 
 const StatItem = ({ label, value, unit, icon: Icon }: any) => (
-  <div className="bg-[#171717] p-4 rounded-lg border border-[#262626] flex items-center gap-3">
-    <div className="text-[#737373]">
+  <div className="card flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
       <Icon size={18} />
     </div>
     <div>
-      <div className="text-[10px] text-[#737373] uppercase tracking-wider font-medium">{label}</div>
-      <div className="text-sm font-medium text-white">
-        {value} <span className="text-[#525252] text-xs font-normal">{unit}</span>
+      <div className="text-[10px] text-[#94a3b8] uppercase tracking-widest font-bold">{label}</div>
+      <div className="text-sm font-medium text-white font-data">
+        {value} <span className="text-[#94a3b8]/50 text-xs font-normal">{unit}</span>
       </div>
     </div>
   </div>
@@ -526,12 +526,12 @@ const AnalysisPage: React.FC = () => {
       >
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Navigation size={14} className="text-[#22D3EE]" />
+            <Navigation size={14} className="text-[#7bf8ac]" />
             Point #{selectedPoint.index}
           </h3>
           <button
             onClick={closePopup}
-            className="text-[#737373] hover:text-white transition-colors"
+            className="text-[#94a3b8] hover:text-white transition-colors"
           >
             <X size={14} />
           </button>
@@ -541,14 +541,14 @@ const AnalysisPage: React.FC = () => {
           {/* Position */}
           <div className="pb-2 border-b border-[#262626]">
             <div className="flex justify-between items-center py-1">
-              <span className="text-[#737373]">Position</span>
+              <span className="text-[#94a3b8]">Position</span>
               <span className="text-white font-mono">
                 X: {selectedPoint.point.x.toFixed(2)}, Y: {selectedPoint.point.y.toFixed(2)}
               </span>
             </div>
             {selectedPoint.point.uwb_z !== undefined && selectedPoint.point.uwb_z !== null && (
               <div className="flex justify-between items-center py-1">
-                <span className="text-[#737373]">Altitude (Z)</span>
+                <span className="text-[#94a3b8]">Altitude (Z)</span>
                 <span className="text-white font-mono">
                   {selectedPoint.point.uwb_z.toFixed(3)} m
                 </span>
@@ -559,7 +559,7 @@ const AnalysisPage: React.FC = () => {
           {/* Temps et Mouvement */}
           <div className="pb-2 border-b border-[#262626]">
             <div className="flex justify-between items-center py-1">
-              <span className="text-[#737373] flex items-center gap-1">
+              <span className="text-[#94a3b8] flex items-center gap-1">
                 <Timer size={12} />
                 Temps
               </span>
@@ -569,7 +569,7 @@ const AnalysisPage: React.FC = () => {
             </div>
 
             <div className="flex justify-between items-center py-1">
-              <span className="text-[#737373] flex items-center gap-1">
+              <span className="text-[#94a3b8] flex items-center gap-1">
                 <Gauge size={12} />
                 Vitesse
               </span>
@@ -579,14 +579,14 @@ const AnalysisPage: React.FC = () => {
             </div>
 
             <div className="flex justify-between items-center py-1">
-              <span className="text-[#737373]">Accélération</span>
+              <span className="text-[#94a3b8]">Accélération</span>
               <span className="text-white font-mono">
                 {(selectedPoint.acceleration || 0).toFixed(2)} m/s²
               </span>
             </div>
 
             <div className="flex justify-between items-center py-1">
-              <span className="text-[#737373]">Distance</span>
+              <span className="text-[#94a3b8]">Distance</span>
               <span className="text-white font-mono">
                 {(selectedPoint.distance_from_start || 0).toFixed(2)} m
               </span>
@@ -594,7 +594,7 @@ const AnalysisPage: React.FC = () => {
 
             {selectedPoint.point.steering_angle !== undefined && selectedPoint.point.steering_angle !== null && (
               <div className="flex justify-between items-center py-1">
-                <span className="text-[#737373]">Direction</span>
+                <span className="text-[#94a3b8]">Direction</span>
                 <span className="text-white font-mono">
                   {selectedPoint.point.steering_angle.toFixed(1)}°
                 </span>
@@ -607,24 +607,24 @@ const AnalysisPage: React.FC = () => {
             selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null ||
             selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null) && (
             <div className="pb-2 border-b border-[#262626]">
-              <h4 className="text-[#22D3EE] font-medium mb-2">IMU - Accéléromètre</h4>
+              <h4 className="text-[#7bf8ac] font-medium mb-2">IMU - Accéléromètre</h4>
               <div className="grid grid-cols-3 gap-2">
                 {selectedPoint.point.imu_ax !== undefined && selectedPoint.point.imu_ax !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_ax.toFixed(3)}</div>
-                    <div className="text-[#737373]">X (g)</div>
+                    <div className="text-[#94a3b8]">X (g)</div>
                   </div>
                 )}
                 {selectedPoint.point.imu_ay !== undefined && selectedPoint.point.imu_ay !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_ay.toFixed(3)}</div>
-                    <div className="text-[#737373]">Y (g)</div>
+                    <div className="text-[#94a3b8]">Y (g)</div>
                   </div>
                 )}
                 {selectedPoint.point.imu_az !== undefined && selectedPoint.point.imu_az !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_az.toFixed(3)}</div>
-                    <div className="text-[#737373]">Z (g)</div>
+                    <div className="text-[#94a3b8]">Z (g)</div>
                   </div>
                 )}
               </div>
@@ -636,24 +636,24 @@ const AnalysisPage: React.FC = () => {
             selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null ||
             selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null) && (
             <div>
-              <h4 className="text-[#22D3EE] font-medium mb-2">IMU - Gyroscope</h4>
+              <h4 className="text-[#7bf8ac] font-medium mb-2">IMU - Gyroscope</h4>
               <div className="grid grid-cols-3 gap-2">
                 {selectedPoint.point.imu_gx !== undefined && selectedPoint.point.imu_gx !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_gx.toFixed(1)}</div>
-                    <div className="text-[#737373]">X (°/s)</div>
+                    <div className="text-[#94a3b8]">X (°/s)</div>
                   </div>
                 )}
                 {selectedPoint.point.imu_gy !== undefined && selectedPoint.point.imu_gy !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_gy.toFixed(1)}</div>
-                    <div className="text-[#737373]">Y (°/s)</div>
+                    <div className="text-[#94a3b8]">Y (°/s)</div>
                   </div>
                 )}
                 {selectedPoint.point.imu_gz !== undefined && selectedPoint.point.imu_gz !== null && (
                   <div className="text-center">
                     <div className="text-white font-mono">{selectedPoint.point.imu_gz.toFixed(1)}</div>
-                    <div className="text-[#737373]">Z (°/s)</div>
+                    <div className="text-[#94a3b8]">Z (°/s)</div>
                   </div>
                 )}
               </div>
@@ -695,7 +695,7 @@ const AnalysisPage: React.FC = () => {
   }, [selectedSession, sessions]);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
       <Sidebar />
 
       <main className="flex-1 md:ml-16 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
@@ -708,7 +708,7 @@ const AnalysisPage: React.FC = () => {
               <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
                 Telemetry Analysis
               </h1>
-              <p className="text-[#737373] text-xs mt-1 font-mono flex items-center gap-2">
+              <p className="text-[#94a3b8] text-xs mt-1 font-mono flex items-center gap-2">
                 SESSION: <span className="text-white">{selectedSession || 'NONE'}</span>
               </p>
             </div>
@@ -718,7 +718,7 @@ const AnalysisPage: React.FC = () => {
                 <select
                   value={selectedSession}
                   onChange={(e: any) => setSelectedSession(e.target.value)}
-                  className="w-full md:w-auto appearance-none bg-[#171717] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
+                  className="w-full md:w-auto appearance-none bg-[#16181d] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
                 >
                   <option value="" disabled>Select Session</option>
                   {sessions.map((s: Session) => (
@@ -727,12 +727,12 @@ const AnalysisPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-2 top-2 text-[#737373] pointer-events-none" size={14} />
+                <ChevronDown className="absolute right-2 top-2 text-[#94a3b8] pointer-events-none" size={14} />
               </div>
 
               <button
                 onClick={() => selectedSession && fetchTrajectory(selectedSession)}
-                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
                 title="Refresh Data"
               >
                 <RotateCw size={14} />
@@ -741,7 +741,7 @@ const AnalysisPage: React.FC = () => {
               <button
                 onClick={calculateOptimalTrajectory}
                 disabled={calculatingTrajectory || !selectedSession}
-                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Calculate Optimal Trajectory"
               >
                 <Target size={14} />
@@ -749,7 +749,7 @@ const AnalysisPage: React.FC = () => {
 
               <button
                 onClick={() => setShowOptimalTrajectory(!showOptimalTrajectory)}
-                className="p-1.5 bg-[#171717] border border-[#262626] text-[#737373] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                className="p-1.5 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
                 title={showOptimalTrajectory ? "Hide Optimal Trajectory" : "Show Optimal Trajectory"}
               >
                 {showOptimalTrajectory ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -775,15 +775,15 @@ const AnalysisPage: React.FC = () => {
               icon={Clock}
             />
 
-            <div className="bg-[#171717] p-4 rounded-lg border border-[#262626] flex-1">
-              <h3 className="text-[#737373] text-[10px] uppercase tracking-wider font-medium mb-3">Sensor Health</h3>
+            <div className="card flex-1">
+              <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Sensor Health</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-[#a3a3a3]">UWB Coverage</span>
                   <span className="font-mono text-white">{(stats?.uwb_coverage || 0).toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-[#262626] h-1 rounded-full overflow-hidden">
-                  <div className="bg-[#22D3EE] h-full" style={{ width: `${stats?.uwb_coverage || 0}%` }}></div>
+                  <div className="bg-[#7bf8ac] h-full" style={{ width: `${stats?.uwb_coverage || 0}%` }}></div>
                 </div>
 
                 <div className="flex justify-between items-center text-xs pt-2">
@@ -791,15 +791,15 @@ const AnalysisPage: React.FC = () => {
                   <span className="font-mono text-white">{(stats?.imu_coverage || 0).toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-[#262626] h-1 rounded-full overflow-hidden">
-                  <div className="bg-[#22D3EE] h-full" style={{ width: `${stats?.imu_coverage || 0}%` }}></div>
+                  <div className="bg-[#7bf8ac] h-full" style={{ width: `${stats?.imu_coverage || 0}%` }}></div>
                 </div>
               </div>
             </div>
 
             {/* Trajectory Comparison Stats */}
             {trajectoryComparison && (
-              <div className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
-                <h3 className="text-[#737373] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+              <div className="card">
+                <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
                   <TrendingUp size={12} />
                   Trajectory Analysis
                 </h3>
@@ -822,19 +822,19 @@ const AnalysisPage: React.FC = () => {
           </div>
 
           {/* Map / Visualization Column */}
-          <div className="lg:col-span-3 bg-[#171717] rounded-lg border border-[#262626] relative overflow-hidden flex flex-col">
+          <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
             <div className="absolute top-4 left-4 z-10 flex gap-2">
-              <div className="px-2 py-1 bg-[#0a0a0a]/80 backdrop-blur text-[10px] text-[#737373] border border-[#262626] rounded">
+              <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
                 Trajectory View
               </div>
               {loading && (
-                <div className="px-2 py-1 bg-[#0a0a0a]/80 backdrop-blur text-[10px] text-[#22D3EE] border border-[#262626] rounded flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE] animate-pulse"></span>
+                <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#7bf8ac] border border-[#262626] rounded flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] animate-pulse"></span>
                   Loading
                 </div>
               )}
               {calculatingTrajectory && (
-                <div className="px-2 py-1 bg-[#0a0a0a]/80 backdrop-blur text-[10px] text-[#10b981] border border-[#262626] rounded flex items-center gap-2">
+                <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#10b981] border border-[#262626] rounded flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
                   Calculating Trajectory
                 </div>
@@ -845,26 +845,26 @@ const AnalysisPage: React.FC = () => {
             <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
               <button
                 onClick={zoomIn}
-                className="p-1.5 bg-[#0a0a0a]/80 backdrop-blur border border-[#262626] text-[#737373] hover:text-white rounded transition-colors"
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
                 title="Zoom In"
               >
                 <ZoomIn size={14} />
               </button>
               <button
                 onClick={zoomOut}
-                className="p-1.5 bg-[#0a0a0a]/80 backdrop-blur border border-[#262626] text-[#737373] hover:text-white rounded transition-colors"
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
                 title="Zoom Out"
               >
                 <ZoomOut size={14} />
               </button>
               <button
                 onClick={resetView}
-                className="p-1.5 bg-[#0a0a0a]/80 backdrop-blur border border-[#262626] text-[#737373] hover:text-white rounded transition-colors"
+                className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
                 title="Reset View"
               >
                 <Move size={14} />
               </button>
-              <div className="px-2 py-1 bg-[#0a0a0a]/80 backdrop-blur text-[10px] text-[#737373] border border-[#262626] rounded text-center">
+              <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded text-center">
                 {(zoomLevel * 100).toFixed(0)}%
               </div>
             </div>
@@ -949,14 +949,14 @@ const AnalysisPage: React.FC = () => {
                       <Scatter
                         name="Trajectory"
                         data={trajectory}
-                        fill="#22D3EE"
-                        line={{ stroke: '#22D3EE', strokeWidth: 1.5 }}
+                        fill="#7bf8ac"
+                        line={{ stroke: '#7bf8ac', strokeWidth: 1.5 }}
                         lineType="joint"
                         shape={(props: any) => {
                           const isClosest = closestPoint && props.index === closestPoint.index;
                           const isHovered = hoveredPoint && props.index === hoveredPoint.index;
                           const radius = isClosest ? 6 : (showPoints ? 4 : 3);
-                          const fill = isClosest ? '#10b981' : (showPoints ? '#22D3EE' : 'rgba(34, 211, 238, 0.3)');
+                          const fill = isClosest ? '#10b981' : (showPoints ? '#7bf8ac' : 'rgba(34, 211, 238, 0.3)');
 
                           return (
                             <circle
@@ -964,7 +964,7 @@ const AnalysisPage: React.FC = () => {
                               cy={props.cy}
                               r={radius}
                               fill={fill}
-                              stroke={isClosest ? '#10b981' : '#22D3EE'}
+                              stroke={isClosest ? '#10b981' : '#7bf8ac'}
                               strokeWidth={isClosest ? 2 : 1}
                               className="cursor-pointer transition-all duration-150"
                               style={{
@@ -993,7 +993,7 @@ const AnalysisPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full text-[#737373] text-sm">
+                <div className="flex items-center justify-center h-full text-[#94a3b8] text-sm">
                   {loading ? 'Loading visualization...' : 'No trajectory data available'}
                 </div>
               )}

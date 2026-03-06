@@ -103,14 +103,14 @@ const SettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-base flex items-center justify-center">
         <div className="text-white">Chargement...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
       <Sidebar />
 
       <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
@@ -122,7 +122,7 @@ const SettingsPage: React.FC = () => {
           <div className="flex items-center gap-4 mb-8">
             <button
               onClick={() => window.history.back()}
-              className="p-2 text-[#a3a3a3] hover:text-white transition-colors"
+              className="p-2 text-[#94a3b8] hover:text-white transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -145,7 +145,7 @@ const SettingsPage: React.FC = () => {
         {/* Formulaire */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Informations personnelles */}
-          <div className="bg-[#171717] border border-[#262626] rounded-lg p-6">
+          <div className="card">
             <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
               <User className="w-5 h-5" />
               Informations personnelles
@@ -153,27 +153,27 @@ const SettingsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-[#a3a3a3] mb-2">
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
                   Prénom
                 </label>
                 <input
                   type="text"
                   value={profile.first_name || ''}
                   onChange={handleChange('first_name')}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   placeholder="Votre prénom"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#a3a3a3] mb-2">
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
                   Nom
                 </label>
                 <input
                   type="text"
                   value={profile.last_name || ''}
                   onChange={handleChange('last_name')}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   placeholder="Votre nom"
                 />
               </div>
@@ -181,7 +181,7 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Coordonnées */}
-          <div className="bg-[#171717] border border-[#262626] rounded-lg p-6">
+          <div className="card">
             <h2 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
               <Mail className="w-5 h-5" />
               Coordonnées
@@ -189,21 +189,21 @@ const SettingsPage: React.FC = () => {
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-[#a3a3a3] mb-2">
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   value={profile.email}
                   onChange={handleChange('email')}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   placeholder="votre.email@example.com"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#a3a3a3] mb-2">
+                <label className="block text-sm font-medium text-[#94a3b8] mb-2">
                   Téléphone
                 </label>
                 <div className="relative">
@@ -212,7 +212,7 @@ const SettingsPage: React.FC = () => {
                     type="tel"
                     value={profile.phone || ''}
                     onChange={handleChange('phone')}
-                    className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                     placeholder="06 12 34 56 78"
                   />
                 </div>
@@ -221,15 +221,15 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {/* Informations système */}
-          <div className="bg-[#171717] border border-[#262626] rounded-lg p-6">
+          <div className="card">
             <h2 className="text-lg font-semibold text-white mb-4">Informations système</h2>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#a3a3a3]">Nom d'utilisateur</span>
+                <span className="text-sm text-[#94a3b8]">Nom d'utilisateur</span>
                 <span className="text-sm text-white font-mono">{profile.username}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#a3a3a3]">ID utilisateur</span>
+                <span className="text-sm text-[#94a3b8]">ID utilisateur</span>
                 <span className="text-sm text-white font-mono">{profile.id.slice(0, 8)}...</span>
               </div>
             </div>
@@ -240,14 +240,14 @@ const SettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => window.history.back()}
-              className="px-6 py-2 border border-[#262626] text-[#a3a3a3] rounded-lg hover:text-white hover:border-[#404040] transition-colors"
+              className="px-6 py-2 border border-[#262626] text-[#94a3b8] rounded-lg hover:text-white hover:border-[#404040] transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-[#22D3EE] text-black font-medium rounded-lg hover:bg-[#40E0D0] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-2 bg-[#7bf8ac] text-black font-semibold rounded-full hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
               {saving ? 'Enregistrement...' : 'Enregistrer'}

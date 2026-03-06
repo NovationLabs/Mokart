@@ -89,31 +89,31 @@ const Home: React.FC = () => {
         {/* System Status */}
         {dashboardData.system_status && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+            <div className="card">
               <div className="flex items-center gap-2 mb-2">
-                <Users size={16} className="text-[#737373]" />
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider">Utilisateurs</span>
+                <Users size={16} className="text-[#94a3b8]" />
+                <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Utilisateurs</span>
               </div>
               <div className="text-2xl font-bold text-white">{dashboardData.system_status.total_users}</div>
             </div>
-            <div className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+            <div className="card">
               <div className="flex items-center gap-2 mb-2">
-                <Activity size={16} className="text-[#737373]" />
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider">Sessions Actives</span>
+                <Activity size={16} className="text-[#94a3b8]" />
+                <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Sessions Actives</span>
               </div>
               <div className="text-2xl font-bold text-white">{dashboardData.system_status.active_sessions}</div>
             </div>
-            <div className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+            <div className="card">
               <div className="flex items-center gap-2 mb-2">
-                <Map size={16} className="text-[#737373]" />
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider">Karts en Ligne</span>
+                <Map size={16} className="text-[#94a3b8]" />
+                <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Karts en Ligne</span>
               </div>
               <div className="text-2xl font-bold text-white">{dashboardData.system_status.online_karts}/{dashboardData.system_status.total_karts}</div>
             </div>
-            <div className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+            <div className="card">
               <div className="flex items-center gap-2 mb-2">
-                <Zap size={16} className="text-[#737373]" />
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider">Système</span>
+                <Zap size={16} className="text-[#94a3b8]" />
+                <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Système</span>
               </div>
               <div className={`text-sm font-bold ${
                 dashboardData.system_status.system_health === 'good' ? 'text-emerald-500' :
@@ -128,20 +128,20 @@ const Home: React.FC = () => {
         {/* Karts Status */}
         {dashboardData.karts_status && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Statut des Karts</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Statut des Karts</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {dashboardData.karts_status.map((kart) => (
-                <div key={kart.id} className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+                <div key={kart.id} className="card">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-medium text-white">{kart.name}</h3>
-                      <p className="text-xs text-[#737373]">{kart.driver}</p>
+                      <p className="text-xs text-[#94a3b8]">{kart.driver}</p>
                     </div>
                     <div className={`w-2 h-2 rounded-full ${getStatusColor(kart.status)}`}></div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-[#737373]">Batterie</span>
+                      <span className="text-xs text-[#94a3b8]">Batterie</span>
                       <div className="flex items-center gap-2">
                         <div className="w-16 bg-[#262626] rounded-full h-1.5">
                           <div
@@ -152,7 +152,7 @@ const Home: React.FC = () => {
                         <span className="text-xs text-white">{kart.battery_level}%</span>
                       </div>
                     </div>
-                    <div className="text-xs text-[#737373]">
+                    <div className="text-xs text-[#94a3b8]">
                       Status: <span className="text-white capitalize">{kart.status}</span>
                     </div>
                   </div>
@@ -165,39 +165,39 @@ const Home: React.FC = () => {
         {/* Electrical Modules */}
         {dashboardData.electrical_modules && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Modules Électriques</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Modules Électriques</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {dashboardData.electrical_modules.map((module, index) => (
-                <div key={index} className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+                <div key={index} className="card">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-medium text-white">{module.kart_id}</h3>
-                      <p className="text-xs text-[#737373] capitalize">{module.module_type.replace('_', ' ')}</p>
+                      <p className="text-xs text-[#94a3b8] capitalize">{module.module_type.replace('_', ' ')}</p>
                     </div>
                     <div className={`w-2 h-2 rounded-full ${getStatusColor(module.status)}`}></div>
                   </div>
                   <div className="space-y-1">
                     {module.battery_voltage && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#737373]">Voltage</span>
+                        <span className="text-[#94a3b8]">Voltage</span>
                         <span className="text-white">{module.battery_voltage}V</span>
                       </div>
                     )}
                     {module.signal_strength && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#737373]">Signal</span>
+                        <span className="text-[#94a3b8]">Signal</span>
                         <span className="text-white">{module.signal_strength} dBm</span>
                       </div>
                     )}
                     {module.module_type === 'point_one' && module.data.satellites && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#737373]">Satellites</span>
+                        <span className="text-[#94a3b8]">Satellites</span>
                         <span className="text-white">{module.data.satellites}</span>
                       </div>
                     )}
                     {module.module_type === 'uwb' && module.data.anchor_count && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#737373]">Anchors</span>
+                        <span className="text-[#94a3b8]">Anchors</span>
                         <span className="text-white">{module.data.anchor_count}</span>
                       </div>
                     )}
@@ -219,20 +219,20 @@ const Home: React.FC = () => {
         {/* User Stats */}
         {dashboardData.user_stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
-              <div className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-2">Total Tours</div>
+            <div className="card">
+              <div className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-2">Total Tours</div>
               <div className="text-2xl font-bold text-white">{dashboardData.user_stats.total_laps.toLocaleString()}</div>
             </div>
-            <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
-              <div className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-2">Meilleur Tour</div>
-              <div className="text-2xl font-bold text-[#22D3EE]">{dashboardData.user_stats.best_lap_time}s</div>
+            <div className="card">
+              <div className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-2">Meilleur Tour</div>
+              <div className="text-2xl font-bold text-[#7bf8ac]">{dashboardData.user_stats.best_lap_time}s</div>
             </div>
-            <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
-              <div className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-2">Vitesse Max</div>
+            <div className="card">
+              <div className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-2">Vitesse Max</div>
               <div className="text-2xl font-bold text-white">{dashboardData.user_stats.top_speed} km/h</div>
             </div>
-            <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
-              <div className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-2">Constance</div>
+            <div className="card">
+              <div className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-2">Constance</div>
               <div className="text-2xl font-bold text-emerald-500">{dashboardData.user_stats.consistency}%</div>
             </div>
           </div>
@@ -240,26 +240,26 @@ const Home: React.FC = () => {
 
         {/* Last Session Details */}
         {dashboardData.user_stats && (
-          <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
-            <h3 className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-4">Dernière Session</h3>
+          <div className="card">
+            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4">Dernière Session</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-2 border-b border-[#262626]">
-                  <span className="text-xs text-[#a3a3a3]">Tour Moyen</span>
+                  <span className="text-xs text-[#94a3b8]">Tour Moyen</span>
                   <span className="font-mono text-sm text-white">{dashboardData.user_stats.avg_lap_time}s</span>
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-[#262626]">
-                  <span className="text-xs text-[#a3a3a3]">Vitesse Max</span>
+                  <span className="text-xs text-[#94a3b8]">Vitesse Max</span>
                   <span className="font-mono text-sm text-white">{dashboardData.user_stats.top_speed} km/h</span>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex justify-between items-center pb-2 border-b border-[#262626]">
-                  <span className="text-xs text-[#a3a3a3]">Constance</span>
+                  <span className="text-xs text-[#94a3b8]">Constance</span>
                   <span className="font-mono text-sm text-emerald-500">{dashboardData.user_stats.consistency}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[#a3a3a3]">Dernière Session</span>
+                  <span className="text-xs text-[#94a3b8]">Dernière Session</span>
                   <span className="font-mono text-sm text-white">
                     {dashboardData.user_stats.last_session_date ?
                       new Date(dashboardData.user_stats.last_session_date).toLocaleDateString() :
@@ -283,14 +283,14 @@ const Home: React.FC = () => {
         {/* Karts Status */}
         {dashboardData.karts_status && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">État des Karts</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">État des Karts</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {dashboardData.karts_status.map((kart) => (
-                <div key={kart.id} className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
+                <div key={kart.id} className="card">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="text-sm font-medium text-white">{kart.name}</h3>
-                      <p className="text-xs text-[#737373]">{kart.driver || 'Non assigné'}</p>
+                      <p className="text-xs text-[#94a3b8]">{kart.driver || 'Non assigné'}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-bold uppercase rounded ${
                       kart.status === 'online' ? 'bg-emerald-900 text-emerald-300' :
@@ -304,7 +304,7 @@ const Home: React.FC = () => {
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-[#737373]">Batterie</span>
+                        <span className="text-xs text-[#94a3b8]">Batterie</span>
                         <span className="text-xs text-white">{kart.battery_level}%</span>
                       </div>
                       <div className="w-full bg-[#262626] rounded-full h-2">
@@ -315,7 +315,7 @@ const Home: React.FC = () => {
                       </div>
                     </div>
                     {kart.last_seen && (
-                      <div className="text-xs text-[#737373]">
+                      <div className="text-xs text-[#94a3b8]">
                         Dernière vue: {new Date(kart.last_seen).toLocaleString()}
                       </div>
                     )}
@@ -329,33 +329,33 @@ const Home: React.FC = () => {
         {/* Electrical Modules */}
         {dashboardData.electrical_modules && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Modules Électriques</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Modules Électriques</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {dashboardData.electrical_modules.map((module, index) => (
-                <div key={index} className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+                <div key={index} className="card">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-medium text-white">{module.kart_id}</h3>
-                      <p className="text-xs text-[#737373] capitalize">{module.module_type.replace('_', ' ')}</p>
+                      <p className="text-xs text-[#94a3b8] capitalize">{module.module_type.replace('_', ' ')}</p>
                     </div>
                     <div className={`w-2 h-2 rounded-full ${getStatusColor(module.status)}`}></div>
                   </div>
                   <div className="space-y-2">
                     {module.battery_voltage && (
                       <div className="flex justify-between items-center">
-                        <Battery size={14} className="text-[#737373]" />
+                        <Battery size={14} className="text-[#94a3b8]" />
                         <span className="text-xs text-white">{module.battery_voltage}V</span>
                       </div>
                     )}
                     {module.signal_strength && (
                       <div className="flex justify-between items-center">
-                        <Wifi size={14} className="text-[#737373]" />
+                        <Wifi size={14} className="text-[#94a3b8]" />
                         <span className="text-xs text-white">{module.signal_strength} dBm</span>
                       </div>
                     )}
                     {module.module_type === 'battery_controller' && module.data.temperature && (
                       <div className="flex justify-between text-xs">
-                        <span className="text-[#737373]">Température</span>
+                        <span className="text-[#94a3b8]">Température</span>
                         <span className="text-white">{module.data.temperature}°C</span>
                       </div>
                     )}
@@ -376,10 +376,10 @@ const Home: React.FC = () => {
       <div className="space-y-6">
         {/* Circuit Info Only */}
         {dashboardData.circuit_info && (
-          <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
+          <div className="card">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-1">Circuit</h3>
+                <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-1">Circuit</h3>
                 <div className="text-lg font-bold text-white">{dashboardData.circuit_info.name}</div>
               </div>
               <div className="flex items-center gap-2">
@@ -395,19 +395,19 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.temperature}°C</div>
-                <div className="text-xs text-[#737373]">Température</div>
+                <div className="text-xs text-[#94a3b8]">Température</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.humidity}%</div>
-                <div className="text-xs text-[#737373]">Humidité</div>
+                <div className="text-xs text-[#94a3b8]">Humidité</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-[#22D3EE]">{dashboardData.circuit_info.grip_level}</div>
-                <div className="text-xs text-[#737373]">Adhérence</div>
+                <div className="text-2xl font-bold text-[#7bf8ac]">{dashboardData.circuit_info.grip_level}</div>
+                <div className="text-xs text-[#94a3b8]">Adhérence</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.active_karts}</div>
-                <div className="text-xs text-[#737373]">Karts Actifs</div>
+                <div className="text-xs text-[#94a3b8]">Karts Actifs</div>
               </div>
             </div>
           </div>
@@ -424,14 +424,14 @@ const Home: React.FC = () => {
         {/* Karts Status - vue commissaire */}
         {dashboardData.karts_status && (
           <div>
-            <h2 className="text-lg font-semibold text-white mb-4">Contrôle des Karts</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Contrôle des Karts</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {dashboardData.karts_status.map((kart) => (
-                <div key={kart.id} className="bg-[#171717] p-4 rounded-lg border border-[#262626]">
+                <div key={kart.id} className="card">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="text-sm font-medium text-white">{kart.name}</h3>
-                      <p className="text-xs text-[#737373]">{kart.driver || 'Non assigné'}</p>
+                      <p className="text-xs text-[#94a3b8]">{kart.driver || 'Non assigné'}</p>
                     </div>
                     <span className={`px-2 py-1 text-xs font-bold uppercase rounded ${
                       kart.status === 'online' ? 'bg-emerald-900 text-emerald-300' :
@@ -444,12 +444,12 @@ const Home: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs text-[#737373]">N° Kart</span>
+                      <span className="text-xs text-[#94a3b8]">N° Kart</span>
                       <span className="text-xs text-white font-mono">{kart.id}</span>
                     </div>
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-[#737373]">Batterie</span>
+                        <span className="text-xs text-[#94a3b8]">Batterie</span>
                         <span className="text-xs text-white">{kart.battery_level}%</span>
                       </div>
                       <div className="w-full bg-[#262626] rounded-full h-1.5">
@@ -463,12 +463,12 @@ const Home: React.FC = () => {
                       </div>
                     </div>
                     {kart.last_seen && (
-                      <div className="text-xs text-[#737373]">
+                      <div className="text-xs text-[#94a3b8]">
                         Dernière activité: {new Date(kart.last_seen).toLocaleTimeString()}
                       </div>
                     )}
                     {kart.location && (
-                      <div className="text-xs text-[#737373]">
+                      <div className="text-xs text-[#94a3b8]">
                         Position: X:{kart.location.x.toFixed(1)}, Y:{kart.location.y.toFixed(1)}
                       </div>
                     )}
@@ -481,10 +481,10 @@ const Home: React.FC = () => {
 
         {/* Circuit Info */}
         {dashboardData.circuit_info && (
-          <div className="bg-[#171717] p-5 rounded-lg border border-[#262626]">
+          <div className="card">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-[#737373] text-[10px] font-bold uppercase tracking-widest mb-1">État du Circuit</h3>
+                <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-1">État du Circuit</h3>
                 <div className="text-lg font-bold text-white">{dashboardData.circuit_info.name}</div>
               </div>
               <div className="flex items-center gap-2">
@@ -500,19 +500,19 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.temperature}°C</div>
-                <div className="text-xs text-[#737373]">Température</div>
+                <div className="text-xs text-[#94a3b8]">Température</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.humidity}%</div>
-                <div className="text-xs text-[#737373]">Humidité</div>
+                <div className="text-xs text-[#94a3b8]">Humidité</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-[#22D3EE]">{dashboardData.circuit_info.grip_level}</div>
-                <div className="text-xs text-[#737373]">Adhérence</div>
+                <div className="text-2xl font-bold text-[#7bf8ac]">{dashboardData.circuit_info.grip_level}</div>
+                <div className="text-xs text-[#94a3b8]">Adhérence</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">{dashboardData.circuit_info.active_karts}</div>
-                <div className="text-xs text-[#737373]">Karts Actifs</div>
+                <div className="text-xs text-[#94a3b8]">Karts Actifs</div>
               </div>
             </div>
           </div>
@@ -563,7 +563,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
       <Sidebar />
 
       <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
@@ -574,10 +574,10 @@ const Home: React.FC = () => {
             {/* Welcome Section */}
             <div className="mb-8">
               <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
-              <p className="text-[#737373] text-sm mt-1">
+              <p className="text-[#94a3b8] text-sm mt-1">
                 Vue pour <span className="text-white font-medium">{userName}</span>
                 {dashboardData && (
-                  <span className="ml-2 px-2 py-1 bg-[#262626] text-xs font-medium rounded border border-[#404040] capitalize">
+                  <span className="ml-2 px-2 py-1 bg-[#1c1f26] text-xs font-medium rounded border border-[#262626] capitalize text-[#94a3b8]">
                     {dashboardData.user_role}
                   </span>
                 )}

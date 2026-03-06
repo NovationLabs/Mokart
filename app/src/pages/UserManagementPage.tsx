@@ -271,7 +271,7 @@ const UserManagementPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+      <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
         <Sidebar />
         <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
           <Header className="flex-shrink-0" />
@@ -288,7 +288,7 @@ const UserManagementPage: React.FC = () => {
   // Afficher un message d'erreur si pas autorisé
   if (isAuthorized === false && userRole && userRole !== UserRole.ADMIN) {
     return (
-      <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+      <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
         <Sidebar />
         <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
           <Header className="flex-shrink-0" />
@@ -316,7 +316,7 @@ const UserManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0a] text-white font-sans overflow-hidden relative">
+    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
       <Sidebar />
 
       <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
@@ -328,11 +328,11 @@ const UserManagementPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-white">Gestion des utilisateurs</h1>
-                <p className="text-[#737373] text-sm mt-1">Gérer les comptes et les permissions</p>
+                <p className="text-[#94a3b8] text-sm mt-1">Gérer les comptes et les permissions</p>
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#22D3EE] text-black font-medium rounded-lg hover:bg-[#40E0D0] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[#7bf8ac] text-black font-semibold rounded-full hover:opacity-90 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 Nouvel utilisateur
@@ -342,37 +342,37 @@ const UserManagementPage: React.FC = () => {
             {/* Stats Cards */}
             {stats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-[#171717] border border-[#262626] rounded-lg p-4">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[#737373] text-xs uppercase tracking-wider">Total utilisateurs</div>
+                      <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Total utilisateurs</div>
                       <div className="text-2xl font-bold text-white mt-1">{stats.total_users}</div>
                     </div>
-                    <User className="w-8 h-8 text-[#22D3EE]" />
+                    <User className="w-8 h-8 text-[#7bf8ac]" />
                   </div>
                 </div>
-                <div className="bg-[#171717] border border-[#262626] rounded-lg p-4">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[#737373] text-xs uppercase tracking-wider">Utilisateurs actifs</div>
+                      <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Utilisateurs actifs</div>
                       <div className="text-2xl font-bold text-white mt-1">{stats.active_users}</div>
                     </div>
                     <UserCheck className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
-                <div className="bg-[#171717] border border-[#262626] rounded-lg p-4">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[#737373] text-xs uppercase tracking-wider">Nouveaux ce mois</div>
+                      <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Nouveaux ce mois</div>
                       <div className="text-2xl font-bold text-white mt-1">{stats.new_users_this_month}</div>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
-                <div className="bg-[#171717] border border-[#262626] rounded-lg p-4">
+                <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-[#737373] text-xs uppercase tracking-wider">Taux d'activité</div>
+                      <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Taux d'activité</div>
                       <div className="text-2xl font-bold text-white mt-1">
                         {stats.total_users > 0 ? Math.round((stats.active_users / stats.total_users) * 100) : 0}%
                       </div>
@@ -384,24 +384,24 @@ const UserManagementPage: React.FC = () => {
             )}
 
             {/* Filters */}
-            <div className="bg-[#171717] border border-[#262626] rounded-lg p-4 mb-6">
+            <div className="card mb-6">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#737373] w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#94a3b8] w-4 h-4" />
                     <input
                       type="text"
                       placeholder="Rechercher un utilisateur..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-white placeholder-[#737373] focus:outline-none focus:border-[#404040] transition-colors"
+                      className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg pl-10 pr-4 py-2 text-white placeholder-[#737373] focus:outline-none focus:border-[#7bf8ac]/50 transition-colors"
                     />
                   </div>
                 </div>
                 <select
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
-                  className="bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 transition-colors"
                 >
                   <option value="all">Tous les rôles</option>
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
@@ -411,7 +411,7 @@ const UserManagementPage: React.FC = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                  className="bg-[#0a0a0a] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="bg-[#0d0f12] border border-[#262626] rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 transition-colors"
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="active">Actifs</option>
@@ -434,17 +434,17 @@ const UserManagementPage: React.FC = () => {
             )}
 
             {/* Users Table */}
-            <div className="bg-[#171717] border border-[#262626] rounded-lg overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-[#0a0a0a] border-b border-[#262626]">
+                  <thead className="bg-[#0d0f12] border-b border-[#262626]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Utilisateur</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Rôle</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Contact</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Licence</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Statut</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-[#737373] uppercase tracking-wider">Actions</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Utilisateur</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Rôle</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Contact</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Licence</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Statut</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#262626]">
@@ -452,12 +452,12 @@ const UserManagementPage: React.FC = () => {
                       <tr key={user.id} className="hover:bg-[#262626] transition-colors">
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-[#22D3EE] rounded-full flex items-center justify-center text-black font-medium text-sm">
+                            <div className="w-8 h-8 bg-[#7bf8ac] rounded-full flex items-center justify-center text-black font-medium text-sm">
                               {(user.first_name || '').charAt(0)}{(user.last_name || '').charAt(0)}
                             </div>
                             <div>
                               <div className="text-sm font-medium text-white">{user.first_name || ''} {user.last_name || ''}</div>
-                              <div className="text-xs text-[#737373]">@{user.username || ''}</div>
+                              <div className="text-xs text-[#94a3b8]">@{user.username || ''}</div>
                             </div>
                           </div>
                         </td>
@@ -466,19 +466,19 @@ const UserManagementPage: React.FC = () => {
                             {getRoleIcon(user.role)}
                             <div>
                               <div className="text-sm font-medium text-white">{getRoleLabel(user.role)}</div>
-                              <div className="text-xs text-[#737373]">{getRoleDescription(user.role)}</div>
+                              <div className="text-xs text-[#94a3b8]">{getRoleDescription(user.role)}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm text-white">
-                              <Mail className="w-3 h-3 text-[#737373]" />
+                              <Mail className="w-3 h-3 text-[#94a3b8]" />
                               {user.email}
                             </div>
                             {user.phone && (
                               <div className="flex items-center gap-2 text-sm text-[#a3a3a3]">
-                                <Phone className="w-3 h-3 text-[#737373]" />
+                                <Phone className="w-3 h-3 text-[#94a3b8]" />
                                 {user.phone}
                               </div>
                             )}
@@ -489,13 +489,13 @@ const UserManagementPage: React.FC = () => {
                             <div className="space-y-1">
                               <div className="text-sm font-mono text-white">{user.license_number}</div>
                               {user.license_expiry && (
-                                <div className="text-xs text-[#737373]">
+                                <div className="text-xs text-[#94a3b8]">
                                   Expire: {new Date(user.license_expiry).toLocaleDateString('fr-FR')}
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-sm text-[#737373]">N/A</span>
+                            <span className="text-sm text-[#94a3b8]">N/A</span>
                           )}
                         </td>
                         <td className="px-4 py-4">
@@ -510,21 +510,21 @@ const UserManagementPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => openEditModal(user)}
-                              className="p-1 text-[#737373] hover:text-white transition-colors"
+                              className="p-1 text-[#94a3b8] hover:text-white transition-colors"
                               title="Modifier"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleToggleUserStatus(user)}
-                              className="p-1 text-[#737373] hover:text-white transition-colors"
+                              className="p-1 text-[#94a3b8] hover:text-white transition-colors"
                               title={user.is_active ? 'Désactiver' : 'Activer'}
                             >
                               {user.is_active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                             </button>
                             <button
                               onClick={() => handleDeleteUser(user)}
-                              className="p-1 text-[#737373] hover:text-red-500 transition-colors"
+                              className="p-1 text-[#94a3b8] hover:text-red-500 transition-colors"
                               title="Supprimer"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -544,7 +544,7 @@ const UserManagementPage: React.FC = () => {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#171717] border border-[#262626] rounded-lg p-6 w-full max-w-md">
+          <div className="card w-full max-w-md">
             <h2 className="text-lg font-semibold text-white mb-4">Créer un utilisateur</h2>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -555,7 +555,7 @@ const UserManagementPage: React.FC = () => {
                     required
                     value={formData.first_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-                    className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   />
                 </div>
                 <div>
@@ -565,7 +565,7 @@ const UserManagementPage: React.FC = () => {
                     required
                     value={formData.last_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-                    className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   />
                 </div>
               </div>
@@ -576,7 +576,7 @@ const UserManagementPage: React.FC = () => {
                   required
                   value={formData.username}
                   onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -586,7 +586,7 @@ const UserManagementPage: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -595,7 +595,7 @@ const UserManagementPage: React.FC = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -603,7 +603,7 @@ const UserManagementPage: React.FC = () => {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as UserRole }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -616,7 +616,7 @@ const UserManagementPage: React.FC = () => {
                   type="text"
                   value={formData.license_number}
                   onChange={(e) => setFormData(prev => ({ ...prev, license_number: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -625,7 +625,7 @@ const UserManagementPage: React.FC = () => {
                   type="date"
                   value={formData.license_expiry}
                   onChange={(e) => setFormData(prev => ({ ...prev, license_expiry: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
@@ -641,7 +641,7 @@ const UserManagementPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#22D3EE] text-black font-medium rounded-lg hover:bg-[#40E0D0] transition-colors"
+                  className="px-4 py-2 bg-[#7bf8ac] text-black font-semibold rounded-full hover:opacity-90 transition-all"
                 >
                   Créer
                 </button>
@@ -654,7 +654,7 @@ const UserManagementPage: React.FC = () => {
       {/* Edit Modal */}
       {showEditModal && selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#171717] border border-[#262626] rounded-lg p-6 w-full max-w-md">
+          <div className="card w-full max-w-md">
             <h2 className="text-lg font-semibold text-white mb-4">Modifier l'utilisateur</h2>
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -665,7 +665,7 @@ const UserManagementPage: React.FC = () => {
                     required
                     value={formData.first_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-                    className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   />
                 </div>
                 <div>
@@ -675,7 +675,7 @@ const UserManagementPage: React.FC = () => {
                     required
                     value={formData.last_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-                    className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                    className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                   />
                 </div>
               </div>
@@ -686,7 +686,7 @@ const UserManagementPage: React.FC = () => {
                   required
                   value={formData.username}
                   onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -696,7 +696,7 @@ const UserManagementPage: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -705,7 +705,7 @@ const UserManagementPage: React.FC = () => {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -713,7 +713,7 @@ const UserManagementPage: React.FC = () => {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as UserRole }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 >
                   {Object.entries(ROLE_LABELS).map(([role, label]) => (
                     <option key={role} value={role}>{label}</option>
@@ -726,7 +726,7 @@ const UserManagementPage: React.FC = () => {
                   type="text"
                   value={formData.license_number}
                   onChange={(e) => setFormData(prev => ({ ...prev, license_number: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div>
@@ -735,7 +735,7 @@ const UserManagementPage: React.FC = () => {
                   type="date"
                   value={formData.license_expiry}
                   onChange={(e) => setFormData(prev => ({ ...prev, license_expiry: e.target.value }))}
-                  className="w-full bg-[#0a0a0a] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#404040] transition-colors"
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>
               <div className="flex justify-end gap-3 pt-4">
@@ -752,7 +752,7 @@ const UserManagementPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#22D3EE] text-black font-medium rounded-lg hover:bg-[#40E0D0] transition-colors"
+                  className="px-4 py-2 bg-[#7bf8ac] text-black font-semibold rounded-full hover:opacity-90 transition-all"
                 >
                   Mettre à jour
                 </button>
