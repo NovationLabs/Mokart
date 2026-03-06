@@ -5,6 +5,7 @@ import AnalysisPage from './pages/AnalysisPage';
 import SessionsPage from './pages/SessionsPage';
 import LivePage from './pages/LivePage';
 import AuthPage from './pages/AuthPage';
+import SettingsPage from './pages/SettingsPage';
 
 const App: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('mokart_session');
@@ -17,6 +18,7 @@ const App: React.FC = () => {
         <Route path="/sessions" element={isAuthenticated  ? <SessionsPage /> : <Navigate to="/login" />} />
         <Route path="/analysis" element={isAuthenticated  ? <AnalysisPage /> : <Navigate to="/login" />} />
         <Route path="/live"     element={isAuthenticated  ? <LivePage />     : <Navigate to="/login" />} />
+        <Route path="/settings" element={isAuthenticated  ? <SettingsPage /> : <Navigate to="/login" />} />
         <Route path="*"         element={<Navigate to="/" />} />
       </Routes>
     </Router>

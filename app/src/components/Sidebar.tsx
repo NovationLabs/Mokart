@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Activity, List, Radio, LogOut } from 'lucide-react';
+import { LayoutDashboard, Activity, List, Radio, LogOut, Settings } from 'lucide-react';
 
 const NAV = [
   { to: '/',          icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/sessions',  icon: List,            label: 'Sessions'             },
   { to: '/analysis',  icon: Activity,        label: 'Analysis'             },
   { to: '/live',      icon: Radio,           label: 'Live'                 },
+  { to: '/settings',  icon: Settings,        label: 'Settings'             },
 ];
 
 const Sidebar: React.FC = () => {
@@ -56,12 +57,15 @@ const Sidebar: React.FC = () => {
 
         {/* Logo */}
         <div className="mb-8 w-8 h-8 flex items-center justify-center">
-          <div className="w-7 h-7 rounded-md bg-white/[0.04] border border-[#262626] flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-4 h-4 text-white/30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="6" width="20" height="14" rx="4" />
-              <path d="M8 6V3a2 2 0 0 0-4 0v3" />
-            </svg>
-          </div>
+          <img
+            src="/icon_inverse.png"
+            alt="Mokart"
+            className="w-7 h-7 object-contain opacity-80"
+            onError={(e) => {
+              // Fallback to SVG icon if image not found
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
         </div>
 
         {/* Nav links */}

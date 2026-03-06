@@ -29,7 +29,7 @@ const KpiCard: React.FC<{
     <div className="text-2xl font-bold font-data tracking-tight text-white">
       {value}
     </div>
-    {sub && <div className="text-[11px] text-[#404040] mt-1">{sub}</div>}
+    {sub && <div className="text-[11px] text-[#94a3b8]/50 mt-1">{sub}</div>}
   </div>
 );
 
@@ -41,10 +41,10 @@ const SessionRow: React.FC<{
   const date = new Date(session.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 
   return (
-    <div className={`flex items-center gap-2 sm:gap-3 py-4 px-1 border-b border-[#262626] transition-all hover:bg-white/[0.02] last:border-0 ${isFirst ? 'border-b border-[#262626]' : ''}`}>
+    <div className="flex items-center gap-2 sm:gap-3 py-4 px-1 border-b border-[#262626] transition-all hover:bg-white/[0.02] last:border-0">
       {/* Date */}
       <div className="text-[10px] sm:text-[11px] text-[#94a3b8] font-data w-10 sm:w-12 shrink-0">{date}</div>
-      {/* Circuit — on mobile juste le kart est masqué */}
+      {/* Circuit */}
       <div className="flex-1 min-w-0">
         <div className="text-xs sm:text-sm text-white font-medium truncate flex items-center gap-1.5">
           {session.circuit.replace('SpeedKart ', '')}
@@ -70,14 +70,28 @@ const Home: React.FC = () => {
   const [userName, setUserName] = useState(MOCK_DRIVER.name.split(' ')[0]);
 
   useEffect(() => {
-    const user = localStorage.getItem('mokart_user');
-    if (user) {
-      try {
-        const data = JSON.parse(user);
-        const n = (data.email || '').split('@')[0];
-        setUserName(n.charAt(0).toUpperCase() + n.slice(1));
-      } catch { /* use default */ }
-    }
+    const updateUserName = () => {
+      const user = localStorage.getItem('mokart_user');
+      if (user) {
+        try {
+          const userData = JSON.parse(user);
+          const email = userData.email || '';
+          const firstName = email.split('@')[0];
+          setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+        } catch (e) {
+          setUserName('Driver');
+        }
+      }
+    };
+
+    updateUserName();
+
+    // Rafraîchir le nom quand on revient des settings
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mokart_user') updateUserName();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const gapToRecord = (MOCK_DRIVER.bestLap - MOCK_DRIVER.trackRecord).toFixed(3);
@@ -115,7 +129,7 @@ const Home: React.FC = () => {
         </header>
 
         {/* ── Content ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 p-5 md:p-6 space-y-5 animate-fade-in">
+        <div className="flex-1 p-4 sm:p-5 md:p-6 space-y-4 sm:space-y-5 animate-fade-in">
 
           {/* Mock notice */}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.02] border border-[#262626] text-[11px] text-[#94a3b8]/60">
@@ -124,7 +138,7 @@ const Home: React.FC = () => {
           </div>
 
           {/* ── KPI Row ───────────────────────────────────────────────────── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <KpiCard
               label="Meilleur tour"
               value={fmtLap(MOCK_DRIVER.bestLap)}
@@ -151,8 +165,50 @@ const Home: React.FC = () => {
             />
           </div>
 
+          {/* ── Circuit Status ────────────────────────────────────────────── */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-0.5">Circuit Status</h3>
+                <div className="text-sm font-semibold text-white">SpeedKart Hyères</div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac]" />
+                <span className="text-[10px] font-medium text-[#7bf8ac] uppercase tracking-wider">Live Tracking</span>
+              </div>
+            </div>
+
+            {/* Map SVG */}
+            <div className="rounded-lg border border-[#262626] bg-[#0d0f12] flex items-center justify-center overflow-hidden mb-4" style={{ height: 110 }}>
+              <svg className="w-full h-full p-4" viewBox="0 0 800 300">
+                <path
+                  d="M100,150 Q200,60 400,180 T700,220"
+                  fill="none" stroke="#262626" strokeWidth="1"
+                />
+                <path
+                  d="M100,150 Q200,60 400,180 T700,220"
+                  fill="none" stroke="#7bf8ac" strokeWidth="1.5"
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(123,248,172,0.5))' }}
+                />
+              </svg>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Temp. piste', value: '24°C' },
+                { label: 'Humidité',    value: '42%' },
+                { label: 'Adhérence',   value: 'Haute', accent: true },
+              ].map(({ label, value, accent }) => (
+                <div key={label} className="p-3 rounded-lg bg-[#0d0f12] border border-[#262626]">
+                  <div className="text-[10px] text-[#94a3b8] mb-1">{label}</div>
+                  <div className={`text-sm font-medium ${accent ? 'text-[#7bf8ac]' : 'text-white'}`}>{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* ── Sessions + Device ─────────────────────────────────────────── */}
-          <div className="grid lg:grid-cols-3 gap-4">
+          <div className="grid lg:grid-cols-3 gap-3 sm:gap-4">
 
             {/* Sessions list */}
             <div className="lg:col-span-2 card">
@@ -165,7 +221,7 @@ const Home: React.FC = () => {
                   Voir tout <ChevronRight size={12} />
                 </NavLink>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-0">
                 {MOCK_SESSIONS.slice(0, 4).map((s, i) => (
                   <div key={s.id} className="stagger-item" style={{ animationDelay: `${i * 70}ms` }}>
                     <SessionRow session={s} isFirst={i === 0} />
@@ -175,7 +231,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Right column */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
 
               {/* Device status */}
               <div className="card">
@@ -187,24 +243,24 @@ const Home: React.FC = () => {
                   <div>
                     <div className="text-sm font-semibold">Unit #042</div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="status-dot status-dot-green w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider glow-green-text">Online</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac]" />
+                      <span className="text-[10px] text-[#7bf8ac] font-medium uppercase tracking-wider">Online</span>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { label: 'Batterie', icon: <Battery size={10} />, pct: 85, fill: 'bar-fill-brand' },
-                    { label: 'Signal',   icon: <Wifi size={10} />,    pct: 92, fill: 'bar-fill-brand' },
-                    { label: 'CPU',      icon: <Cpu size={10} />,     pct: 34, fill: 'bar-fill-brand' },
-                  ].map(({ label, icon, pct, fill }) => (
+                    { label: 'Batterie', icon: <Battery size={10} />, pct: 85 },
+                    { label: 'Signal',   icon: <Wifi size={10} />,    pct: 92 },
+                    { label: 'CPU',      icon: <Cpu size={10} />,     pct: 34 },
+                  ].map(({ label, icon, pct }) => (
                     <div key={label}>
                       <div className="flex justify-between text-[10px] mb-1">
                         <span className="text-[#94a3b8] flex items-center gap-1">{icon} {label}</span>
                         <span className="text-white font-data">{pct}%</span>
                       </div>
                       <div className="bar-track">
-                        <div className={`bar-fill ${fill}`} style={{ width: `${pct}%` }} />
+                        <div className="bar-fill bar-fill-brand" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   ))}
@@ -219,7 +275,7 @@ const Home: React.FC = () => {
                     { to: '/analysis', icon: <Activity size={14} />, label: 'Analyse dernière session' },
                     { to: '/live',     icon: <Radio size={14} />,    label: 'Mode Live' },
                   ].map(({ to, icon, label }) => (
-                    <NavLink key={to} to={to} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-[#7bf8ac]/20 hover:bg-[#7bf8ac]/[0.03] transition-all group">
+                    <NavLink key={to} to={to} className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-white/[0.02] border border-[#262626] hover:border-[#7bf8ac]/20 hover:bg-[#7bf8ac]/[0.03] transition-all group">
                       <div className="flex items-center gap-2">
                         <span className="text-[#94a3b8] group-hover:text-[#7bf8ac] transition-colors">{icon}</span>
                         <span className="text-xs text-[#a3a3a3] group-hover:text-white transition-colors">{label}</span>

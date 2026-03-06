@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // Global style import handled in index.tsx
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 interface AuthResponse {
   user: {
@@ -23,10 +23,13 @@ const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [kart, setKart] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,29 +41,30 @@ const AuthPage: React.FC = () => {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const body = isLogin
         ? { email, password }
-        : { email, password, kart };
+        : { email, password, confirm_password: confirmPassword, kart };
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
-      const data: AuthResponse = await response.json();
-
       if (response.ok) {
+        const data: AuthResponse = await response.json();
         setSuccess(data.message);
         if (data.session) {
           localStorage.setItem('mokart_session', JSON.stringify(data.session));
           localStorage.setItem('mokart_user', JSON.stringify(data.user));
         }
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1500);
+        setTimeout(() => { window.location.href = '/'; }, 1500);
       } else {
-        setError(data.message || 'Une erreur est survenue');
+        const errorData = await response.json();
+        if (response.status === 404 && errorData.detail?.includes("n'existe pas")) {
+          setIsLogin(false);
+          setError("Ce compte n'existe pas. Veuillez vous inscrire.");
+        } else {
+          setError(errorData.detail || 'Une erreur est survenue');
+        }
       }
     } catch (err) {
       setError('Erreur de connexion au serveur');
@@ -112,7 +116,6 @@ const AuthPage: React.FC = () => {
 
         {/* Header */}
         <div className="text-center mb-8">
-
           <h1 className="text-2xl font-bold text-white tracking-tight mb-2">
             {isLogin ? 'Welcome back.' : 'Create your account.'}
           </h1>
@@ -130,7 +133,7 @@ const AuthPage: React.FC = () => {
           {error && (
             <div className="mb-5 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-center gap-2">
               <AlertCircle size={15} className="shrink-0" />
-              {error}
+              {typeof error === 'string' ? error : JSON.stringify(error)}
             </div>
           )}
           {success && (
@@ -156,27 +159,59 @@ const AuthPage: React.FC = () => {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
-                placeholder="••••••••"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {!isLogin && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Kart</label>
-                <input
-                  type="text"
-                  value={kart}
-                  onChange={(e) => setKart(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
-                  placeholder="Sodi RT8 v2"
-                />
-              </div>
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 pr-12 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Kart</label>
+                  <input
+                    type="text"
+                    value={kart}
+                    onChange={(e) => setKart(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-all"
+                    placeholder="Sodi RT8 v2"
+                  />
+                </div>
+              </>
             )}
 
             <button

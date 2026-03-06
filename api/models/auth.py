@@ -8,6 +8,7 @@ class LoginRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: str
     password: str
+    confirm_password: str
     kart: Optional[str] = None
 
 class AuthResponse(BaseModel):

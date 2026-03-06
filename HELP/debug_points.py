@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 
 OFFSET = 5
+MIN_DRAG_DISTANCE = 1  # Distance minimale entre deux points lors du drag
 
 class CircuitDrawer:
     def __init__(self, root):
@@ -18,12 +19,34 @@ class CircuitDrawer:
         self.finished = False
 
         self.canvas.bind("<Button-1>", self.add_point)
+        self.canvas.bind("<B1-Motion>", self.add_point_drag)
         self.canvas.bind("<Button-3>", self.finish)
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def add_point(self, event):
         if self.finished:
             return
+
+        self.points.append((event.x, event.y))
+        r = 3
+        self.canvas.create_oval(event.x-r, event.y-r, event.x+r, event.y+r, fill="black")
+
+        if len(self.points) > 1:
+            self.canvas.create_line(
+                self.points[-2][0], self.points[-2][1],
+                self.points[-1][0], self.points[-1][1],
+                fill="blue"
+            )
+
+    def add_point_drag(self, event):
+        if self.finished:
+            return
+
+        if self.points:
+            last_x, last_y = self.points[-1]
+            dist = math.hypot(event.x - last_x, event.y - last_y)
+            if dist < MIN_DRAG_DISTANCE:
+                return
 
         self.points.append((event.x, event.y))
         r = 3
