@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import AnalysisPage from './pages/AnalysisPage';
 import SessionsPage from './pages/SessionsPage';
 import LivePage from './pages/LivePage';
+import SimulationPage from './pages/SimulationPage';
 import AuthPage from './pages/AuthPage';
 import SettingsPage from './pages/SettingsPage';
 import UserManagementPage from './pages/UserManagementPage';
@@ -19,6 +20,7 @@ const App: React.FC = () => {
         <Route path="/sessions" element={isAuthenticated  ? <SessionsPage />       : <Navigate to="/login" />} />
         <Route path="/analysis" element={isAuthenticated  ? <AnalysisPage />       : <Navigate to="/login" />} />
         <Route path="/live"     element={isAuthenticated  ? <LivePage />           : <Navigate to="/login" />} />
+        <Route path="/simulation" element={isAuthenticated ? <SimulationPage />    : <Navigate to="/login" />} />
         <Route path="/settings" element={isAuthenticated  ? <SettingsPage />       : <Navigate to="/login" />} />
         <Route path="/users"    element={isAuthenticated  ? <UserManagementPage /> : <Navigate to="/login" />} />
         <Route path="*"         element={<Navigate to="/" />} />
