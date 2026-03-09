@@ -28,6 +28,15 @@ interface Player {
   currentTrajectoryIndex: number;
 }
 
+interface CircuitSection {
+  id: string;
+  name: string;
+  color: string;
+  startIndex: number;
+  endIndex: number;
+  isSlowed: boolean;
+}
+
 interface SimulationData {
   circuit: {
     id: string;
@@ -51,6 +60,8 @@ const SimulationPage: React.FC = () => {
     { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
   ]);
 
+  const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
+
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -60,6 +71,51 @@ const SimulationPage: React.FC = () => {
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
   const chartRef = useRef<any>(null);
+
+  // Initialize circuit sections when data loads
+  useEffect(() => {
+    if (simulationData && simulationData.optimal_trajectory.length > 0) {
+      const trajectoryLength = simulationData.optimal_trajectory.length;
+      const sectionSize = Math.floor(trajectoryLength / 4);
+
+      const sections: CircuitSection[] = [
+        {
+          id: 'section1',
+          name: 'Section 1',
+          color: 'rgba(239, 68, 68, 0.3)', // Red
+          startIndex: 0,
+          endIndex: sectionSize,
+          isSlowed: false
+        },
+        {
+          id: 'section2',
+          name: 'Section 2',
+          color: 'rgba(245, 158, 11, 0.3)', // Orange
+          startIndex: sectionSize,
+          endIndex: sectionSize * 2,
+          isSlowed: false
+        },
+        {
+          id: 'section3',
+          name: 'Section 3',
+          color: 'rgba(59, 130, 246, 0.3)', // Blue
+          startIndex: sectionSize * 2,
+          endIndex: sectionSize * 3,
+          isSlowed: false
+        },
+        {
+          id: 'section4',
+          name: 'Section 4',
+          color: 'rgba(168, 85, 247, 0.3)', // Purple
+          startIndex: sectionSize * 3,
+          endIndex: trajectoryLength - 1,
+          isSlowed: false
+        }
+      ];
+
+      setCircuitSections(sections);
+    }
+  }, [simulationData]);
 
   // Load simulation data on mount
   useEffect(() => {
@@ -123,6 +179,18 @@ const SimulationPage: React.FC = () => {
             let speedMultiplier = player.speed;
             if (player.status === 'slowed') speedMultiplier *= 0.5;
             if (player.status === 'blue_flag') speedMultiplier *= 0.7;
+
+            // Check if player is in a slowed section
+            const currentIndex = Math.floor(player.currentTrajectoryIndex);
+            const slowedSection = circuitSections.find(section =>
+              section.isSlowed &&
+              currentIndex >= section.startIndex &&
+              currentIndex <= section.endIndex
+            );
+
+            if (slowedSection) {
+              speedMultiplier *= 0.3; // Reduce speed by 70% in slowed sections
+            }
 
             let newIndex = player.currentTrajectoryIndex + (speedMultiplier * deltaTime * 0.05);
 
@@ -231,15 +299,31 @@ const SimulationPage: React.FC = () => {
   };
 
   const handlePlayerAction = (playerId: string, action: 'stop' | 'slow' | 'blue_flag' | 'clear') => {
+    console.log(`Action ${action} pour joueur ${playerId}`);
     setPlayers(prevPlayers =>
       prevPlayers.map(player => {
         if (player.id === playerId) {
+          console.log(`Ancien statut: ${player.status}, Nouveau statut: ${action === 'clear' ? 'running' : action}`);
           return {
             ...player,
             status: action === 'clear' ? 'running' : action
           };
         }
         return player;
+      })
+    );
+  };
+
+  const toggleSectionSlow = (sectionId: string) => {
+    setCircuitSections(prevSections =>
+      prevSections.map(section => {
+        if (section.id === sectionId) {
+          return {
+            ...section,
+            isSlowed: !section.isSlowed
+          };
+        }
+        return section;
       })
     );
   };
@@ -282,10 +366,19 @@ const SimulationPage: React.FC = () => {
 
   // Prepare data for charts
   const prepareChartData = () => {
-    if (!simulationData) return { leftBoundary: [], rightBoundary: [], trajectory: [], players: [] };
+    if (!simulationData) return { leftBoundary: [], rightBoundary: [], trajectory: [], players: [], sections: [] };
 
     const leftBoundary = simulationData.boundaries.filter(b => b.side === 'left');
     const rightBoundary = simulationData.boundaries.filter(b => b.side === 'right');
+
+    // Create section data for visualization
+    const sectionsData = circuitSections.map(section => {
+      const sectionTrajectory = simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
+      return {
+        ...section,
+        data: sectionTrajectory
+      };
+    });
 
     const playerPositions = players.map(player => {
       const pos = getPlayerPosition(player);
@@ -302,7 +395,8 @@ const SimulationPage: React.FC = () => {
       leftBoundary,
       rightBoundary,
       trajectory: simulationData.optimal_trajectory,
-      players: playerPositions
+      players: playerPositions,
+      sections: sectionsData
     };
   };
 
@@ -411,12 +505,15 @@ const SimulationPage: React.FC = () => {
                             player.status === 'running' ? 'bg-[#7bf8ac]' :
                             player.status === 'stopped' ? 'bg-[#ef4444]' :
                             player.status === 'slowed' ? 'bg-[#f59e0b]' :
-                            'bg-[#3b82f6]'
+                            player.status === 'blue_flag' ? 'bg-[#3b82f6]' :
+                            'bg-[#94a3b8]'
                           }`} />
                           <span className="text-xs text-[#94a3b8]">
                             {player.status === 'running' ? 'Actif' :
                              player.status === 'stopped' ? 'Arrêté' :
-                             player.status === 'slowed' ? 'Ralenti' : 'Drapeau bleu'}
+                             player.status === 'slowed' ? 'Ralenti' :
+                             player.status === 'blue_flag' ? 'Drapeau bleu' :
+                             player.status}
                           </span>
                         </div>
                       </div>
@@ -474,6 +571,39 @@ const SimulationPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Section Controls */}
+              <div className="card">
+                <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                  <AlertTriangle size={12} />
+                  Contrôle Sections
+                </h3>
+                <div className="space-y-2">
+                  {circuitSections.map((section: any) => (
+                    <div key={section.id} className="border border-[#262626] rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: section.color.replace('0.3', '1') }}
+                          />
+                          <span className="text-sm font-medium text-white">{section.name}</span>
+                        </div>
+                        <button
+                          onClick={() => toggleSectionSlow(section.id)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            section.isSlowed
+                              ? 'bg-red-500 text-white hover:bg-red-600'
+                              : 'bg-[#16181d] text-[#94a3b8] hover:text-white hover:bg-[#262626]'
+                          }`}
+                        >
+                          {section.isSlowed ? 'Ralenti' : 'Normal'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Circuit Visualization */}
@@ -503,7 +633,6 @@ const SimulationPage: React.FC = () => {
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
-                ref={chartRef}
               >
                 {simulationData && (
                   <ResponsiveContainer width="100%" height="100%">
@@ -538,6 +667,21 @@ const SimulationPage: React.FC = () => {
                         line={{ stroke: '#3b82f6', strokeWidth: 2 }}
                         shape={false}
                       />
+
+                      {/* Circuit Sections */}
+                      {chartData.sections.map((section: any) => (
+                        <Scatter
+                          key={section.id}
+                          name={section.name}
+                          data={section.data}
+                          fill={section.color}
+                          line={{
+                            stroke: section.isSlowed ? section.color.replace('0.3', '0.8') : section.color,
+                            strokeWidth: section.isSlowed ? 4 : 2
+                          }}
+                          shape={false}
+                        />
+                      ))}
 
                       {/* Optimal Trajectory - Hidden */}
                       {/* <Scatter
