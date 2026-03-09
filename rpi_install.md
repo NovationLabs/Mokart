@@ -1,7 +1,7 @@
 ## Installations
 ```
 sudo apt update
-sudo apt install -y btop
+sudo apt install -y btop git
 sudo loginctl enable-linger
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
@@ -12,13 +12,29 @@ sudo systemctl enable tailscaled
 ```
 sudo nmcli device wifi rescan
 nmcli device wifi list
-sudo nmcli device wifi connect "SSID2" password "PASSWORD"
+sudo nmcli device wifi connect "SFR_D0C0" password "PASSWORD"
 nmcli device status
 nmcli connection show
-sudo nmcli connection modify "SSID1" connection.autoconnect-retries 0
-sudo nmcli connection modify "SSID2" connection.autoconnect-retries 0
-sudo nmcli connection modify "SSID1" connection.autoconnect-priority 200
+sudo nmcli connection modify "SFR-7FA5" connection.autoconnect-retries 0
+sudo nmcli connection modify "SFR_D0C0" connection.autoconnect-retries 0
+sudo nmcli connection modify "SFR-7FA5" connection.autoconnect-priority 200
 sudo nmcli connection modify "SFR_D0C0" connection.autoconnect-priority 100
+```
+
+## Screen
+```
+grep -q "fbcon=map:10" /boot/firmware/cmdline.txt || sudo sed -i 's/$/ fbcon=map:10/' /boot/firmware/cmdline.txt
+sudo rm -rf LCD-show
+git clone https://github.com/goodtft/LCD-show.git
+chmod -R 755 LCD-show
+cd LCD-show/
+sudo ./LCD35-show
+sudo rm -rf LCD-show
+
+grep -q "dtoverlay=tft35a:rotate=90,speed=32000000,fps=30" /boot/firmware/config.txt || \
+sudo sed -i 's/^dtoverlay=tft35a:rotate=90.*/dtoverlay=tft35a:rotate=90,speed=32000000,fps=30/' /boot/firmware/config.txt
+
+echo "dtparam=spi=on" | sudo tee -a /boot/firmware/config.txt
 ```
 
 ## Customization
@@ -101,12 +117,4 @@ EOF
 chmod +x ~/welcome.py
 echo "python3 ~/welcome.py" >> ~/.zshrc
 source ~/.zshrc
-```
-
-```
-sudo rm -rf LCD-show
-git clone https://github.com/goodtft/LCD-show.git
-chmod -R 755 LCD-show
-cd LCD-show/
-sudo ./LCD35-show
 ```
