@@ -212,7 +212,7 @@ const SimulationPage: React.FC = () => {
             );
 
             let speedMultiplier = player.speed;
-            
+
             if (inSlowedSection) {
               speedMultiplier *= 0.1; // Full stop in slowed section
             }
@@ -574,21 +574,50 @@ const SimulationPage: React.FC = () => {
               </div>
 
               {/* Circuit Info */}
-              {simulationData && (
+              {simulationData ? (
+                <div className="w-full h-full p-2 flex items-center justify-center">
+                  <div
+                    className="bg-[#101010]"
+                    style={{
+                      width: 'min(100%, calc(100vh - 200px))',
+                      height: 'min(100%, calc(100vh - 200px))',
+                      maxWidth: '100%',
+                      maxHeight: '100%'
+                    }}
+                    ref={chartRef}
+                  >
+                    <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Informations Circuit</h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#a3a3a3]">Nom</span>
+                        <span className="text-white font-medium">{simulationData?.circuit?.name || 'Unknown'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#a3a3a3]">Points Trajectoire</span>
+                        <span className="text-white font-mono">{simulationData?.optimal_trajectory?.length || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#a3a3a3]">Points Bordure</span>
+                        <span className="text-white font-mono">{simulationData?.boundaries?.length || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
                 <div className="card">
                   <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Informations Circuit</h3>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between items-center">
                       <span className="text-[#a3a3a3]">Nom</span>
-                      <span className="text-white font-medium">{simulationData.circuit.name}</span>
+                      <span className="text-white font-medium">{simulationData?.circuit?.name || 'Unknown'}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[#a3a3a3]">Points Trajectoire</span>
-                      <span className="text-white font-mono">{simulationData.optimal_trajectory.length}</span>
+                      <span className="text-white font-mono">{simulationData?.optimal_trajectory?.length || 0}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-[#a3a3a3]">Points Bordure</span>
-                      <span className="text-white font-mono">{simulationData.boundaries.length}</span>
+                      <span className="text-white font-mono">{simulationData?.boundaries?.length || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -657,7 +686,16 @@ const SimulationPage: React.FC = () => {
                 onMouseLeave={handleMouseUp}
               >
                 {simulationData && (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <div className="w-full h-full p-2 flex items-center justify-center">
+                    <div
+                      style={{
+                        width: 'min(100%, calc(100vh - 200px))',
+                        height: 'min(100%, calc(100vh - 200px))',
+                        maxWidth: '100%',
+                        maxHeight: '100%'
+                      }}
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 50, right: 20, bottom: 20, left: 20 }}>
                       <XAxis
                         type="number"
@@ -738,6 +776,8 @@ const SimulationPage: React.FC = () => {
                       />
                     </ScatterChart>
                   </ResponsiveContainer>
+                    </div>
+                  </div>
                 )}
               </div>
 
