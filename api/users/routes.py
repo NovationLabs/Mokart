@@ -86,6 +86,7 @@ class UserStats(BaseModel):
     active: int
     inactive: int
     by_role: Dict[str, int]
+    new_users_this_month: int = 0
 
 @router.get("/profile", response_model=UserProfile)
 async def get_user_profile(user_id: str = "", db: Session = Depends(get_db)):
@@ -325,11 +326,20 @@ async def get_user_stats(db: Session = Depends(get_db)):
 
     by_role = {row.role: row.count for row in role_result}
 
+    # Nouveaux utilisateurs ce mois
+    new_month_query = text("""
+    SELECT COUNT(*) as count
+    FROM users
+    WHERE created_at >= date_trunc('month', CURRENT_DATE)
+    """)
+    new_users_this_month = db.execute(new_month_query).scalar()
+
     return UserStats(
         total=total,
         active=active,
         inactive=inactive,
-        by_role=by_role
+        by_role=by_role,
+        new_users_this_month=new_users_this_month or 0
     )
 
 @admin_router.get("/{user_id}", response_model=User)

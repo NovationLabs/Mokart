@@ -20,7 +20,9 @@ import {
   Calendar,
   Mail,
   Phone,
-  AlertTriangle
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { User as UserType, UserRole, UserCreate, UserUpdate, UserStats, ROLE_LABELS, ROLE_DESCRIPTIONS } from '../types/user';
 import { api } from '../services/api';
@@ -68,6 +70,10 @@ const UserManagementPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Form states
   const [formData, setFormData] = useState<UserCreate>({
@@ -249,6 +255,26 @@ const UserManagementPage: React.FC = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, roleFilter, statusFilter, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
+
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-500" />;
@@ -346,7 +372,7 @@ const UserManagementPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Total utilisateurs</div>
-                      <div className="text-2xl font-bold text-white mt-1">{stats.total_users}</div>
+                      <div className="text-2xl font-bold text-white mt-1">{stats.total || 0}</div>
                     </div>
                     <User className="w-8 h-8 text-[#7bf8ac]" />
                   </div>
@@ -355,7 +381,7 @@ const UserManagementPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Utilisateurs actifs</div>
-                      <div className="text-2xl font-bold text-white mt-1">{stats.active_users}</div>
+                      <div className="text-2xl font-bold text-white mt-1">{stats.active || 0}</div>
                     </div>
                     <UserCheck className="w-8 h-8 text-green-500" />
                   </div>
@@ -364,7 +390,9 @@ const UserManagementPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Nouveaux ce mois</div>
-                      <div className="text-2xl font-bold text-white mt-1">{stats.new_users_this_month}</div>
+                      <div className="text-2xl font-bold text-white mt-1">
+                        {stats.new_users_this_month || 0}
+                      </div>
                     </div>
                     <Calendar className="w-8 h-8 text-blue-500" />
                   </div>
@@ -374,7 +402,7 @@ const UserManagementPage: React.FC = () => {
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Taux d'activité</div>
                       <div className="text-2xl font-bold text-white mt-1">
-                        {stats.total_users > 0 ? Math.round((stats.active_users / stats.total_users) * 100) : 0}%
+                        {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
                       </div>
                     </div>
                     <Shield className="w-8 h-8 text-purple-500" />
@@ -448,7 +476,7 @@ const UserManagementPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#262626]">
-                    {filteredUsers.map((user) => (
+                    {paginatedUsers.map((user) => (
                       <tr key={user.id} className="hover:bg-[#262626] transition-colors">
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
@@ -537,6 +565,83 @@ const UserManagementPage: React.FC = () => {
                 </table>
               </div>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredUsers.length > 0 && (
+              <div className="card mt-4">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[#94a3b8]">Afficher:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                      className="bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-1 text-white text-sm focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span className="text-sm text-[#94a3b8]">par page</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[#94a3b8]">
+                      {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} sur {filteredUsers.length} utilisateurs
+                    </span>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg border border-[#262626] text-[#94a3b8] hover:text-white hover:border-[#404040] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                                currentPage === pageNum
+                                  ? 'bg-[#7bf8ac] text-black font-medium'
+                                  : 'border border-[#262626] text-[#94a3b8] hover:text-white hover:border-[#404040]'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg border border-[#262626] text-[#94a3b8] hover:text-white hover:border-[#404040] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </main>
       </div>
