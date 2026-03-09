@@ -372,7 +372,7 @@ const UserManagementPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Total utilisateurs</div>
-                      <div className="text-2xl font-bold text-white mt-1">{stats.total || 0}</div>
+                      <div className="text-2xl font-bold text-white mt-1">{stats.total_users || 0}</div>
                     </div>
                     <User className="w-8 h-8 text-[#7bf8ac]" />
                   </div>
@@ -381,7 +381,7 @@ const UserManagementPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Utilisateurs actifs</div>
-                      <div className="text-2xl font-bold text-white mt-1">{stats.active || 0}</div>
+                      <div className="text-2xl font-bold text-white mt-1">{stats.active_users || 0}</div>
                     </div>
                     <UserCheck className="w-8 h-8 text-green-500" />
                   </div>
@@ -402,7 +402,7 @@ const UserManagementPage: React.FC = () => {
                     <div>
                       <div className="text-[#94a3b8] text-xs uppercase tracking-wider">Taux d'activité</div>
                       <div className="text-2xl font-bold text-white mt-1">
-                        {stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0}%
+                        {stats.total_users > 0 ? Math.round((stats.active_users / stats.total_users) * 100) : 0}%
                       </div>
                     </div>
                     <Shield className="w-8 h-8 text-purple-500" />
@@ -603,7 +603,7 @@ const UserManagementPage: React.FC = () => {
 
                       <div className="flex items-center gap-1">
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum;
+                          let pageNum: number;
                           if (totalPages <= 5) {
                             pageNum = i + 1;
                           } else if (currentPage <= 3) {

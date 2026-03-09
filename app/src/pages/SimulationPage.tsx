@@ -441,7 +441,7 @@ const SimulationPage: React.FC = () => {
                 Simulation en Direct
               </h1>
               <p className="text-[#94a3b8] text-xs mt-1 font-mono flex items-center gap-2">
-                CIRCUIT: <span className="text-white">{simulationData?.circuit.name || 'Chargement...'}</span>
+                CIRCUIT: <span className="text-white">{simulationData?.circuit?.name || 'Chargement...'}</span>
               </p>
             </div>
 
@@ -608,16 +608,8 @@ const SimulationPage: React.FC = () => {
                   <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Informations Circuit</h3>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-[#a3a3a3]">Nom</span>
-                      <span className="text-white font-medium">{simulationData?.circuit?.name || 'Unknown'}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#a3a3a3]">Points Trajectoire</span>
-                      <span className="text-white font-mono">{simulationData?.optimal_trajectory?.length || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[#a3a3a3]">Points Bordure</span>
-                      <span className="text-white font-mono">{simulationData?.boundaries?.length || 0}</span>
+                      <span className="text-[#a3a3a3]">Statut</span>
+                      <span className="text-white font-medium">Chargement...</span>
                     </div>
                   </div>
                 </div>
@@ -747,7 +739,7 @@ const SimulationPage: React.FC = () => {
                       <Scatter
                         name="Joueurs"
                         data={chartData.players}
-                        fill={(entry: any) => entry.color}
+                        fill="#8884d8"
                         shape={(props: any) => {
                           const { cx, cy, payload } = props;
                           return (
@@ -755,21 +747,11 @@ const SimulationPage: React.FC = () => {
                               <circle
                                 cx={cx}
                                 cy={cy}
-                                r={8}
+                                r={6}
                                 fill={payload.color}
                                 stroke="#fff"
-                                strokeWidth={2}
+                                strokeWidth={1}
                               />
-                              <text
-                                x={cx}
-                                y={cy + 4}
-                                textAnchor="middle"
-                                fill="white"
-                                fontSize={8}
-                                fontWeight="bold"
-                              >
-                                {payload.name.split(' ')[1]}
-                              </text>
                             </g>
                           );
                         }}
