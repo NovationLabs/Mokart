@@ -219,3 +219,71 @@ async def compare_trajectories(circuit_id: str, session_id: str, db: DbSession =
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/week-circuit/simulation-data")
+async def get_week_circuit_simulation_data(db: DbSession = Depends(get_db)):
+    """Récupère les données de simulation pour le circuit Week"""
+    try:
+        # Récupérer le circuit Week par son nom
+        week_circuit = db.query(sql_models.Circuit)\
+            .filter(sql_models.Circuit.name == "Week Circuit")\
+            .first()
+
+        if not week_circuit:
+            raise HTTPException(status_code=404, detail="Circuit Week non trouvé")
+
+        circuit_id = str(week_circuit.id)
+
+        # Récupérer les bordures du circuit
+        boundaries = db.query(sql_models.CircuitBoundary)\
+            .filter(sql_models.CircuitBoundary.circuit_id == circuit_id)\
+            .order_by(sql_models.CircuitBoundary.side, sql_models.CircuitBoundary.point_order)\
+            .all()
+
+        # Récupérer la trajectoire optimale
+        optimal_trajectory = db.query(sql_models.OptimalTrajectory)\
+            .filter(sql_models.OptimalTrajectory.circuit_id == circuit_id)\
+            .order_by(sql_models.OptimalTrajectory.point_order)\
+            .all()
+
+        # Si pas de trajectoire optimale, la calculer
+        if not optimal_trajectory:
+            left_boundary = [b for b in boundaries if b.side == 'left']
+            right_boundary = [b for b in boundaries if b.side == 'right']
+
+            if not left_boundary or not right_boundary:
+                raise HTTPException(status_code=400, detail="Les bordures du circuit sont incomplètes")
+
+            optimizer = TrajectoryOptimizer()
+            trajectory_points = optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+
+            # Formater les données
+            optimal_trajectory_formatted = [{"x": x, "y": y, "point_order": i} for i, (x, y) in enumerate(trajectory_points)]
+        else:
+            optimal_trajectory_formatted = [{"x": float(p.x), "y": float(p.y), "point_order": p.point_order} for p in optimal_trajectory]
+
+        # Formater les bordures
+        boundaries_formatted = []
+        for boundary in boundaries:
+            boundaries_formatted.append({
+                "id": str(boundary.id),
+                "side": boundary.side,
+                "point_order": boundary.point_order,
+                "x": float(boundary.x),
+                "y": float(boundary.y)
+            })
+
+        return {
+            "circuit": {
+                "id": circuit_id,
+                "name": week_circuit.name,
+                "description": week_circuit.description
+            },
+            "boundaries": boundaries_formatted,
+            "optimal_trajectory": optimal_trajectory_formatted
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

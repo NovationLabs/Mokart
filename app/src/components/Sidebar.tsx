@@ -1,10 +1,11 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Activity, LogOut, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, Activity, LogOut, Settings, Users, Play } from 'lucide-react';
 
 const NAV = [
   { to: '/',         icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/analysis', icon: Activity,        label: 'Analysis'             },
+  { to: '/simulation', icon: Play,          label: 'Simulation'           },
   { to: '/users',    icon: Users,           label: 'Utilisateurs'         },
   { to: '/settings', icon: Settings,        label: 'Settings'             },
 ];
