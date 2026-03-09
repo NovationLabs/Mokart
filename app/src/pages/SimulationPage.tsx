@@ -72,6 +72,24 @@ const SimulationPage: React.FC = () => {
   const lastTimeRef = useRef<number>(0);
   const chartRef = useRef<any>(null);
 
+  // Refs to always have the latest values inside the animation loop (avoids stale closures)
+  const circuitSectionsRef = useRef<CircuitSection[]>([]);
+  const playersRef = useRef<Player[]>([]);
+  const simulationDataRef = useRef<SimulationData | null>(null);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    circuitSectionsRef.current = circuitSections;
+  }, [circuitSections]);
+
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  useEffect(() => {
+    simulationDataRef.current = simulationData;
+  }, [simulationData]);
+
   // Initialize circuit sections when data loads
   useEffect(() => {
     if (simulationData && simulationData.optimal_trajectory.length > 0) {
@@ -82,7 +100,7 @@ const SimulationPage: React.FC = () => {
         {
           id: 'section1',
           name: 'Section 1',
-          color: 'rgba(239, 68, 68, 0.3)', // Red
+          color: 'rgba(239, 68, 68, 0.3)',
           startIndex: 0,
           endIndex: sectionSize,
           isSlowed: false
@@ -90,7 +108,7 @@ const SimulationPage: React.FC = () => {
         {
           id: 'section2',
           name: 'Section 2',
-          color: 'rgba(245, 158, 11, 0.3)', // Orange
+          color: 'rgba(245, 158, 11, 0.3)',
           startIndex: sectionSize,
           endIndex: sectionSize * 2,
           isSlowed: false
@@ -98,7 +116,7 @@ const SimulationPage: React.FC = () => {
         {
           id: 'section3',
           name: 'Section 3',
-          color: 'rgba(59, 130, 246, 0.3)', // Blue
+          color: 'rgba(59, 130, 246, 0.3)',
           startIndex: sectionSize * 2,
           endIndex: sectionSize * 3,
           isSlowed: false
@@ -106,7 +124,7 @@ const SimulationPage: React.FC = () => {
         {
           id: 'section4',
           name: 'Section 4',
-          color: 'rgba(168, 85, 247, 0.3)', // Purple
+          color: 'rgba(168, 85, 247, 0.3)',
           startIndex: sectionSize * 3,
           endIndex: trajectoryLength - 1,
           isSlowed: false
@@ -128,7 +146,6 @@ const SimulationPage: React.FC = () => {
       let minX = Infinity, maxX = -Infinity;
       let minY = Infinity, maxY = -Infinity;
 
-      // Check boundary points
       for (const b of simulationData.boundaries) {
         minX = Math.min(minX, b.x);
         maxX = Math.max(maxX, b.x);
@@ -136,7 +153,6 @@ const SimulationPage: React.FC = () => {
         maxY = Math.max(maxY, b.y);
       }
 
-      // Check trajectory points
       for (const t of simulationData.optimal_trajectory) {
         minX = Math.min(minX, t.x);
         maxX = Math.max(maxX, t.x);
@@ -144,7 +160,6 @@ const SimulationPage: React.FC = () => {
         maxY = Math.max(maxY, t.y);
       }
 
-      // Add padding
       const paddingX = (maxX - minX) * 0.1;
       const paddingY = (maxY - minY) * 0.1;
 
@@ -155,15 +170,14 @@ const SimulationPage: React.FC = () => {
         maxY: maxY + paddingY
       });
 
-      // Reset zoom and pan when new data loads
       setZoomLevel(1);
       setPanOffset({ x: 0, y: 0 });
     }
   }, [simulationData]);
 
-  // Animation loop
+  // Animation loop — uses refs so it always reads the latest sections/players without restart
   useEffect(() => {
-    if (isRunning && simulationData) {
+    if (isRunning) {
       const animate = (currentTime: number) => {
         if (lastTimeRef.current === 0) {
           lastTimeRef.current = currentTime;
@@ -172,30 +186,45 @@ const SimulationPage: React.FC = () => {
         const deltaTime = currentTime - lastTimeRef.current;
         lastTimeRef.current = currentTime;
 
+        const currentSections = circuitSectionsRef.current;
+        const currentSimData = simulationDataRef.current;
+
+        if (!currentSimData) {
+          animationRef.current = requestAnimationFrame(animate);
+          return;
+        }
+
         setPlayers(prevPlayers =>
           prevPlayers.map(player => {
-            if (player.status === 'stopped') return player;
+            // Stopped players don't move at all
+            if (player.status === 'stopped') {
+              return player;
+            }
 
-            let speedMultiplier = player.speed;
-            if (player.status === 'slowed') speedMultiplier *= 0.5;
-            if (player.status === 'blue_flag') speedMultiplier *= 0.7;
-
-            // Check if player is in a slowed section
             const currentIndex = Math.floor(player.currentTrajectoryIndex);
-            const slowedSection = circuitSections.find(section =>
-              section.isSlowed &&
-              currentIndex >= section.startIndex &&
-              currentIndex <= section.endIndex
+
+            // Check if the player is currently inside a slowed section
+            const inSlowedSection = currentSections.some(
+              section =>
+                section.isSlowed &&
+                currentIndex >= section.startIndex &&
+                currentIndex <= section.endIndex
             );
 
-            if (slowedSection) {
-              speedMultiplier *= 0.3; // Reduce speed by 70% in slowed sections
+            let speedMultiplier = player.speed;
+            
+            if (inSlowedSection) {
+              speedMultiplier *= 0.1; // Full stop in slowed section
             }
+
+            // Apply per-player status multipliers
+            if (player.status === 'slowed') speedMultiplier *= 0.1;
+            if (player.status === 'blue_flag') speedMultiplier *= 0.2;
 
             let newIndex = player.currentTrajectoryIndex + (speedMultiplier * deltaTime * 0.05);
 
-            if (newIndex >= simulationData.optimal_trajectory.length) {
-              newIndex = 0; // Loop back to start
+            if (newIndex >= currentSimData.optimal_trajectory.length) {
+              newIndex = 0;
             }
 
             return {
@@ -221,7 +250,7 @@ const SimulationPage: React.FC = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isRunning, simulationData]);
+  }, [isRunning]); // Only re-run when isRunning changes — sections/data read via refs
 
   const fetchSimulationData = async () => {
     setLoading(true);
@@ -299,15 +328,18 @@ const SimulationPage: React.FC = () => {
   };
 
   const handlePlayerAction = (playerId: string, action: 'stop' | 'slow' | 'blue_flag' | 'clear') => {
-    console.log(`Action ${action} pour joueur ${playerId}`);
     setPlayers(prevPlayers =>
       prevPlayers.map(player => {
         if (player.id === playerId) {
-          console.log(`Ancien statut: ${player.status}, Nouveau statut: ${action === 'clear' ? 'running' : action}`);
-          return {
-            ...player,
-            status: action === 'clear' ? 'running' : action
-          };
+          let newStatus: 'running' | 'stopped' | 'slowed' | 'blue_flag';
+          switch (action) {
+            case 'stop': newStatus = 'stopped'; break;
+            case 'slow': newStatus = 'slowed'; break;
+            case 'blue_flag': newStatus = 'blue_flag'; break;
+            case 'clear': newStatus = 'running'; break;
+            default: newStatus = 'running';
+          }
+          return { ...player, status: newStatus };
         }
         return player;
       })
@@ -316,15 +348,11 @@ const SimulationPage: React.FC = () => {
 
   const toggleSectionSlow = (sectionId: string) => {
     setCircuitSections(prevSections =>
-      prevSections.map(section => {
-        if (section.id === sectionId) {
-          return {
-            ...section,
-            isSlowed: !section.isSlowed
-          };
-        }
-        return section;
-      })
+      prevSections.map(section =>
+        section.id === sectionId
+          ? { ...section, isSlowed: !section.isSlowed }
+          : section
+      )
     );
   };
 
@@ -346,7 +374,6 @@ const SimulationPage: React.FC = () => {
     };
   };
 
-  // Calculate current bounds based on zoom and pan
   const getCurrentBounds = () => {
     const centerX = (graphBounds.minX + graphBounds.maxX) / 2;
     const centerY = (graphBounds.minY + graphBounds.maxY) / 2;
@@ -364,20 +391,15 @@ const SimulationPage: React.FC = () => {
     };
   };
 
-  // Prepare data for charts
   const prepareChartData = () => {
     if (!simulationData) return { leftBoundary: [], rightBoundary: [], trajectory: [], players: [], sections: [] };
 
     const leftBoundary = simulationData.boundaries.filter(b => b.side === 'left');
     const rightBoundary = simulationData.boundaries.filter(b => b.side === 'right');
 
-    // Create section data for visualization
     const sectionsData = circuitSections.map(section => {
       const sectionTrajectory = simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
-      return {
-        ...section,
-        data: sectionTrajectory
-      };
+      return { ...section, data: sectionTrajectory };
     });
 
     const playerPositions = players.map(player => {
@@ -654,7 +676,7 @@ const SimulationPage: React.FC = () => {
                       <Scatter
                         name="Bordure Gauche"
                         data={chartData.leftBoundary}
-                        fill="#ef4444"
+                        fill="transparent"
                         line={{ stroke: '#ef4444', strokeWidth: 2 }}
                         shape={false}
                       />
@@ -663,7 +685,7 @@ const SimulationPage: React.FC = () => {
                       <Scatter
                         name="Bordure Droite"
                         data={chartData.rightBoundary}
-                        fill="#3b82f6"
+                        fill="transparent"
                         line={{ stroke: '#3b82f6', strokeWidth: 2 }}
                         shape={false}
                       />
@@ -682,15 +704,6 @@ const SimulationPage: React.FC = () => {
                           shape={false}
                         />
                       ))}
-
-                      {/* Optimal Trajectory - Hidden */}
-                      {/* <Scatter
-                        name="Trajectoire Optimale"
-                        data={chartData.trajectory}
-                        fill="#7bf8ac"
-                        line={{ stroke: '#7bf8ac', strokeWidth: 2, strokeDasharray: '5,5' }}
-                        shape={false}
-                      /> */}
 
                       {/* Players */}
                       <Scatter
@@ -739,10 +752,6 @@ const SimulationPage: React.FC = () => {
                     <div className="w-3 h-3 bg-[#3b82f6] rounded-full" />
                     <span className="text-[#94a3b8]">Bordure Droite</span>
                   </div>
-                  {/* <div className="flex items-center gap-2">
-                    <div className="w-3 h-1 bg-[#7bf8ac]" />
-                    <span className="text-[#94a3b8]">Trajectoire Optimale</span>
-                  </div> */}
                   {players.map((player) => (
                     <div key={player.id} className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: player.color }} />
