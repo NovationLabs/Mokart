@@ -227,7 +227,7 @@ const LivePage: React.FC = () => {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-[#7bf8ac]/4 blur-[100px] rounded-full pointer-events-none" />
       <Sidebar />
 
-      <main className="flex-1 md:ml-16 ml-0 flex flex-col h-screen overflow-hidden relative z-10">
+      <main className="flex-1 md:ml-11 ml-0 flex flex-col h-screen overflow-hidden relative z-10">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <header className="shrink-0 px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 border-b border-[#262626] bg-[#0d0f12]/95 backdrop-blur-xl">
