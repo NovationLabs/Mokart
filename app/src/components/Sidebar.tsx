@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Activity, LogOut, Settings, Users, Play } from 'lucide-react';
 
@@ -12,6 +12,7 @@ const NAV = [
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('mokart_session');
@@ -22,7 +23,7 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-      {/* ── Mobile bottom nav ──────────────────────────────────────────────── */}
+      {/* ── Mobile bottom nav ──────────────────────────────────────────── */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0d0f12]/98 border-t border-[#262626] flex items-center justify-around z-50 px-4 backdrop-blur-xl">
         {NAV.map(({ to, icon: Icon, label, end }) => (
           <NavLink
@@ -52,45 +53,52 @@ const Sidebar: React.FC = () => {
         </button>
       </div>
 
-      {/* ── Desktop sidebar ────────────────────────────────────────────────── */}
-      <aside className="fixed left-0 top-0 h-screen w-16 glass-sidebar hidden md:flex flex-col items-center py-5 z-50">
-
+      {/* ── Desktop sidebar ────────────────────────────────────────────── */}
+      <aside
+        onMouseEnter={() => setExpanded(true)}
+        onMouseLeave={() => setExpanded(false)}
+        className={`fixed left-0 top-0 h-screen glass-sidebar hidden md:flex flex-col py-4 z-50 transition-all duration-200 ease-out overflow-hidden ${
+          expanded ? 'w-48' : 'w-11'
+        }`}
+      >
         {/* Logo */}
-        <div className="mb-8 w-8 h-8 flex items-center justify-center">
-          <img
-            src="/icon_inverse.png"
-            alt="Mokart"
-            className="w-7 h-7 object-contain opacity-80"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
+        <div className="mb-6 flex items-center gap-2.5 px-2.5 flex-shrink-0">
+          <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+            <img
+              src="/icon_inverse.png"
+              alt="Mokart"
+              className="w-5 h-5 object-contain opacity-80"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+          <span className={`text-sm font-semibold text-white whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+            Mokart
+          </span>
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 flex flex-col gap-1 w-full px-2">
+        <nav className="flex-1 flex flex-col gap-0.5 w-full px-1.5">
           {NAV.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
-              title={label}
+              title={!expanded ? label : undefined}
               className={({ isActive }) =>
-                `w-full p-2.5 rounded-lg flex justify-center transition-all duration-200 group relative ${
+                `w-full h-8 rounded-md flex items-center gap-2.5 px-2 transition-all duration-150 relative ${
                   isActive
-                    ? 'bg-[#0d0f12] text-[#7bf8ac]'
-                    : 'text-white/35 hover:text-white hover:bg-white/[0.04]'
+                    ? 'bg-[#1c1f26] text-[#7bf8ac]'
+                    : 'text-[#737373] hover:text-white hover:bg-white/[0.04]'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-[#7bf8ac]/40 rounded-r" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-[#7bf8ac]/60 rounded-r" />
                   )}
-                  <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-                  {/* Tooltip */}
-                  <span className="absolute left-full ml-3 px-2 py-1 bg-[#16181d] border border-[#262626] text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                  <Icon size={16} strokeWidth={isActive ? 2 : 1.5} className="flex-shrink-0" />
+                  <span className={`text-xs font-medium whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
                     {label}
                   </span>
                 </>
@@ -100,16 +108,18 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* Logout */}
-        <button
-          onClick={handleLogout}
-          title="Logout"
-          className="p-2.5 text-white/35 hover:text-white hover:bg-white/[0.04] rounded-lg transition-all duration-200 group relative"
-        >
-          <LogOut size={18} strokeWidth={1.5} />
-          <span className="absolute left-full ml-3 px-2 py-1 bg-[#16181d] border border-[#262626] text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
-            Logout
-          </span>
-        </button>
+        <div className="px-1.5 flex-shrink-0">
+          <button
+            onClick={handleLogout}
+            title={!expanded ? 'Logout' : undefined}
+            className="w-full h-8 rounded-md flex items-center gap-2.5 px-2 text-[#737373] hover:text-white hover:bg-white/[0.04] transition-all duration-150"
+          >
+            <LogOut size={16} strokeWidth={1.5} className="flex-shrink-0" />
+            <span className={`text-xs font-medium whitespace-nowrap transition-opacity duration-200 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+              Logout
+            </span>
+          </button>
+        </div>
       </aside>
     </>
   );
