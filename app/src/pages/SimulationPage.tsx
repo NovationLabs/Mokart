@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
@@ -426,11 +425,8 @@ const SimulationPage: React.FC = () => {
   const bounds = getCurrentBounds();
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
-
-      <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
-        <Header />
+    <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+      <Header />
 
         <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
           {/* Top Bar */}
@@ -784,9 +780,8 @@ const SimulationPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 };
 

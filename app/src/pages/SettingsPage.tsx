@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Save, ArrowLeft } from 'lucide-react';
 import api, { UserProfile, UserProfileUpdate } from '../services/api';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 
 const SettingsPage: React.FC = () => {
@@ -110,14 +109,11 @@ const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
+    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <Header className="flex-shrink-0" />
 
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-        <Header className="flex-shrink-0" />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="md:p-6 p-4 pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto">
+        <div className="md:p-6 p-4 pb-20 md:pb-0">
           {/* En-tête */}
           <div className="flex items-center gap-4 mb-8">
             <button
@@ -254,9 +250,8 @@ const SettingsPage: React.FC = () => {
             </button>
           </div>
         </form>
-          </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

@@ -27,7 +27,6 @@ import {
 import { User as UserType, UserRole, UserCreate, UserUpdate, UserStats, ROLE_LABELS, ROLE_DESCRIPTIONS } from '../types/user';
 import { api } from '../services/api';
 import usePermissions from '../hooks/usePermissions';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 
 const UserManagementPage: React.FC = () => {
@@ -297,16 +296,13 @@ const UserManagementPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-        <Sidebar />
-        <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-          <Header className="flex-shrink-0" />
-          <main className="flex-1 overflow-y-auto">
-            <div className="md:p-6 p-4 pb-20 md:pb-0">
-              <div className="text-white">Chargement...</div>
-            </div>
-          </main>
-        </div>
+      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+        <Header className="flex-shrink-0" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="md:p-6 p-4 pb-20 md:pb-0">
+            <div className="text-white">Chargement...</div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -314,13 +310,11 @@ const UserManagementPage: React.FC = () => {
   // Afficher un message d'erreur si pas autorisé
   if (isAuthorized === false && userRole && userRole !== UserRole.ADMIN) {
     return (
-      <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-        <Sidebar />
-        <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-          <Header className="flex-shrink-0" />
-          <main className="flex-1 overflow-y-auto">
-            <div className="md:p-6 p-4 pb-20 md:pb-0">
-              <div className="max-w-2xl mx-auto">
+      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+        <Header className="flex-shrink-0" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="md:p-6 p-4 pb-20 md:pb-0">
+            <div className="max-w-2xl mx-auto">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-6">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
@@ -336,17 +330,13 @@ const UserManagementPage: React.FC = () => {
               </div>
             </div>
           </main>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
-
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-        <Header className="flex-shrink-0" />
+    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <Header className="flex-shrink-0" />
 
         <main className="flex-1 overflow-y-auto">
           <div className="md:p-6 p-4 pb-20 md:pb-0">
@@ -644,7 +634,6 @@ const UserManagementPage: React.FC = () => {
             )}
           </div>
         </main>
-      </div>
 
       {/* Create Modal */}
       {showCreateModal && (

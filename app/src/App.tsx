@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from './components/AppLayout';
 import Home from './pages/Home';
 import AnalysisPage from './pages/AnalysisPage';
 import SessionsPage from './pages/SessionsPage';
@@ -15,15 +16,21 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/login"    element={!isAuthenticated ? <AuthPage />           : <Navigate to="/" />} />
-        <Route path="/"         element={isAuthenticated  ? <Home />               : <Navigate to="/login" />} />
-        <Route path="/sessions" element={isAuthenticated  ? <SessionsPage />       : <Navigate to="/login" />} />
-        <Route path="/analysis" element={isAuthenticated  ? <AnalysisPage />       : <Navigate to="/login" />} />
-        <Route path="/live"     element={isAuthenticated  ? <LivePage />           : <Navigate to="/login" />} />
-        <Route path="/simulation" element={isAuthenticated ? <SimulationPage />    : <Navigate to="/login" />} />
-        <Route path="/settings" element={isAuthenticated  ? <SettingsPage />       : <Navigate to="/login" />} />
-        <Route path="/users"    element={isAuthenticated  ? <UserManagementPage /> : <Navigate to="/login" />} />
-        <Route path="*"         element={<Navigate to="/" />} />
+        <Route path="/login" element={!isAuthenticated ? <AuthPage /> : <Navigate to="/" />} />
+        {isAuthenticated ? (
+          <Route element={<AppLayout />}>
+            <Route path="/"           element={<Home />} />
+            <Route path="/sessions"   element={<SessionsPage />} />
+            <Route path="/analysis"   element={<AnalysisPage />} />
+            <Route path="/live"       element={<LivePage />} />
+            <Route path="/simulation" element={<SimulationPage />} />
+            <Route path="/settings"   element={<SettingsPage />} />
+            <Route path="/users"      element={<UserManagementPage />} />
+          </Route>
+        ) : (
+          <Route path="*" element={<Navigate to="/login" />} />
+        )}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

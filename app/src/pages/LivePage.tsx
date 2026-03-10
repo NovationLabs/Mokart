@@ -2,7 +2,6 @@
 // Inspiré du prototype.py (pygame HUD embarqué sur le Raspberry Pi).
 // Aucune vraie donnée de télémétrie utilisée ici.
 import React, { useState, useEffect, useRef } from 'react';
-import Sidebar from '../components/Sidebar';
 import { MOCK_DRIVER } from '../data/mock';
 import { Radio } from 'lucide-react';
 
@@ -222,10 +221,9 @@ const LivePage: React.FC = () => {
   const gear         = speed < 30 ? 1 : speed < 45 ? 2 : speed < 60 ? 3 : speed < 72 ? 4 : speed < 82 ? 5 : 6;
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
+    <>
       <div className="absolute inset-0 bg-grid-minimal opacity-30 pointer-events-none" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-[#7bf8ac]/4 blur-[100px] rounded-full pointer-events-none" />
-      <Sidebar />
 
       <main className="flex-1 md:ml-11 ml-0 flex flex-col h-screen overflow-hidden relative z-10">
 
@@ -427,7 +425,7 @@ const LivePage: React.FC = () => {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 };
 

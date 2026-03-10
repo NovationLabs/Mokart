@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 // Global style import handled in index.tsx
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { User, Smartphone, Activity, Zap, Map, Users, Battery, Wifi } from 'lucide-react';
 import { dashboardService } from '../services/dashboardService';
@@ -563,14 +562,11 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
+    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <Header className="flex-shrink-0" />
 
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-        <Header className="flex-shrink-0" />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="md:p-6 p-4 pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto">
+        <div className="md:p-6 p-4 pb-20 md:pb-0">
             {/* Welcome Section */}
             <div className="mb-8">
               <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
@@ -586,9 +582,8 @@ const Home: React.FC = () => {
 
             {/* Dashboard Content */}
             {renderDashboard()}
-          </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

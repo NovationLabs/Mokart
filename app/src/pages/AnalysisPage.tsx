@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
@@ -695,11 +694,8 @@ const AnalysisPage: React.FC = () => {
   }, [selectedSession, sessions]);
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
-
-      <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
-        <Header />
+    <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+      <Header />
 
         <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
           {/* Top Bar */}
@@ -1001,11 +997,10 @@ const AnalysisPage: React.FC = () => {
           </div>
         </div>
         </div>
-      </main>
 
       {/* Point Popup */}
       <PointPopup />
-    </div>
+    </main>
   );
 };
 
