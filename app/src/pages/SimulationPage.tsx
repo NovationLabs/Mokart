@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Header from '../components/Header';
+import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
 import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
 
@@ -500,6 +501,11 @@ const SimulationPage: React.FC = () => {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
             {/* Controls Column */}
+            {loading && !simulationData ? (
+              <div className="lg:col-span-1 overflow-y-auto pr-1">
+                <SkeletonSidePanel />
+              </div>
+            ) : (
             <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
               {/* Player Controls */}
               <div className="card">
@@ -644,8 +650,12 @@ const SimulationPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Circuit Visualization */}
+            {loading && !simulationData ? (
+              <SkeletonChart className="lg:col-span-3 min-h-[300px]" />
+            ) : (
             <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
               <div className="absolute top-4 left-4 z-10 flex gap-2">
                 <div className="px-3 py-1.5 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
@@ -779,6 +789,7 @@ const SimulationPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
           </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // Global style import handled in index.tsx
 import Header from '../components/Header';
+import { DashboardSkeleton } from '../components/Skeleton';
 import { User, Smartphone, Activity, Zap, Map, Users, Battery, Wifi } from 'lucide-react';
 import { dashboardService } from '../services/dashboardService';
 import { DashboardData } from '../types/dashboard';
@@ -522,11 +523,7 @@ const Home: React.FC = () => {
 
   const renderDashboard = () => {
     if (loading) {
-      return (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-white">Chargement du dashboard...</div>
-        </div>
-      );
+      return <DashboardSkeleton />;
     }
 
     if (error) {
