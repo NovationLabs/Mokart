@@ -983,7 +983,7 @@ const AnalysisPage: React.FC = () => {
                           data={[...optimalTrajectory.map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 })),
                                 ...optimalTrajectory.slice(0, 1).map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 }))]}
                           fill="none"
-                          line={{ stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5 5' }}
+                          line={{ stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '5 5' }}
                           lineType="joint"
                           shape={<circle r={0} />}
                         />
