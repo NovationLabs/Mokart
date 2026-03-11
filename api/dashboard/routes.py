@@ -182,7 +182,62 @@ async def get_dashboard_data(user_id: str = None, role: str = None, db: DbSessio
             circuit_info=circuit_info
         )
 
-    else:  # commissaire_piste
+    elif user_role == "observer":
+        # Observer voit le circuit, sessions en cours, et données live
+        # Simuler une session en cours avec classement
+        live_leaderboard = [
+            {"position": 1, "driver": "Jean Pilot", "kart": "KRT8-1", "last_lap": 48.2, "gap": "LEADER"},
+            {"position": 2, "driver": "Marie Racer", "kart": "KRT8-2", "last_lap": 48.5, "gap": "+0.3"},
+            {"position": 3, "driver": "Pierre Speed", "kart": "KRT8-3", "last_lap": 48.8, "gap": "+0.6"},
+            {"position": 4, "driver": "Sophie Fast", "kart": "KRT8-4", "last_lap": 49.1, "gap": "+0.9"}
+        ]
+
+        # Statistiques live enrichies
+        live_stats = {
+            "session_time": "14:32",
+            "total_laps": 47,
+            "best_lap": 48.2,
+            "avg_speed": 67.3,
+            "laps_per_minute": 3.2,
+            "avg_consistency": 91.2
+        }
+
+        # Météo et conditions
+        weather_data = {
+            "current": {"temp": 24, "condition": "sunny", "icon": "☀️"},
+            "plus_2h": {"temp": 22, "condition": "partly_cloudy", "icon": "⛅"},
+            "plus_4h": {"temp": 20, "condition": "mostly_sunny", "icon": "🌤️"},
+            "wind": {"speed": 12, "direction": "NE"},
+            "pressure": 1013
+        }
+
+        # Évolution de la piste
+        track_evolution = {
+            "current_grip": 87,
+            "forecast_grip": 92,
+            "track_temp": 28,
+            "optimal": True
+        }
+
+        # Moments forts du jour
+        daily_highlights = [
+            {"type": "best_lap", "driver": "Jean Pilot", "value": "47.8s", "icon": "🏆"},
+            {"type": "top_speed", "driver": "Marie Racer", "value": "89 km/h", "icon": "⚡"},
+            {"type": "sessions", "value": "12 sessions complètes", "icon": "📊"}
+        ]
+
+        return DashboardData(
+            user_role=user_role,
+            circuit_info=circuit_info,
+            live_leaderboard=live_leaderboard,
+            live_stats=live_stats,
+            weather_data=weather_data,
+            track_evolution=track_evolution,
+            daily_highlights=daily_highlights
+        )
+
+    elif user_role == "commissaire_piste":
+        # Commissaire de piste voit les karts et le circuit avec plus de détails
         return DashboardData(
             user_role=user_role,
             karts_status=generate_fake_karts_status(),
