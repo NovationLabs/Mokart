@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, Save, ArrowLeft } from 'lucide-react';
 import api, { UserProfile, UserProfileUpdate } from '../services/api';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import { SettingsSkeleton } from '../components/Skeleton';
 
 const SettingsPage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>({
@@ -101,23 +101,12 @@ const SettingsPage: React.FC = () => {
     setProfile(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-base flex items-center justify-center">
-        <div className="text-white">Chargement...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
+    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <Header className="flex-shrink-0" />
 
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
-        <Header className="flex-shrink-0" />
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="md:p-6 p-4 pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto">
+        <div className="md:p-6 p-4 pb-20 md:pb-0">
           {/* En-tête */}
           <div className="flex items-center gap-4 mb-8">
             <button
@@ -128,6 +117,11 @@ const SettingsPage: React.FC = () => {
             </button>
             <h1 className="text-2xl font-bold text-white">Paramètres</h1>
           </div>
+
+          {loading ? (
+            <SettingsSkeleton />
+          ) : (
+          <>
 
           {/* Message de succès/erreur */}
           {message && (
@@ -254,9 +248,10 @@ const SettingsPage: React.FC = () => {
             </button>
           </div>
         </form>
-          </div>
-        </main>
-      </div>
+          </>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

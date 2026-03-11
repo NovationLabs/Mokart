@@ -1,6 +1,5 @@
 // MOCK DATA — toutes les valeurs sont synthétiques (voir src/data/mock.ts)
 import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
 import { MOCK_SESSIONS, MOCK_DRIVER, fmtLap, fmtDelta } from '../data/mock';
 import { TrendingDown, TrendingUp, MapPin, Gauge, ChevronRight, Filter, Search, Bell } from 'lucide-react';
 
@@ -38,9 +37,8 @@ const SessionsPage: React.FC = () => {
   const bestLapSession = MOCK_SESSIONS.reduce((a, b) => a.bestLap < b.bestLap ? a : b);
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
+    <>
       <div className="absolute inset-0 bg-grid-minimal opacity-40 pointer-events-none" />
-      <Sidebar />
 
       <main className="flex-1 md:ml-11 ml-0 flex flex-col h-screen relative z-10">
 
@@ -189,7 +187,7 @@ const SessionsPage: React.FC = () => {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 };
 

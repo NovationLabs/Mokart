@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
-import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import { SkeletonCard, SkeletonChart } from '../components/Skeleton';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
@@ -78,6 +78,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.
 
 const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<string>('');
   const [trajectory, setTrajectory] = useState<TrajectoryPoint[]>([]);
   const [circuitBoundaries, setCircuitBoundaries] = useState<CircuitBoundary[]>([]);
@@ -188,6 +189,7 @@ const AnalysisPage: React.FC = () => {
   }, [trajectory, circuitBoundaries]);
 
   const fetchSessions = async () => {
+    setSessionsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/sessions/`);
       const data = await response.json();
@@ -197,6 +199,8 @@ const AnalysisPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
+    } finally {
+      setSessionsLoading(false);
     }
   };
 
@@ -695,11 +699,8 @@ const AnalysisPage: React.FC = () => {
   }, [selectedSession, sessions]);
 
   return (
-    <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
-      <Sidebar />
-
-      <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
-        <Header />
+    <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+      <Header />
 
         <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
           {/* Top Bar */}
@@ -761,6 +762,14 @@ const AnalysisPage: React.FC = () => {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
           {/* Stats Column */}
+          {sessionsLoading ? (
+            <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={4} />
+              <SkeletonCard lines={3} />
+            </div>
+          ) : (
           <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
             <StatItem
               label="Data Points"
@@ -820,8 +829,12 @@ const AnalysisPage: React.FC = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Map / Visualization Column */}
+          {sessionsLoading ? (
+            <SkeletonChart className="lg:col-span-3 min-h-[300px]" />
+          ) : (
           <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
@@ -999,13 +1012,13 @@ const AnalysisPage: React.FC = () => {
               )}
             </div>
           </div>
+          )}
         </div>
         </div>
-      </main>
 
       {/* Point Popup */}
       <PointPopup />
-    </div>
+    </main>
   );
 };
 
