@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from config.database import get_db, engine, Base
 from auth.routes import router as auth_router
@@ -8,11 +9,24 @@ from circuits.routes import router as circuits_router
 from users.routes import router as users_router, admin_router
 from dashboard.routes import router as dashboard_router
 from sqlalchemy.orm import Session
+import asyncio
 
 # Create tables if not exists (although init.sql should handle it)
 # Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Configuration du timeout global
+@app.middleware("http")
+async def add_timeout_middleware(request, call_next):
+    try:
+        # Timeout de 30 secondes pour les requêtes
+        return await asyncio.wait_for(call_next(request), timeout=30.0)
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            status_code=408,
+            content={"detail": "Request timeout - l'opération a pris trop de temps"}
+        )
 
 # Inclure les routes D'ABORD
 app.include_router(auth_router)

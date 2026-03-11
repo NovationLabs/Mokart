@@ -31,13 +31,14 @@ async def get_sessions(db: DbSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
 @router.get("/{session_id}/stats")
-async def get_session_stats(session_id: str, db: DbSession = Depends(get_db)):
+async def get_session_stats(session_id: str, db: DbSession = Depends(get_db), limit: int = 10000):
     """Récupérer les statistiques d'une session"""
     try:
-        # Récupérer tous les points de la session
+        # Récupérer les points de la session avec une limite pour éviter les blocages
         data = db.query(sql_models.SensorData)\
             .filter(sql_models.SensorData.session_id == session_id)\
             .order_by(sql_models.SensorData.timestamp)\
+            .limit(limit)\
             .all()
 
         if not data:
@@ -54,6 +55,7 @@ async def get_session_stats(session_id: str, db: DbSession = Depends(get_db)):
             "session_id": session_id,
             "total_points": len(data),
             "duration_ms": data[-1].timestamp - data[0].timestamp if len(data) > 1 else 0,
+            "limited": len(data) == limit,  # Indique si les données sont limitées
 
             # Pourcentages de couverture (champs non null)
             "uwb_coverage": len([d for d in data if d.uwb_x is not None]) / len(data) * 100,
@@ -137,13 +139,15 @@ async def create_session(session: Session, db: DbSession = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{session_id}/sensor-data", response_model=list[SensorData])
-async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_db)):
-    """Récupérer toutes les données de capteur d'une session"""
+async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_db), limit: int = 5000, offset: int = 0):
+    """Récupérer toutes les données de capteur d'une session avec pagination"""
     try:
-        # Récupérer toutes les données de capteur de la session
+        # Récupérer les données de capteur de la session avec pagination
         data = db.query(sql_models.SensorData)\
             .filter(sql_models.SensorData.session_id == session_id)\
             .order_by(sql_models.SensorData.timestamp)\
+            .limit(limit)\
+            .offset(offset)\
             .all()
 
         if not data:

@@ -101,9 +101,18 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         if not left_boundary or not right_boundary:
             raise HTTPException(status_code=400, detail="Les bordures gauche et droite sont requises")
 
-        # Calculer la trajectoire optimale
-        optimizer = TrajectoryOptimizer()
-        trajectory_points = optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+        # Calculer la trajectoire optimale de manière asynchrone
+        import asyncio
+        from concurrent.futures import ThreadPoolExecutor
+
+        def compute_trajectory():
+            optimizer = TrajectoryOptimizer()
+            return optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+
+        # Exécuter le calcul dans un thread séparé pour ne pas bloquer
+        loop = asyncio.get_event_loop()
+        with ThreadPoolExecutor() as executor:
+            trajectory_points = await loop.run_in_executor(executor, compute_trajectory)
 
         # Supprimer l'ancienne trajectoire si elle existe
         db.query(sql_models.OptimalTrajectory)\
@@ -246,7 +255,7 @@ async def get_week_circuit_simulation_data(db: DbSession = Depends(get_db)):
             .order_by(sql_models.OptimalTrajectory.point_order)\
             .all()
 
-        # Si pas de trajectoire optimale, la calculer
+        # Si pas de trajectoire optimale, la calculer de manière asynchrone
         if not optimal_trajectory:
             left_boundary = [b for b in boundaries if b.side == 'left']
             right_boundary = [b for b in boundaries if b.side == 'right']
@@ -254,8 +263,18 @@ async def get_week_circuit_simulation_data(db: DbSession = Depends(get_db)):
             if not left_boundary or not right_boundary:
                 raise HTTPException(status_code=400, detail="Les bordures du circuit sont incomplètes")
 
-            optimizer = TrajectoryOptimizer()
-            trajectory_points = optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+            # Calculer la trajectoire optimale de manière asynchrone
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
+
+            def compute_trajectory():
+                optimizer = TrajectoryOptimizer()
+                return optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+
+            # Exécuter le calcul dans un thread séparé pour ne pas bloquer
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                trajectory_points = await loop.run_in_executor(executor, compute_trajectory)
 
             # Formater les données
             optimal_trajectory_formatted = [{"x": x, "y": y, "point_order": i} for i, (x, y) in enumerate(trajectory_points)]
