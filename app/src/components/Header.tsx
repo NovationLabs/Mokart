@@ -211,7 +211,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   ];
 
   return (
-    <header className={`flex-shrink-0 h-16 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-6 backdrop-blur-xl ${className || ''}`}>
+    <header className={`flex-shrink-0 h-16 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-6 backdrop-blur-xl relative z-30 ${className || ''}`}>
       <div className="flex items-center justify-between">
         {/* Barre de recherche */}
         <div className="flex-1 max-w-xl">
