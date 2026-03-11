@@ -113,7 +113,7 @@ const SettingsPage: React.FC = () => {
     <div className="flex min-h-screen bg-base text-white font-display overflow-hidden relative">
       <Sidebar />
 
-      <div className="flex-1 md:ml-16 ml-0 relative z-10 flex flex-col h-screen">
+      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
         <Header className="flex-shrink-0" />
 
         <main className="flex-1 overflow-y-auto">
