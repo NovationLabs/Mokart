@@ -20,7 +20,7 @@ services:
     volumes:
       - ./api:/app
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-mokart}:${DB_PASSWORD:-mokart123}@db:5432/${DB_NAME:-mokart}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
     depends_on:
       - db
     restart: always
@@ -40,9 +40,9 @@ services:
     image: postgres:15-alpine
     container_name: mokart-db-prod
     environment:
-      - POSTGRES_USER=${DB_USER:-mokart}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-mokart123}
-      - POSTGRES_DB=${DB_NAME:-mokart}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "5433:5432"
     volumes:
