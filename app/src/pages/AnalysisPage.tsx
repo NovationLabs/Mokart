@@ -89,6 +89,7 @@ const AnalysisPage: React.FC = () => {
   const [showOptimalTrajectory, setShowOptimalTrajectory] = useState<boolean>(true);
   const [trajectoryComparison, setTrajectoryComparison] = useState<TrajectoryComparison | null>(null);
   const [calculatingTrajectory, setCalculatingTrajectory] = useState<boolean>(false);
+  const [displayMode, setDisplayMode] = useState<'speed' | 'accuracy'>('speed');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -387,6 +388,162 @@ const AnalysisPage: React.FC = () => {
     return totalDistance;
   };
 
+  // Calculate speed for all trajectory points
+  const calculateSpeeds = (): number[] => {
+    const speeds: number[] = [];
+    for (let i = 0; i < trajectory.length; i++) {
+      const speed = i > 0 ? calculateSpeed(trajectory[i - 1], trajectory[i]) : 0;
+      speeds.push(speed);
+    }
+    return speeds;
+  };
+
+  // Calculate circuit width from boundaries
+  const calculateCircuitWidth = (): number => {
+    if (circuitBoundaries.length === 0) return 10; // Default width
+
+    let totalWidth = 0;
+    let count = 0;
+
+    // Group boundaries by point_order to calculate width at each point
+    const boundaryGroups: { [key: number]: CircuitBoundary[] } = {};
+    circuitBoundaries.forEach(boundary => {
+      if (!boundaryGroups[boundary.point_order]) {
+        boundaryGroups[boundary.point_order] = [];
+      }
+      boundaryGroups[boundary.point_order].push(boundary);
+    });
+
+    // Calculate width for each point where we have both left and right boundaries
+    Object.values(boundaryGroups).forEach(group => {
+      const leftBoundary = group.find(b => b.side === 'left');
+      const rightBoundary = group.find(b => b.side === 'right');
+
+      if (leftBoundary && rightBoundary) {
+        const width = Math.sqrt(
+          Math.pow(rightBoundary.x - leftBoundary.x, 2) +
+          Math.pow(rightBoundary.y - leftBoundary.y, 2)
+        );
+        totalWidth += width;
+        count++;
+      }
+    });
+
+    return count > 0 ? totalWidth / count : 10; // Return average width or default
+  };
+
+  // Calculate distance between two points
+  const calculateDistance = (p1: {x: number, y: number}, p2: {x: number, y: number}): number => {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+  };
+
+  // Find closest point on optimal trajectory to a given actual trajectory point
+  const findClosestOptimalPoint = (actualPoint: {x: number, y: number}): {x: number, y: number} | null => {
+    if (optimalTrajectory.length === 0) return null;
+
+    let minDistance = Infinity;
+    let closestPoint = null;
+
+    optimalTrajectory.forEach(optimalPoint => {
+      const distance = calculateDistance(actualPoint, optimalPoint);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = optimalPoint;
+      }
+    });
+
+    return closestPoint;
+  };
+
+  // Calculate trajectory accuracy percentage with color coding
+  const calculateTrajectoryAccuracy = (): { percentage: number; color: string; points: Array<{index: number, accuracy: number, color: string}> } => {
+    if (trajectory.length === 0 || optimalTrajectory.length === 0) {
+      return { percentage: 0, color: '#ef4444', points: [] };
+    }
+
+    const circuitWidth = calculateCircuitWidth();
+    const maxAcceptableDeviation = circuitWidth * 0.3; // 30% of circuit width as max acceptable deviation
+    const points: Array<{index: number, accuracy: number, color: string}> = [];
+    let totalAccuracy = 0;
+
+    trajectory.forEach((point, index) => {
+      const closestOptimal = findClosestOptimalPoint(point);
+      if (closestOptimal) {
+        const deviation = calculateDistance(point, closestOptimal);
+        // Calculate accuracy as percentage (100% = perfect alignment, 0% = max deviation)
+        const accuracy = Math.max(0, Math.min(100, 100 - (deviation / maxAcceptableDeviation) * 100));
+        totalAccuracy += accuracy;
+
+        // Determine color based on accuracy
+        let color;
+        if (accuracy >= 80) {
+          // Green (80-100%)
+          const intensity = (accuracy - 80) / 20;
+          color = `rgb(${Math.round(34 + (39 - 34) * (1 - intensity))}, ${Math.round(197 + (68 - 197) * (1 - intensity))}, ${Math.round(94 + (68 - 94) * (1 - intensity))})`;
+        } else if (accuracy >= 60) {
+          // Yellow-green to yellow (60-80%)
+          const intensity = (accuracy - 60) / 20;
+          color = `rgb(${Math.round(245 + (239 - 245) * (1 - intensity))}, ${Math.round(158 + (68 - 158) * (1 - intensity))}, ${Math.round(11 + (68 - 11) * intensity)})`;
+        } else if (accuracy >= 40) {
+          // Orange (40-60%)
+          const intensity = (accuracy - 40) / 20;
+          color = `rgb(${Math.round(249 + (239 - 249) * (1 - intensity))}, ${Math.round(115 + (68 - 115) * (1 - intensity))}, ${Math.round(22 + (68 - 22) * intensity)})`;
+        } else {
+          // Red (0-40%)
+          const intensity = accuracy / 40;
+          color = `rgb(${Math.round(239)}, ${Math.round(68 + (68 - 68) * intensity)}, ${Math.round(68)})`;
+        }
+
+        points.push({ index, accuracy, color });
+      }
+    });
+
+    const averageAccuracy = totalAccuracy / trajectory.length;
+
+    // Determine overall color
+    let overallColor;
+    if (averageAccuracy >= 80) {
+      overallColor = '#22c55e'; // Green
+    } else if (averageAccuracy >= 60) {
+      overallColor = '#eab308'; // Yellow
+    } else if (averageAccuracy >= 40) {
+      overallColor = '#f97316'; // Orange
+    } else {
+      overallColor = '#ef4444'; // Red
+    }
+
+    return {
+      percentage: averageAccuracy,
+      color: overallColor,
+      points
+    };
+  };
+
+  // Get color based on speed (blue = slow, green = medium, yellow = fast, red = very fast)
+  const getSpeedColor = (speed: number, maxSpeed: number): string => {
+    if (maxSpeed === 0) return '#22d3ee'; // cyan default
+
+    const ratio = Math.min(speed / maxSpeed, 1);
+
+    if (ratio < 0.25) {
+      // Blue to cyan
+      const localRatio = ratio / 0.25;
+      return `rgb(${Math.round(34 + (34 - 34) * localRatio)}, ${Math.round(211 + (211 - 211) * localRatio)}, ${Math.round(238 + (238 - 238) * localRatio)})`;
+    } else if (ratio < 0.5) {
+      // Cyan to green
+      const localRatio = (ratio - 0.25) / 0.25;
+      return `rgb(${Math.round(34 + (123 - 34) * localRatio)}, ${Math.round(211 + (248 - 211) * localRatio)}, ${Math.round(238 + (172 - 238) * localRatio)})`;
+    } else if (ratio < 0.75) {
+      // Green to yellow
+      const localRatio = (ratio - 0.5) / 0.25;
+      return `rgb(${Math.round(123 + (245 - 123) * localRatio)}, ${Math.round(248 + (158 - 248) * localRatio)}, ${Math.round(172 + (11 - 172) * localRatio)})`;
+    } else {
+      // Yellow to red
+      const localRatio = (ratio - 0.75) / 0.25;
+      return `rgb(${Math.round(245 + (239 - 245) * localRatio)}, ${Math.round(158 + (68 - 158) * localRatio)}, ${Math.round(11 + (68 - 11) * localRatio)})`;
+    }
+  };
+
   const handlePointClick = (data: any, index: number) => {
     if (data && data.payload) {
       const pointInfo = calculatePointInfo(data.payload, index);
@@ -578,7 +735,7 @@ const AnalysisPage: React.FC = () => {
                 Vitesse
               </span>
               <span className="text-white font-mono">
-                {(selectedPoint.speed || 0).toFixed(2)} m/s
+                {((selectedPoint.speed || 0) * 3.6).toFixed(1)} km/h
               </span>
             </div>
 
@@ -828,6 +985,85 @@ const AnalysisPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Trajectory Accuracy */}
+            {trajectory.length > 0 && optimalTrajectory.length > 0 && (() => {
+              const accuracy = calculateTrajectoryAccuracy();
+              return (
+                <div className="card">
+                  <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                    <Target size={12} />
+                    Précision Trajectoire
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#a3a3a3] text-xs">Précision globale</span>
+                      <span className="font-mono text-sm font-bold" style={{ color: accuracy.color }}>
+                        {accuracy.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#262626] h-2 rounded-full overflow-hidden">
+                      <div
+                        className="h-full transition-all duration-500"
+                        style={{
+                          width: `${accuracy.percentage}%`,
+                          backgroundColor: accuracy.color
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-[#a3a3a3] pt-1">
+                      Largeur circuit: {calculateCircuitWidth().toFixed(1)}m
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Speed Color Legend */}
+            <div className="card">
+              <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                <Gauge size={12} />
+                Vitesse
+              </h3>
+              <div className="space-y-2">
+                <div className="text-xs text-[#a3a3a3] mb-2">Échelle de couleur:</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#22d3ee]"></div>
+                    <span className="text-xs text-white">Lent</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#7bf8ac]"></div>
+                    <span className="text-xs text-white">Modéré</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+                    <span className="text-xs text-white">Rapide</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+                    <span className="text-xs text-white">Très rapide</span>
+                  </div>
+                </div>
+                {trajectory.length > 0 && (() => {
+                  const speeds = calculateSpeeds();
+                  const maxSpeed = Math.max(...speeds);
+                  const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+                  return (
+                    <div className="pt-2 border-t border-[#262626] space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[#a3a3a3]">Vitesse max</span>
+                        <span className="font-mono text-white">{(maxSpeed * 3.6).toFixed(0)} km/h</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[#a3a3a3]">Vitesse moy</span>
+                        <span className="font-mono text-white">{(avgSpeed * 3.6).toFixed(0)} km/h</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
           )}
 
@@ -969,7 +1205,15 @@ const AnalysisPage: React.FC = () => {
                           const isClosest = closestPoint && props.index === closestPoint.index;
                           const isHovered = hoveredPoint && props.index === hoveredPoint.index;
                           const radius = isClosest ? 6 : (showPoints ? 4 : 3);
-                          const fill = isClosest ? '#10b981' : (showPoints ? '#7bf8ac' : 'rgba(34, 211, 238, 0.3)');
+
+                          // Calculate speed and color
+                          const speeds = calculateSpeeds();
+                          const maxSpeed = Math.max(...speeds);
+                          const currentSpeed = speeds[props.index] || 0;
+                          const speedColor = getSpeedColor(currentSpeed, maxSpeed);
+
+                          const fill = isClosest ? speedColor : (showPoints ? speedColor : speedColor);
+                          const stroke = isClosest ? '#ffffff' : speedColor;
 
                           return (
                             <circle
@@ -977,11 +1221,11 @@ const AnalysisPage: React.FC = () => {
                               cy={props.cy}
                               r={radius}
                               fill={fill}
-                              stroke={isClosest ? '#10b981' : '#7bf8ac'}
+                              stroke={stroke}
                               strokeWidth={isClosest ? 2 : 1}
                               className="cursor-pointer transition-all duration-150"
                               style={{
-                                filter: isClosest ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.8))' : 'none'
+                                filter: isClosest ? 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.8))' : 'drop-shadow(0 0 2px rgba(0, 0, 0, 0.3))'
                               }}
                             />
                           );
