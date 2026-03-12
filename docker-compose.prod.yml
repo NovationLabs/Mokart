@@ -20,8 +20,7 @@ services:
     volumes:
       - ./api:/app
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-mokart}:${DB_PASSWORD:-mokart123}@192.168.112.2:5432/${DB_NAME:-mokart}
-      - DB_HOST=db-prod
+      - DATABASE_URL=postgresql://${DB_USER:-mokart}:${DB_PASSWORD:-mokart123}@db:5432/${DB_NAME:-mokart}
     depends_on:
       - db
     restart: always
@@ -33,6 +32,8 @@ services:
     container_name: mokart-app-prod
     ports:
       - "9979:80"
+    depends_on:
+      - api
     restart: always
 
   db:

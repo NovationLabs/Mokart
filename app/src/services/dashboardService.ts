@@ -1,6 +1,6 @@
 import { DashboardData } from '../types/dashboard';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL  || 'http://localhost:8081';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {

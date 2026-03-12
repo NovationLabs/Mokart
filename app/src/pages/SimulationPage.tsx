@@ -47,7 +47,7 @@ interface SimulationData {
   optimal_trajectory: TrajectoryPoint[];
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8081`;
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const SimulationPage: React.FC = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);

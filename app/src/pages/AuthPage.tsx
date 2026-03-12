@@ -17,8 +17,7 @@ interface AuthResponse {
   message: string;
 }
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.hostname}:8081`;
-console.log(process.env.REACT_APP_API_URL);
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
