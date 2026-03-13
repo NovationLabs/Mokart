@@ -15,9 +15,9 @@ nmcli device wifi list
 sudo nmcli device wifi connect "SFR_D0C0" password "PASSWORD"
 nmcli device status
 nmcli connection show
-sudo nmcli connection modify "SFR-7FA5" connection.autoconnect-retries 0
+sudo nmcli connection modify "netplan-wlan0-SFR-7FA5" connection.autoconnect-retries 0
 sudo nmcli connection modify "SFR_D0C0" connection.autoconnect-retries 0
-sudo nmcli connection modify "SFR-7FA5" connection.autoconnect-priority 200
+sudo nmcli connection modify "netplan-wlan0-SFR-7FA5" connection.autoconnect-priority 200
 sudo nmcli connection modify "SFR_D0C0" connection.autoconnect-priority 100
 ```
 
@@ -33,6 +33,8 @@ sudo rm -rf LCD-show
 
 grep -q "dtoverlay=tft35a:rotate=90,speed=32000000,fps=30" /boot/firmware/config.txt || \
 sudo sed -i 's/^dtoverlay=tft35a:rotate=90.*/dtoverlay=tft35a:rotate=90,speed=32000000,fps=30/' /boot/firmware/config.txt
+
+grep -q "dtoverlay=disable-bt" /boot/firmware/config.txt || echo "dtoverlay=disable-bt" | sudo tee -a /boot/firmware/config.txt
 
 echo "dtparam=spi=on" | sudo tee -a /boot/firmware/config.txt
 ```
@@ -118,3 +120,7 @@ chmod +x ~/welcome.py
 echo "python3 ~/welcome.py" >> ~/.zshrc
 source ~/.zshrc
 ```
+
+## Python & Dependencies
+sudo apt install python3-numpy python3-psutil python3-pil
+wget https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf

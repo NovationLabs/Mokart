@@ -56,6 +56,17 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 ---
 
+## Benchmarks consommation
+
+| Board | Durée | Conso | Python | SSH | Display | Temp | Ventilo |
+|---|---|---|---|---|---|---|---|
+| RPi Zero 2W | 5 min | 60 mWh | ✅ 1x | ❌ | ❌ | — | ❌ |
+| RPi Zero 2W | 50 min | 685 mWh | ✅ 1x | ❌ | ❌ | — | ❌ |
+| RPi Zero 2W | 5 min | 155 mWh | ✅ 2x | ✅ 3x | ✅ (blanc) | — | ❌ |
+| RPi Zero 2W | 25 min | 745 mWh | ✅ 1x | ✅ 2x + btop | ✅ | 65°C | ❌ |
+| RPi Zero 2W | 25 min | 860 mWh | ✅ 1x | ✅ 2x + btop | ✅ | 45°C | ✅ |
+| RPi 4 | 24 min | 1000 mWh | ❌ | — | ✅ | — | ❌ |
+
 ## Team
 
 - **Léo GREGORI**
