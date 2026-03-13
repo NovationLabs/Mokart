@@ -6,6 +6,7 @@ import {
   Clock, ArrowRight
 } from 'lucide-react';
 import api, { Notification, UserProfile } from '../services/api';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface HeaderProps {
   className?: string;
@@ -49,18 +50,23 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const currentPage = PAGE_TITLES[location.pathname] || 'Dashboard';
+  const { hasPermission } = usePermissions();
 
   // ── Search items ─────────────────────────────────────────────────
-  const searchItems: SearchItem[] = useMemo(() => [
+  const allSearchItems: (SearchItem & { permission?: string })[] = useMemo(() => [
     { id: 'dashboard', label: 'Dashboard', description: 'Vue principale', icon: <LayoutDashboard className="w-4 h-4" />, action: () => navigate('/'), category: 'page' },
-    { id: 'analysis', label: 'Analysis', description: 'Analyse de performance', icon: <Activity className="w-4 h-4" />, action: () => navigate('/analysis'), category: 'page' },
-    { id: 'sessions', label: 'Sessions', description: 'Historique des sessions', icon: <Clock className="w-4 h-4" />, action: () => navigate('/sessions'), category: 'page' },
-    { id: 'live', label: 'Live Tracking', description: 'Suivi en temps réel', icon: <Radio className="w-4 h-4" />, action: () => navigate('/live'), category: 'page' },
-    { id: 'simulation', label: 'Simulation', description: 'Simulateur de circuit', icon: <Play className="w-4 h-4" />, action: () => navigate('/simulation'), category: 'page' },
-    { id: 'users', label: 'Utilisateurs', description: 'Gestion des utilisateurs', icon: <Users className="w-4 h-4" />, action: () => navigate('/users'), category: 'page' },
+    { id: 'analysis', label: 'Analysis', description: 'Analyse de performance', icon: <Activity className="w-4 h-4" />, action: () => navigate('/analysis'), category: 'page', permission: 'analysis.read' },
+    { id: 'sessions', label: 'Sessions', description: 'Historique des sessions', icon: <Clock className="w-4 h-4" />, action: () => navigate('/sessions'), category: 'page', permission: 'sessions.read' },
+    { id: 'live', label: 'Live Tracking', description: 'Suivi en temps réel', icon: <Radio className="w-4 h-4" />, action: () => navigate('/live'), category: 'page', permission: 'sessions.read' },
+    { id: 'simulation', label: 'Simulation', description: 'Simulateur de circuit', icon: <Play className="w-4 h-4" />, action: () => navigate('/simulation'), category: 'page', permission: 'sessions.read' },
+    { id: 'users', label: 'Utilisateurs', description: 'Gestion des utilisateurs', icon: <Users className="w-4 h-4" />, action: () => navigate('/users'), category: 'page', permission: 'users.read' },
     { id: 'settings', label: 'Settings', description: 'Paramètres du compte', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings'), category: 'page' },
     { id: 'logout', label: 'Déconnexion', description: 'Se déconnecter', icon: <LogOut className="w-4 h-4" />, action: () => handleLogout(), category: 'action' },
   ], [navigate]);
+
+  const searchItems: SearchItem[] = useMemo(() =>
+    allSearchItems.filter(item => !item.permission || hasPermission(item.permission)),
+  [allSearchItems, hasPermission]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return searchItems;
@@ -266,7 +272,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
   return (
     <>
-      <header className={`flex-shrink-0 h-12 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-4 backdrop-blur-xl relative z-30 ${className || ''}`}>
+      <header className={`flex-shrink-0 h-12 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-4 backdrop-blur-xl relative z-40 ${className || ''}`}>
         {/* ── Left: Breadcrumb (Supabase style) ──────────────────────── */}
         <div className="flex items-center gap-0 min-w-0">
           <img
@@ -311,7 +317,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
               </button>
 
               {showRoleSwitcher && (
-                <div className="absolute right-0 mt-2 w-48 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-[200]">
                   <div className="p-3 border-b border-[#262626]">
                     <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Changer de Rôle</h3>
                     <p className="text-xs text-[#737373] mt-1">Mode démo uniquement</p>
