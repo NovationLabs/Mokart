@@ -10,6 +10,8 @@ services:
     volumes:
       - ./app/src:/app/src
       - ./app/public:/app/public
+    environment:
+      - REACT_APP_API_URL=http://localhost:8081
     restart: unless-stopped
 
   web:

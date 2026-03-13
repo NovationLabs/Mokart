@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
 import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
+import { API_BASE_URL } from '../services/api';
 
 interface CircuitBoundary {
   id: string;
@@ -46,8 +47,6 @@ interface SimulationData {
   boundaries: CircuitBoundary[];
   optimal_trajectory: TrajectoryPoint[];
 }
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const SimulationPage: React.FC = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);

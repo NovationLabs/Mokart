@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 // Global style import handled in index.tsx
 import { AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { API_BASE_URL } from '../services/api';
 
 interface AuthResponse {
   user: {
@@ -16,8 +17,6 @@ interface AuthResponse {
   };
   message: string;
 }
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');

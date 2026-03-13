@@ -4,6 +4,7 @@ import { SkeletonCard, SkeletonChart } from '../components/Skeleton';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
+import { API_BASE_URL } from '../services/api';
 
 interface CircuitBoundary {
   id: string;
@@ -73,8 +74,6 @@ const StatItem = ({ label, value, unit, icon: Icon }: any) => (
     </div>
   </div>
 );
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
