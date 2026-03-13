@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 // Global style import handled in index.tsx
 import Header from '../components/Header';
 import { DashboardSkeleton } from '../components/Skeleton';
-import { User, Smartphone, Activity, Zap, Map, Users, Battery, Wifi } from 'lucide-react';
+import { User, Smartphone, Activity, Zap, Map, Users, Battery, Wifi, Trophy, Gauge, Flag, Menu, Search, Bell, Play, TrendingUp, Droplets, UserPlus, Share2, BarChart3 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { dashboardService } from '../services/dashboardService';
 import { DashboardData } from '../types/dashboard';
 
@@ -11,6 +12,115 @@ const Home: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // États pour le graphique d'évolution des performances
+  const [selectedPilots, setSelectedPilots] = useState([
+    {
+      name: "Jean (Moi)",
+      sessions: 10,
+      data: [
+        { session: 'S01', time: 52.4 },
+        { session: 'S02', time: 55.6 },
+        { session: 'S03', time: 53.3 },
+        { session: 'S04', time: 50.3 },
+        { session: 'S05', time: 52.3 },
+        { session: 'S06', time: 51.3 },
+        { session: 'S07', time: 48.8 },
+        { session: 'S08', time: 48.3 },
+        { session: 'S09', time: 48.3 },
+        { session: 'S10', time: 48.3 },
+      ],
+      color: "#7bf8ac",
+      enabled: true
+    },
+    {
+      name: "Marie Racer",
+      sessions: 25,
+      data: [
+        { session: 'S01', time: 54.2 },
+        { session: 'S02', time: 53.8 },
+        { session: 'S03', time: 52.1 },
+        { session: 'S04', time: 51.5 },
+        { session: 'S05', time: 50.8 },
+        { session: 'S06', time: 50.2 },
+        { session: 'S07', time: 49.6 },
+        { session: 'S08', time: 49.1 },
+        { session: 'S09', time: 48.9 },
+        { session: 'S10', time: 48.7 },
+        { session: 'S11', time: 48.5 },
+        { session: 'S12', time: 48.4 },
+        { session: 'S13', time: 48.2 },
+        { session: 'S14', time: 48.1 },
+        { session: 'S15', time: 48.0 },
+        { session: 'S16', time: 47.9 },
+        { session: 'S17', time: 47.8 },
+        { session: 'S18', time: 47.7 },
+        { session: 'S19', time: 47.6 },
+        { session: 'S20', time: 47.5 },
+        { session: 'S21', time: 47.8 },
+        { session: 'S22', time: 47.4 },
+        { session: 'S23', time: 47.3 },
+        { session: 'S24', time: 47.2 },
+        { session: 'S25', time: 47.1 },
+      ],
+      color: "#f59e0b",
+      enabled: false
+    },
+    {
+      name: "Pierre Speed",
+      sessions: 8,
+      data: [
+        { session: 'S01', time: 56.1 },
+        { session: 'S02', time: 54.3 },
+        { session: 'S03', time: 52.8 },
+        { session: 'S04', time: 51.2 },
+        { session: 'S05', time: 50.1 },
+        { session: 'S06', time: 49.5 },
+        { session: 'S07', time: 49.0 },
+        { session: 'S08', time: 48.8 },
+      ],
+      color: "#3b82f6",
+      enabled: false
+    }
+  ]);
+
+  // Fonction pour toggle l'affichage d'un pilote
+  const togglePilot = (index: number) => {
+    setSelectedPilots((prev: any[]) => prev.map((pilot: any, i: number) =>
+      i === index ? { ...pilot, enabled: !pilot.enabled } : pilot
+    ));
+  };
+
+  // Créer des données combinées pour le graphique
+  const createChartData = () => {
+    const enabledPilots = selectedPilots.filter((p: any) => p.enabled);
+    if (enabledPilots.length === 0) return [];
+
+    // Trouver le nombre maximum de sessions
+    const maxSessions = Math.max(...enabledPilots.map((p: any) => p.sessions));
+
+    // Créer un tableau avec toutes les sessions de S01 à S(max)
+    const chartData = [];
+    for (let i = 1; i <= maxSessions; i++) {
+      const sessionLabel = `S${i.toString().padStart(2, '0')}`;
+      const dataPoint: any = { session: sessionLabel };
+
+      // Ajouter les données de chaque pilote pour cette session
+      enabledPilots.forEach((pilot: any) => {
+        if (i <= pilot.sessions) {
+          // Trouver la donnée correspondante pour cette session
+          const sessionData = pilot.data.find((d: any) => d.session === sessionLabel);
+          if (sessionData) {
+            dataPoint[pilot.name] = sessionData.time;
+          }
+        }
+      });
+
+      chartData.push(dataPoint);
+    }
+
+    return chartData;
+  };
 
   useEffect(() => {
     const updateUserName = () => {
@@ -216,217 +326,272 @@ const Home: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        {/* Performance Overview */}
-        {dashboardData.user_stats && (
+        {/* En-tête avec salutation et bouton de démarrage */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">Bonjour Jean</h1>
+            <p className="text-[#94a3b8] text-sm">Prêt pour une nouvelle session ?</p>
+          </div>
+          <button className="bg-[#7bf8ac] hover:bg-[#6fe89c] text-black font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2">
+            <Play className="w-5 h-5" />
+            DÉMARRER UNE SESSION
+          </button>
+        </div>
+
+        {/* Section Mes Records */}
+        <div>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-4">Mes Records</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="card relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#7bf8ac]/20 to-transparent rounded-bl-full"></div>
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity size={16} className="text-[#7bf8ac]" />
-                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Total Tours</span>
-                </div>
-                <div className="text-2xl font-bold text-white">{dashboardData.user_stats.total_laps.toLocaleString()}</div>
-                <div className="text-xs text-[#94a3b8] mt-1">+12% ce mois</div>
-              </div>
-            </div>
+            {/* Meilleur Tour */}
             <div className="card relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-transparent rounded-bl-full"></div>
               <div className="relative">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap size={16} className="text-yellow-500" />
-                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Meilleur Tour</span>
+                  <Trophy size={16} className="text-yellow-500" />
+                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Meilleur Tour (Record Personnel)</span>
                 </div>
-                <div className="text-2xl font-bold text-[#7bf8ac]">{dashboardData.user_stats.best_lap_time}s</div>
-                <div className="text-xs text-[#94a3b8] mt-1">Record personnel</div>
+                <div className="text-2xl font-bold text-white">48.2s</div>
+                <div className="text-xs text-[#7bf8ac] mt-1">+1.2% ce mois</div>
               </div>
             </div>
+
+            {/* Vitesse Max */}
             <div className="card relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500/20 to-transparent rounded-bl-full"></div>
               <div className="relative">
                 <div className="flex items-center gap-2 mb-2">
-                  <Map size={16} className="text-blue-500" />
+                  <Gauge size={16} className="text-blue-500" />
                   <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Vitesse Max</span>
                 </div>
-                <div className="text-2xl font-bold text-white">{dashboardData.user_stats.top_speed} km/h</div>
+                <div className="text-2xl font-bold text-white">84 km/h</div>
                 <div className="text-xs text-[#94a3b8] mt-1">En ligne droite</div>
               </div>
             </div>
+
+            {/* Constance */}
             <div className="card relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-bl-full"></div>
               <div className="relative">
                 <div className="flex items-center gap-2 mb-2">
-                  <Battery size={16} className="text-emerald-500" />
-                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Constance</span>
+                  <TrendingUp size={16} className="text-emerald-500" />
+                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Constance (Moyenne)</span>
                 </div>
-                <div className="text-2xl font-bold text-emerald-500">{dashboardData.user_stats.consistency}%</div>
+                <div className="text-2xl font-bold text-emerald-500">94%</div>
                 <div className="text-xs text-[#94a3b8] mt-1">Très stable</div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Session Details & Progress */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Last Session Analysis */}
-          {dashboardData.user_stats && (
-            <div className="lg:col-span-2 card">
-              <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Activity size={14} />
-                Analyse Dernière Session
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
-                  <div className="text-lg font-bold text-white">{dashboardData.user_stats.avg_lap_time}s</div>
-                  <div className="text-xs text-[#94a3b8]">Tour Moyen</div>
+            {/* Total Tours */}
+            <div className="card relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-[#7bf8ac]/20 to-transparent rounded-bl-full"></div>
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <Flag size={16} className="text-[#7bf8ac]" />
+                  <span className="text-[10px] text-[#94a3b8] uppercase tracking-wider">Total Tours</span>
                 </div>
-                <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
-                  <div className="text-lg font-bold text-white">{dashboardData.user_stats.top_speed} km/h</div>
-                  <div className="text-xs text-[#94a3b8]">Vitesse Max</div>
-                </div>
-                <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
-                  <div className="text-lg font-bold text-emerald-500">{dashboardData.user_stats.consistency}%</div>
-                  <div className="text-xs text-[#94a3b8]">Constance</div>
-                </div>
-                <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
-                  <div className="text-lg font-bold text-white">
-                    {dashboardData.user_stats.last_session_date ?
-                      new Date(dashboardData.user_stats.last_session_date).toLocaleDateString() :
-                      'N/A'
-                    }
-                  </div>
-                  <div className="text-xs text-[#94a3b8]">Dernière Session</div>
-                </div>
+                <div className="text-2xl font-bold text-white">1248</div>
+                <div className="text-xs text-[#7bf8ac] mt-1">+12% ce mois</div>
               </div>
-
-              {/* Performance Graph Placeholder */}
-              <div className="bg-[#1c1f26] rounded-lg p-4 h-32 flex items-center justify-center">
-                <div className="text-center">
-                  <Activity size={24} className="text-[#94a3b8] mx-auto mb-2" />
-                  <div className="text-xs text-[#94a3b8]">Graphique de performance</div>
-                  <div className="text-xs text-white mt-1">Évolution des temps au tour</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="card">
-            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Zap size={14} />
-              Actions Rapides
-            </h3>
-            <div className="space-y-3">
-              <button className="w-full bg-gradient-to-r from-[#7bf8ac] to-emerald-600 text-black font-bold py-3 px-4 rounded-lg hover:from-emerald-600 hover:to-[#7bf8ac] transition-all duration-200 text-sm">
-                Démarrer Session
-              </button>
-              <button className="w-full bg-[#1c1f26] border border-[#262626] text-white font-medium py-3 px-4 rounded-lg hover:bg-[#262626] transition-all duration-200 text-sm">
-                Voir Historique
-              </button>
-              <button className="w-full bg-[#1c1f26] border border-[#262626] text-white font-medium py-3 px-4 rounded-lg hover:bg-[#262626] transition-all duration-200 text-sm">
-                Comparer Sessions
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Circuit Conditions & Kart Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Circuit Conditions */}
-          {dashboardData.circuit_info && (
-            <div className="card">
-              <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-                <Map size={14} />
-                Conditions Circuit
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-orange-500 text-sm">°C</span>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{dashboardData.circuit_info.temperature}°C</div>
-                    <div className="text-xs text-[#94a3b8]">Température</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-500 text-sm">%</span>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{dashboardData.circuit_info.humidity}%</div>
-                    <div className="text-xs text-[#94a3b8]">Humidité</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-[#7bf8ac]/20 rounded-lg flex items-center justify-center">
-                    <span className="text-[#7bf8ac] text-sm">🏁</span>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-[#7bf8ac]">{dashboardData.circuit_info.grip_level}</div>
-                    <div className="text-xs text-[#94a3b8]">Adhérence</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <span className="text-purple-500 text-sm">🏎️</span>
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold text-white">{dashboardData.circuit_info.active_karts}</div>
-                    <div className="text-xs text-[#94a3b8]">Karts Actifs</div>
-                  </div>
-                </div>
+        {/* Évolution des Performances */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest">
+              ÉVOLUTION DES PERFORMANCES (TEMPS AU TOUR)
+            </h3>
+            <div className="flex gap-2">
+              {selectedPilots.map((pilot, index) => (
+                <button
+                  key={index}
+                  onClick={() => togglePilot(index)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                    pilot.enabled
+                      ? 'bg-white/10 text-white border border-white/20'
+                      : 'bg-[#1c1f26] text-[#94a3b8] border border-[#262626]'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: pilot.color }}
+                  ></div>
+                  <span>{pilot.name}</span>
+                  <span className="text-[10px] opacity-75">({pilot.sessions})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={createChartData()}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                <XAxis
+                  dataKey="session"
+                  stroke="#94a3b8"
+                  tick={{ fontSize: 10 }}
+                />
+                <YAxis
+                  stroke="#94a3b8"
+                  tick={{ fontSize: 10 }}
+                  domain={[45, 60]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#16181d',
+                    border: '1px solid #262626',
+                    borderRadius: '8px'
+                  }}
+                  labelStyle={{ color: '#94a3b8', fontSize: 10 }}
+                  labelFormatter={(label) => `Session ${label}`}
+                  content={({ payload, label }) => {
+                    if (payload && payload.length) {
+                      return (
+                        <div style={{ backgroundColor: '#16181d', border: '1px solid #262626', borderRadius: '8px', padding: '8px' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '10px', marginBottom: '4px' }}>
+                            Session {label}
+                          </div>
+                          {payload.map((entry: any, index: number) => (
+                            <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                              <div
+                                style={{
+                                  width: '12px',
+                                  height: '12px',
+                                  borderRadius: '2px',
+                                  backgroundColor: entry.color
+                                }}
+                              ></div>
+                              <span style={{ color: entry.color, fontWeight: 'bold' }}>
+                                {entry.value}s
+                              </span>
+                              <span style={{ color: entry.color }}>
+                                {entry.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {selectedPilots.filter((p: any) => p.enabled).map((pilot: any, index: number) =>
+                  <Line
+                    key={index}
+                    type="monotone"
+                    dataKey={pilot.name}
+                    stroke={pilot.color}
+                    strokeWidth={pilot.name.includes("Moi") ? 3 : 2}
+                    dot={{ fill: pilot.color, r: pilot.name.includes("Moi") ? 5 : 3 }}
+                    activeDot={{ r: 6 }}
+                    name={pilot.name}
+                  />
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            {selectedPilots.filter(p => p.enabled).map((pilot, index) => (
+              <div key={index} className="text-center">
+                <span className="text-[#94a3b8]">{pilot.name}: </span>
+                <span className="font-bold text-white" style={{ color: pilot.color }}>
+                  {pilot.sessions} sessions
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Résumé Dernière Session et États */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Résumé Dernière Session */}
+          <div className="lg:col-span-2 card">
+            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4">
+              RÉSUMÉ: DERNIÈRE SESSION (10/03/2026)
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
+                <div className="text-lg font-bold text-white">52.4s</div>
+                <div className="text-xs text-[#94a3b8]">Temps Moyen</div>
+              </div>
+              <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
+                <div className="text-lg font-bold text-white">84 km/h</div>
+                <div className="text-xs text-[#94a3b8]">Vitesse Max</div>
+              </div>
+              <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
+                <div className="text-lg font-bold text-white">25</div>
+                <div className="text-xs text-[#94a3b8]">Tours</div>
+              </div>
+              <div className="text-center p-3 bg-[#1c1f26] rounded-lg">
+                <div className="text-lg font-bold text-emerald-500">94%</div>
+                <div className="text-xs text-[#94a3b8]">Constance</div>
               </div>
             </div>
-          )}
+            <button className="w-full bg-[#1c1f26] border border-[#262626] text-white font-medium py-3 px-4 rounded-lg hover:bg-[#262626] transition-all duration-200 text-sm">
+              ANALYSER LA SESSION DÉTAILLÉE
+            </button>
+          </div>
 
-          {/* Personal Kart Status */}
+          {/* États et Conditions */}
           <div className="card">
-            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Smartphone size={14} />
-              Mon Kart
+            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4">
+              ÉTATS ET CONDITIONS
             </h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-sm font-medium text-white">SodiKart RT8-1</div>
-                  <div className="text-xs text-[#94a3b8]">Prêt à rouler</div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-              </div>
+              {/* Kart Status */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-[#94a3b8]">Batterie</span>
-                  <span className="text-xs text-white">85%</span>
+                  <span className="text-sm font-medium text-white">SodiKart RT8-1</span>
+                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                 </div>
-                <div className="w-full bg-[#262626] rounded-full h-2">
-                  <div className="h-2 rounded-full bg-emerald-500" style={{ width: '85%' }}></div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-xs text-[#94a3b8]">BATTERIE</span>
+                    <span className="text-xs text-white">85%</span>
+                  </div>
+                  <div className="w-full bg-[#262626] rounded-full h-2">
+                    <div className="h-2 rounded-full bg-emerald-500" style={{ width: '85%' }}></div>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="text-center p-2 bg-[#1c1f26] rounded">
-                  <div className="text-sm font-bold text-white">48.2V</div>
-                  <div className="text-xs text-[#94a3b8]">Voltage</div>
-                </div>
-                <div className="text-center p-2 bg-[#1c1f26] rounded">
-                  <div className="text-sm font-bold text-white">22°C</div>
-                  <div className="text-xs text-[#94a3b8]">Température</div>
+
+              {/* Conditions Environnementales */}
+              <div className="border-t border-[#262626] pt-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                      <span className="text-orange-500 text-xs">°C</span>
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">24°C</div>
+                      <div className="text-xs text-[#94a3b8]">Temp. Circuit</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                      <Droplets className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">42%</div>
+                      <div className="text-xs text-[#94a3b8]">Humidité</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Achievements */}
+        {/* Réalisations Récentes */}
         <div className="card">
-          <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
-            <Zap size={14} />
-            Réalisations Récentes
+          <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest mb-4">
+            RÉALISATIONS RÉCENTES
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center gap-3 p-3 bg-[#1c1f26] rounded-lg">
               <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
-                <span className="text-yellow-500">🏆</span>
+                <Trophy className="w-6 h-6 text-yellow-500" />
               </div>
               <div>
                 <div className="text-sm font-medium text-white">Tour Record</div>
@@ -435,22 +600,116 @@ const Home: React.FC = () => {
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#1c1f26] rounded-lg">
               <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center">
-                <span className="text-emerald-500">📈</span>
+                <TrendingUp className="w-6 h-6 text-emerald-500" />
               </div>
               <div>
                 <div className="text-sm font-medium text-white">Progression</div>
-                <div className="text-xs text-[#94a3b8]">+15% ce mois</div>
+                <div className="text-xs text-[#94a3b8]">-15% de mois</div>
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 bg-[#1c1f26] rounded-lg">
               <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
-                <span className="text-blue-500">🎯</span>
+                <Gauge className="w-6 h-6 text-blue-500" />
               </div>
               <div>
                 <div className="text-sm font-medium text-white">Constance</div>
                 <div className="text-xs text-[#94a3b8]">94% de régularité</div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Concurrence Amis */}
+        <div className="card">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest">
+              CONCURRENCE AMIS
+            </h3>
+            <div className="flex gap-2">
+              <button className="flex items-center gap-1 px-3 py-1 bg-[#7bf8ac]/20 text-[#7bf8ac] rounded-lg text-xs hover:bg-[#7bf8ac]/30 transition-colors">
+                <UserPlus className="w-3 h-3" />
+                Ajouter
+              </button>
+              <button className="flex items-center gap-1 px-3 py-1 bg-[#1c1f26] border border-[#262626] text-white rounded-lg text-xs hover:bg-[#262626] transition-colors">
+                <Share2 className="w-3 h-3" />
+                Partager
+              </button>
+            </div>
+          </div>
+
+          {/* Classement Amis */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-4 gap-4 text-xs text-[#94a3b8] font-bold uppercase tracking-wider pb-2 border-b border-[#262626]">
+              <span>Position</span>
+              <span>Pilote</span>
+              <span>Meilleur Tour</span>
+              <span>Actions</span>
+            </div>
+
+            {/* Mon profil (highlighted) */}
+            <div className="p-3 bg-[#7bf8ac]/10 border border-[#7bf8ac]/30 rounded-lg">
+              <div className="grid grid-cols-4 gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-[#7bf8ac] text-black flex items-center justify-center text-xs font-bold">1</div>
+                  <span className="text-xs text-[#7bf8ac] font-medium">VOUS</span>
+                </div>
+                <div className="text-sm font-medium text-white">Jean</div>
+                <div className="text-sm font-mono text-[#7bf8ac] font-bold">48.2s</div>
+                <div className="flex gap-1">
+                  <button className="p-1 text-[#94a3b8] hover:text-white transition-colors">
+                    <BarChart3 className="w-3 h-3" />
+                  </button>
+                  <button className="p-1 text-[#94a3b8] hover:text-white transition-colors">
+                    <Share2 className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Amis */}
+            {[
+              { pos: 2, name: "Marie Racer", time: "48.5s", diff: "+0.3s", status: "online" },
+              { pos: 3, name: "Pierre Speed", time: "48.8s", diff: "+0.6s", status: "online" },
+              { pos: 4, name: "Sophie Fast", time: "49.1s", diff: "+0.9s", status: "offline" },
+              { pos: 5, name: "Lucas Bolt", time: "49.5s", diff: "+1.3s", status: "online" },
+            ].map((friend) => (
+              <div key={friend.pos} className="p-3 bg-[#1c1f26] rounded-lg hover:bg-[#262626] transition-colors cursor-pointer group">
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      friend.pos === 2 ? 'bg-gray-400 text-black' :
+                      friend.pos === 3 ? 'bg-orange-600 text-white' :
+                      'bg-[#262626] text-white'
+                    }`}>
+                      {friend.pos}
+                    </div>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" title={friend.status}></div>
+                  </div>
+                  <div className="text-sm font-medium text-white group-hover:text-[#7bf8ac] transition-colors">{friend.name}</div>
+                  <div className="text-sm font-mono text-white">
+                    <span className="text-[#94a3b8]">{friend.time}</span>
+                    <span className="ml-2 text-xs text-orange-500">{friend.diff}</span>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button className="p-1 text-[#94a3b8] hover:text-white transition-colors" title="Comparer">
+                      <BarChart3 className="w-3 h-3" />
+                    </button>
+                    <button className="p-1 text-[#94a3b8] hover:text-white transition-colors" title="Partager">
+                      <Share2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Bouton d'invitation */}
+          <div className="mt-4 p-3 bg-[#1c1f26] border border-dashed border-[#262626] rounded-lg text-center">
+            <p className="text-xs text-[#94a3b8] mb-2">Invitez vos amis à concourir avec vous</p>
+            <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-[#7bf8ac] text-black font-medium rounded-lg text-xs hover:bg-[#6fe89c] transition-colors">
+              <UserPlus className="w-4 h-4" />
+              Inviter des amis
+            </button>
           </div>
         </div>
       </div>
@@ -984,19 +1243,6 @@ const Home: React.FC = () => {
 
       <main className="flex-1 overflow-y-auto">
         <div className="md:p-6 p-4 pb-20 md:pb-0">
-            {/* Welcome Section */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-semibold tracking-tight text-white">Dashboard</h1>
-              <p className="text-[#94a3b8] text-sm mt-1">
-                Vue pour <span className="text-white font-medium">{userName}</span>
-                {dashboardData && (
-                  <span className="ml-2 px-2 py-1 bg-[#1c1f26] text-xs font-medium rounded border border-[#262626] capitalize text-[#94a3b8]">
-                    {dashboardData.user_role}
-                  </span>
-                )}
-              </p>
-            </div>
-
             {/* Dashboard Content */}
             {renderDashboard()}
         </div>
