@@ -79,6 +79,7 @@ const UserManagementPage: React.FC = () => {
   const [formData, setFormData] = useState<UserCreate>({
     username: '',
     email: '',
+    password: '',
     first_name: '',
     last_name: '',
     phone: '',
@@ -217,6 +218,7 @@ const UserManagementPage: React.FC = () => {
     setFormData({
       username: '',
       email: '',
+      password: '',
       first_name: '',
       last_name: '',
       phone: '',
@@ -232,6 +234,7 @@ const UserManagementPage: React.FC = () => {
     setFormData({
       username: user.username,
       email: user.email,
+      password: '',
       first_name: user.first_name,
       last_name: user.last_name,
       phone: user.phone || '',
@@ -674,6 +677,16 @@ const UserManagementPage: React.FC = () => {
                   required
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#a3a3a3] mb-1">Mot de passe</label>
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                   className="w-full bg-[#0d0f12] border border-[#262626] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#7bf8ac]/50 focus:ring-1 focus:ring-[#7bf8ac]/20 transition-colors"
                 />
               </div>

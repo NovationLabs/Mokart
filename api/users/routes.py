@@ -277,6 +277,7 @@ async def mark_all_notifications_read(user_id: str = "", db: Session = Depends(g
 admin_router = APIRouter(prefix="/admin/users", tags=["admin-users"])
 
 @admin_router.get("/", response_model=List[User])
+@admin_router.get("", response_model=List[User])
 async def get_all_users(db: Session = Depends(get_db)):
     """Récupérer tous les utilisateurs (admin)"""
     try:
@@ -366,6 +367,7 @@ async def get_user_by_id(user_id: str, db: Session = Depends(get_db)):
     return User(**result_dict)
 
 @admin_router.post("/", response_model=User)
+@admin_router.post("", response_model=User)
 async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """Créer un nouvel utilisateur (admin)"""
     # Vérifier si le username ou email existe déjà
@@ -397,28 +399,36 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             NOW(), NOW())
     RETURNING id, username, email, first_name, last_name, phone, kart,
               role, is_active, license_number, license_expiry,
-              created_at, updated_at, last_login
+              created_at, updated_at
     """)
 
-    result = db.execute(insert_query, {
-        "username": user_data.username,
-        "email": user_data.email,
-        "password_hash": password_hash,
-        "first_name": user_data.first_name,
-        "last_name": user_data.last_name,
-        "phone": user_data.phone,
-        "kart": user_data.kart,
-        "role": user_data.role,
-        "license_number": user_data.license_number,
-        "license_expiry": user_data.license_expiry
-    }).fetchone()
+    try:
+        result = db.execute(insert_query, {
+            "username": user_data.username,
+            "email": user_data.email,
+            "password_hash": password_hash,
+            "first_name": user_data.first_name,
+            "last_name": user_data.last_name,
+            "phone": user_data.phone,
+            "kart": user_data.kart,
+            "role": user_data.role,
+            "license_number": user_data.license_number,
+            "license_expiry": user_data.license_expiry
+        })
+        db.commit()
 
-    db.commit()
+        row = result.fetchone()
+        result_dict = dict(row._mapping)
+        result_dict['id'] = str(result_dict['id'])
 
-    result_dict = result._asdict()
-    result_dict['id'] = str(result_dict['id'])
-
-    return User(**result_dict)
+        return User(**result_dict)
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur lors de la création: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la création: {str(e)}"
+        )
 
 @admin_router.put("/{user_id}", response_model=User)
 async def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_db)):
@@ -527,9 +537,24 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
             detail="Utilisateur non trouvé"
         )
 
-    # Suppression
-    delete_query = text("DELETE FROM users WHERE id = :user_id")
-    db.execute(delete_query, {"user_id": user_id})
-    db.commit()
+    try:
+        # Supprimer d'abord les sessions associées
+        delete_sessions_query = text("DELETE FROM sessions WHERE user_id = :user_id")
+        db.execute(delete_sessions_query, {"user_id": user_id})
 
-    return {"message": "Utilisateur supprimé"}
+        # Supprimer les notifications associées
+        delete_notifications_query = text("DELETE FROM notifications WHERE user_id = :user_id")
+        db.execute(delete_notifications_query, {"user_id": user_id})
+
+        # Suppression de l'utilisateur
+        delete_query = text("DELETE FROM users WHERE id = :user_id")
+        db.execute(delete_query, {"user_id": user_id})
+        db.commit()
+
+        return {"message": "Utilisateur supprimé"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la suppression: {str(e)}"
+        )

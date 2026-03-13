@@ -32,6 +32,8 @@ services:
     container_name: mokart-app-prod
     ports:
       - "9979:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:9981
     depends_on:
       - api
     restart: always
