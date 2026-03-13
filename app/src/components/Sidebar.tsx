@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Activity, LogOut, Settings, Users, Play } from 'lucide-react';
+import { usePermissions } from '../hooks/usePermissions';
 
 const NAV = [
-  { to: '/',         icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { to: '/analysis', icon: Activity,        label: 'Analysis'             },
-  { to: '/simulation', icon: Play,          label: 'Simulation'           },
-  { to: '/users',    icon: Users,           label: 'Utilisateurs'         },
-  { to: '/settings', icon: Settings,        label: 'Settings'             },
+  { to: '/',           icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/analysis',   icon: Activity,        label: 'Analysis',            permission: 'analysis.read' },
+  { to: '/simulation', icon: Play,            label: 'Simulation',          permission: 'sessions.read' },
+  { to: '/users',      icon: Users,           label: 'Utilisateurs',        permission: 'users.read' },
+  { to: '/settings',   icon: Settings,        label: 'Settings'             },
 ];
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const { hasPermission } = usePermissions();
+
+  const filteredNav = NAV.filter(item => !item.permission || hasPermission(item.permission));
 
   const handleLogout = () => {
     localStorage.removeItem('mokart_session');
@@ -25,7 +29,7 @@ const Sidebar: React.FC = () => {
     <>
       {/* ── Mobile bottom nav ──────────────────────────────────────────── */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0d0f12]/98 border-t border-[#262626] flex items-center justify-around z-50 px-4 backdrop-blur-xl">
-        {NAV.map(({ to, icon: Icon, label, end }) => (
+        {filteredNav.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -78,7 +82,7 @@ const Sidebar: React.FC = () => {
 
         {/* Nav links */}
         <nav className="flex-1 flex flex-col gap-0.5 w-full px-1.5">
-          {NAV.map(({ to, icon: Icon, label, end }) => (
+          {filteredNav.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to}
               to={to}
