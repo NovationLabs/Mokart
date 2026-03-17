@@ -398,11 +398,11 @@ const Home: React.FC = () => {
 
         {/* Évolution des Performances */}
         <div className="card">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest">
               ÉVOLUTION DES PERFORMANCES (TEMPS AU TOUR)
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {selectedPilots.map((pilot, index) => (
                 <button
                   key={index}
@@ -417,13 +417,14 @@ const Home: React.FC = () => {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: pilot.color }}
                   ></div>
-                  <span>{pilot.name}</span>
+                  <span className="hidden sm:inline">{pilot.name}</span>
+                  <span className="sm:hidden">{pilot.name.split(' ')[0]}</span>
                   <span className="text-[10px] opacity-75">({pilot.sessions})</span>
                 </button>
               ))}
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={createChartData()}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
@@ -621,7 +622,7 @@ const Home: React.FC = () => {
 
         {/* Concurrence Amis */}
         <div className="card">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
             <h3 className="text-[#94a3b8] text-[10px] font-bold uppercase tracking-widest">
               CONCURRENCE AMIS
             </h3>
@@ -639,7 +640,7 @@ const Home: React.FC = () => {
 
           {/* Classement Amis */}
           <div className="space-y-3">
-            <div className="grid grid-cols-4 gap-4 text-xs text-[#94a3b8] font-bold uppercase tracking-wider pb-2 border-b border-[#262626]">
+            <div className="hidden sm:grid grid-cols-4 gap-4 text-xs text-[#94a3b8] font-bold uppercase tracking-wider pb-2 border-b border-[#262626]">
               <span>Position</span>
               <span>Pilote</span>
               <span>Meilleur Tour</span>
@@ -648,12 +649,12 @@ const Home: React.FC = () => {
 
             {/* Mon profil (highlighted) */}
             <div className="p-3 bg-[#7bf8ac]/10 border border-[#7bf8ac]/30 rounded-lg">
-              <div className="grid grid-cols-4 gap-4 items-center">
+              <div className="flex items-center justify-between sm:grid sm:grid-cols-4 sm:gap-4 sm:items-center">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-[#7bf8ac] text-black flex items-center justify-center text-xs font-bold">1</div>
                   <span className="text-xs text-[#7bf8ac] font-medium">VOUS</span>
                 </div>
-                <div className="text-sm font-medium text-white">Jean</div>
+                <div className="text-sm font-medium text-white hidden sm:block">Jean</div>
                 <div className="text-sm font-mono text-[#7bf8ac] font-bold">48.2s</div>
                 <div className="flex gap-1">
                   <button className="p-1 text-[#94a3b8] hover:text-white transition-colors">
@@ -674,7 +675,7 @@ const Home: React.FC = () => {
               { pos: 5, name: "Lucas Bolt", time: "49.5s", diff: "+1.3s", status: "online" },
             ].map((friend) => (
               <div key={friend.pos} className="p-3 bg-[#1c1f26] rounded-lg hover:bg-[#262626] transition-colors cursor-pointer group">
-                <div className="grid grid-cols-4 gap-4 items-center">
+                <div className="flex items-center justify-between sm:grid sm:grid-cols-4 sm:gap-4 sm:items-center">
                   <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                       friend.pos === 2 ? 'bg-gray-400 text-black' :
@@ -684,13 +685,14 @@ const Home: React.FC = () => {
                       {friend.pos}
                     </div>
                     <div className="w-2 h-2 rounded-full bg-emerald-500" title={friend.status}></div>
+                    <span className="text-sm font-medium text-white group-hover:text-[#7bf8ac] transition-colors sm:hidden">{friend.name.split(' ')[0]}</span>
                   </div>
-                  <div className="text-sm font-medium text-white group-hover:text-[#7bf8ac] transition-colors">{friend.name}</div>
+                  <div className="text-sm font-medium text-white group-hover:text-[#7bf8ac] transition-colors hidden sm:block">{friend.name}</div>
                   <div className="text-sm font-mono text-white">
                     <span className="text-[#94a3b8]">{friend.time}</span>
                     <span className="ml-2 text-xs text-orange-500">{friend.diff}</span>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button className="p-1 text-[#94a3b8] hover:text-white transition-colors" title="Comparer">
                       <BarChart3 className="w-3 h-3" />
                     </button>
@@ -880,25 +882,25 @@ const Home: React.FC = () => {
 
             {/* Session Timer */}
             <div className="bg-[#1c1f26] rounded-lg p-4 mb-4">
-              <div className="flex justify-between items-center">
+              <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-sm text-[#94a3b8]">Temps de session</div>
-                  <div className="text-2xl font-mono font-bold text-white">14:32</div>
+                  <div className="text-[10px] sm:text-sm text-[#94a3b8]">Temps de session</div>
+                  <div className="text-lg sm:text-2xl font-mono font-bold text-white">14:32</div>
                 </div>
                 <div>
-                  <div className="text-sm text-[#94a3b8]">Tours complétés</div>
-                  <div className="text-2xl font-bold text-[#7bf8ac]">47</div>
+                  <div className="text-[10px] sm:text-sm text-[#94a3b8]">Tours complétés</div>
+                  <div className="text-lg sm:text-2xl font-bold text-[#7bf8ac]">47</div>
                 </div>
                 <div>
-                  <div className="text-sm text-[#94a3b8]">Meilleur tour</div>
-                  <div className="text-2xl font-bold text-white">48.2s</div>
+                  <div className="text-[10px] sm:text-sm text-[#94a3b8]">Meilleur tour</div>
+                  <div className="text-lg sm:text-2xl font-bold text-white">48.2s</div>
                 </div>
               </div>
             </div>
 
             {/* Live Leaderboard */}
             <div className="space-y-3">
-              <div className="flex justify-between items-center text-xs text-[#94a3b8] font-bold uppercase tracking-wider">
+              <div className="hidden md:grid grid-cols-5 gap-4 text-xs text-[#94a3b8] font-bold uppercase tracking-wider">
                 <span>Position</span>
                 <span>Pilote</span>
                 <span>Kart</span>
@@ -912,25 +914,27 @@ const Home: React.FC = () => {
                 { pos: 3, driver: "Pierre Speed", kart: "KRT8-3", lastLap: "48.8s", gap: "+0.6s" },
                 { pos: 4, driver: "Sophie Fast", kart: "KRT8-4", lastLap: "49.1s", gap: "+0.9s" }
               ].map((position) => (
-                <div key={position.pos} className="flex justify-between items-center p-3 bg-[#1c1f26] rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      position.pos === 1 ? 'bg-yellow-500 text-black' :
-                      position.pos === 2 ? 'bg-gray-400 text-black' :
-                      position.pos === 3 ? 'bg-orange-600 text-white' :
-                      'bg-[#262626] text-white'
-                    }`}>
-                      {position.pos}
+                <div key={position.pos} className="p-3 bg-[#1c1f26] rounded-lg">
+                  <div className="flex items-center justify-between md:grid md:grid-cols-5 md:gap-4 md:items-center">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                        position.pos === 1 ? 'bg-yellow-500 text-black' :
+                        position.pos === 2 ? 'bg-gray-400 text-black' :
+                        position.pos === 3 ? 'bg-orange-600 text-white' :
+                        'bg-[#262626] text-white'
+                      }`}>
+                        {position.pos}
+                      </div>
+                      <span className="text-sm font-medium text-white">{position.driver}</span>
                     </div>
-                    <span className="text-sm font-medium text-white">{position.driver}</span>
+                    <span className="text-xs text-[#94a3b8] hidden md:block">{position.kart}</span>
+                    <span className="text-sm font-mono text-white">{position.lastLap}</span>
+                    <span className={`text-xs font-bold ${
+                      position.gap === "LIDER" ? 'text-[#7bf8ac]' : 'text-white'
+                    }`}>
+                      {position.gap}
+                    </span>
                   </div>
-                  <span className="text-xs text-[#94a3b8]">{position.kart}</span>
-                  <span className="text-sm font-mono text-white">{position.lastLap}</span>
-                  <span className={`text-xs font-bold ${
-                    position.gap === "LIDER" ? 'text-[#7bf8ac]' : 'text-white'
-                  }`}>
-                    {position.gap}
-                  </span>
                 </div>
               ))}
             </div>

@@ -359,7 +359,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
+              <div className="absolute right-0 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-80 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
                 <div className="p-3 border-b border-[#262626] flex items-center justify-between">
                   <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Notifications</h3>
                   {unreadCount > 0 && (
@@ -416,7 +416,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
+              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
                 <div className="p-3 border-b border-[#262626]">
                   <p className="text-sm font-medium text-white">
                     {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() || userProfile.username : '...'}

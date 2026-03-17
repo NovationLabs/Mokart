@@ -441,7 +441,7 @@ const SimulationPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={toggleSimulation}
                 className={`p-2 border transition-colors rounded ${
@@ -472,7 +472,7 @@ const SimulationPage: React.FC = () => {
 
               <button
                 onClick={zoomIn}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
                 title="Zoom avant"
               >
                 <ZoomIn size={16} />
@@ -480,7 +480,7 @@ const SimulationPage: React.FC = () => {
 
               <button
                 onClick={zoomOut}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
                 title="Zoom arrière"
               >
                 <ZoomOut size={16} />
@@ -488,7 +488,7 @@ const SimulationPage: React.FC = () => {
 
               <button
                 onClick={resetView}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
+                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
                 title="Réinitialiser la vue"
               >
                 <Move size={16} />

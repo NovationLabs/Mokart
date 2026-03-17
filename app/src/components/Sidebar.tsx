@@ -28,14 +28,14 @@ const Sidebar: React.FC = () => {
   return (
     <>
       {/* ── Mobile bottom nav ──────────────────────────────────────────── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0d0f12]/98 border-t border-[#262626] flex items-center justify-around z-50 px-4 backdrop-blur-xl">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0d0f12]/98 border-t border-[#262626] flex items-center justify-evenly z-50 px-2 backdrop-blur-xl safe-area-bottom">
         {filteredNav.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all ${
+              `flex flex-col items-center justify-center gap-0.5 min-w-[48px] py-1.5 px-1 rounded-lg transition-all ${
                 isActive ? 'text-[#7bf8ac]' : 'text-white/35 hover:text-white'
               }`
             }
@@ -43,19 +43,19 @@ const Sidebar: React.FC = () => {
             {({ isActive }) => (
               <>
                 <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
-                <span className="text-[9px] font-medium uppercase tracking-wider">{label}</span>
+                <span className="text-[8px] font-medium uppercase tracking-wider leading-none">{label}</span>
               </>
             )}
           </NavLink>
         ))}
         <button
           onClick={handleLogout}
-          className="flex flex-col items-center gap-0.5 p-2 rounded-lg text-white/35 hover:text-white transition-colors"
+          className="flex flex-col items-center justify-center gap-0.5 min-w-[48px] py-1.5 px-1 rounded-lg text-white/35 hover:text-white transition-colors"
         >
           <LogOut size={20} strokeWidth={1.5} />
-          <span className="text-[9px] font-medium uppercase tracking-wider">Out</span>
+          <span className="text-[8px] font-medium uppercase tracking-wider leading-none">Out</span>
         </button>
-      </div>
+      </nav>
 
       {/* ── Desktop sidebar ────────────────────────────────────────────── */}
       <aside
