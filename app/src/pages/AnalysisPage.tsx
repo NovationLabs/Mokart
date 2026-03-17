@@ -60,7 +60,7 @@ interface PointInfo {
 }
 
 const StatItem = ({ label, value, unit, icon: Icon }: any) => (
-  <div className="card flex items-center gap-3">
+  <div className="card flex items-center gap-3 shrink-0 lg:shrink min-w-[160px] lg:min-w-0">
     <div className="p-2 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
       <Icon size={18} />
     </div>
@@ -757,7 +757,7 @@ const AnalysisPage: React.FC = () => {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
           {/* Stats Column */}
-          <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
+          <div className="lg:col-span-1 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden pr-0 lg:pr-1 pb-2 lg:pb-0">
             <StatItem
               label="Data Points"
               value={stats?.total_points?.toLocaleString() || '0'}
@@ -819,7 +819,7 @@ const AnalysisPage: React.FC = () => {
 
           {/* Map / Visualization Column */}
           <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
-            <div className="absolute top-4 left-4 z-10 flex gap-2">
+            <div className="absolute top-4 left-4 z-20 flex gap-2">
               <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
                 Trajectory View
               </div>
@@ -838,7 +838,7 @@ const AnalysisPage: React.FC = () => {
             </div>
 
             {/* Zoom Controls */}
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 z-20 hidden md:flex flex-col gap-2">
               <button
                 onClick={zoomIn}
                 className="p-1.5 bg-[#0d0f12]/80 backdrop-blur border border-[#262626] text-[#94a3b8] hover:text-white rounded transition-colors"
@@ -866,7 +866,7 @@ const AnalysisPage: React.FC = () => {
             </div>
 
             <div
-              className="flex-1 w-full h-full min-h-[400px] flex items-center justify-center bg-[#101010] relative"
+              className="flex-1 w-full h-full min-h-[300px] sm:min-h-[400px] flex items-center justify-center bg-[#101010] relative"
               onWheel={handleWheel}
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}

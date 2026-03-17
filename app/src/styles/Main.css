@@ -255,3 +255,9 @@ body {
 .animate-fade-in    { animation: fade-in 0.35s ease-out both; }
 .animate-spin       { animation: spin 1s linear infinite; }
 .animate-value-glow { animation: value-glow 2.5s ease-in-out infinite; }
+
+/* ─── Safe area for bottom nav on notched devices ────────────────────────────── */
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
