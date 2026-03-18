@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Header from '../components/Header';
+import { SkeletonCard, SkeletonChart } from '../components/Skeleton';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
@@ -60,7 +61,7 @@ interface PointInfo {
 }
 
 const StatItem = ({ label, value, unit, icon: Icon }: any) => (
-  <div className="card flex items-center gap-3 shrink-0 lg:shrink min-w-[160px] lg:min-w-0">
+  <div className="card flex items-center gap-3">
     <div className="p-2 rounded-lg bg-[#1c1f26] text-[#94a3b8]">
       <Icon size={18} />
     </div>
@@ -77,6 +78,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || `http://${window.location.
 
 const AnalysisPage: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<string>('');
   const [trajectory, setTrajectory] = useState<TrajectoryPoint[]>([]);
   const [circuitBoundaries, setCircuitBoundaries] = useState<CircuitBoundary[]>([]);
@@ -87,6 +89,7 @@ const AnalysisPage: React.FC = () => {
   const [showOptimalTrajectory, setShowOptimalTrajectory] = useState<boolean>(true);
   const [trajectoryComparison, setTrajectoryComparison] = useState<TrajectoryComparison | null>(null);
   const [calculatingTrajectory, setCalculatingTrajectory] = useState<boolean>(false);
+  const [displayMode, setDisplayMode] = useState<'speed' | 'accuracy'>('speed');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -187,6 +190,7 @@ const AnalysisPage: React.FC = () => {
   }, [trajectory, circuitBoundaries]);
 
   const fetchSessions = async () => {
+    setSessionsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/sessions/`);
       const data = await response.json();
@@ -196,6 +200,8 @@ const AnalysisPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
+    } finally {
+      setSessionsLoading(false);
     }
   };
 
@@ -380,6 +386,193 @@ const AnalysisPage: React.FC = () => {
       totalDistance += Math.sqrt(Math.pow(points[i].x - points[i - 1].x, 2) + Math.pow(points[i].y - points[i - 1].y, 2));
     }
     return totalDistance;
+  };
+
+  // Calculate speed for all trajectory points
+  const calculateSpeeds = (): number[] => {
+    const speeds: number[] = [];
+    for (let i = 0; i < trajectory.length; i++) {
+      const speed = i > 0 ? calculateSpeed(trajectory[i - 1], trajectory[i]) : 0;
+      speeds.push(speed);
+    }
+    return speeds;
+  };
+
+  // Calculate circuit width from boundaries
+  const calculateCircuitWidth = (): number => {
+    if (circuitBoundaries.length === 0) return 10; // Default width
+
+    let totalWidth = 0;
+    let count = 0;
+
+    // Group boundaries by point_order to calculate width at each point
+    const boundaryGroups: { [key: number]: CircuitBoundary[] } = {};
+    circuitBoundaries.forEach(boundary => {
+      if (!boundaryGroups[boundary.point_order]) {
+        boundaryGroups[boundary.point_order] = [];
+      }
+      boundaryGroups[boundary.point_order].push(boundary);
+    });
+
+    // Calculate width for each point where we have both left and right boundaries
+    Object.values(boundaryGroups).forEach(group => {
+      const leftBoundary = group.find(b => b.side === 'left');
+      const rightBoundary = group.find(b => b.side === 'right');
+
+      if (leftBoundary && rightBoundary) {
+        const width = Math.sqrt(
+          Math.pow(rightBoundary.x - leftBoundary.x, 2) +
+          Math.pow(rightBoundary.y - leftBoundary.y, 2)
+        );
+        totalWidth += width;
+        count++;
+      }
+    });
+
+    return count > 0 ? totalWidth / count : 10; // Return average width or default
+  };
+
+  // Calculate distance between two points
+  const calculateDistance = (p1: {x: number, y: number}, p2: {x: number, y: number}): number => {
+    return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+  };
+
+  // Find closest point on optimal trajectory to a given actual trajectory point
+  const findClosestOptimalPoint = (actualPoint: {x: number, y: number}, actualIndex: number): {x: number, y: number} | null => {
+    if (optimalTrajectory.length === 0) return null;
+
+    // Calculate the expected position in the optimal trajectory based on progress
+    const progressRatio = actualIndex / Math.max(trajectory.length - 1, 1);
+    const expectedOptimalIndex = Math.floor(progressRatio * (optimalTrajectory.length - 1));
+
+    // Search in a window around the expected position
+    const searchWindow = Math.max(10, Math.floor(optimalTrajectory.length * 0.1)); // 10% of trajectory or 10 points
+    const startIndex = Math.max(0, expectedOptimalIndex - searchWindow);
+    const endIndex = Math.min(optimalTrajectory.length - 1, expectedOptimalIndex + searchWindow);
+
+    let minDistance = Infinity;
+    let closestPoint = null;
+
+    // Search in the window first (more likely to be the correct match)
+    for (let i = startIndex; i <= endIndex; i++) {
+      const optimalPoint = optimalTrajectory[i];
+      const distance = calculateDistance(actualPoint, optimalPoint);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = optimalPoint;
+      }
+    }
+
+    // If we didn't find a close enough match in the window, search the entire trajectory
+    if (minDistance > 5.0 && searchWindow < optimalTrajectory.length) { // 5 meters threshold
+      optimalTrajectory.forEach(optimalPoint => {
+        const distance = calculateDistance(actualPoint, optimalPoint);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestPoint = optimalPoint;
+        }
+      });
+    }
+
+    return closestPoint;
+  };
+
+  // Calculate trajectory accuracy percentage with color coding
+  const calculateTrajectoryAccuracy = (): { percentage: number; color: string; points: Array<{index: number, accuracy: number, color: string}> } => {
+    if (trajectory.length === 0 || optimalTrajectory.length === 0) {
+      return { percentage: 0, color: '#ef4444', points: [] };
+    }
+
+    const circuitWidth = calculateCircuitWidth();
+    const maxAcceptableDeviation = circuitWidth * 0.8; // 80% of circuit width as max acceptable deviation
+    const points: Array<{index: number, accuracy: number, color: string}> = [];
+    let totalAccuracy = 0;
+
+    trajectory.forEach((point, index) => {
+      const closestOptimal = findClosestOptimalPoint(point, index);
+      if (closestOptimal) {
+        const deviation = calculateDistance(point, closestOptimal);
+        // Calculate accuracy as percentage (100% = perfect alignment, 0% = max deviation)
+        // Use a much more forgiving curve for real karting conditions
+        let accuracy;
+        if (deviation <= maxAcceptableDeviation * 0.15) { // Very close (up to 1.2m for 10m circuit)
+          accuracy = 100;
+        } else if (deviation <= maxAcceptableDeviation * 0.35) { // Close (up to 2.8m for 10m circuit)
+          accuracy = 85;
+        } else if (deviation <= maxAcceptableDeviation * 0.6) { // Moderate (up to 4.8m for 10m circuit)
+          accuracy = 70;
+        } else if (deviation <= maxAcceptableDeviation * 0.8) { // Acceptable (up to 6.4m for 10m circuit)
+          accuracy = 55;
+        } else {
+          accuracy = Math.max(0, 100 - (deviation / maxAcceptableDeviation) * 50); // More gradual decrease
+        }
+
+        totalAccuracy += accuracy;
+
+        // Determine color based on accuracy
+        let color;
+        if (accuracy >= 80) {
+          // Green (80-100%)
+          color = '#22c55e';
+        } else if (accuracy >= 60) {
+          // Yellow (60-80%)
+          color = '#eab308';
+        } else if (accuracy >= 40) {
+          // Orange (40-60%)
+          color = '#f97316';
+        } else {
+          // Red (0-40%)
+          color = '#ef4444';
+        }
+
+        points.push({ index, accuracy, color });
+      }
+    });
+
+    const averageAccuracy = totalAccuracy / trajectory.length;
+
+    // Determine overall color
+    let overallColor;
+    if (averageAccuracy >= 80) {
+      overallColor = '#22c55e'; // Green
+    } else if (averageAccuracy >= 60) {
+      overallColor = '#eab308'; // Yellow
+    } else if (averageAccuracy >= 40) {
+      overallColor = '#f97316'; // Orange
+    } else {
+      overallColor = '#ef4444'; // Red
+    }
+
+    return {
+      percentage: averageAccuracy,
+      color: overallColor,
+      points
+    };
+  };
+
+  // Get color based on speed (blue = slow, green = medium, yellow = fast, red = very fast)
+  const getSpeedColor = (speed: number, maxSpeed: number): string => {
+    if (maxSpeed === 0) return '#22d3ee'; // cyan default
+
+    const ratio = Math.min(speed / maxSpeed, 1);
+
+    if (ratio < 0.25) {
+      // Blue to cyan
+      const localRatio = ratio / 0.25;
+      return `rgb(${Math.round(34 + (34 - 34) * localRatio)}, ${Math.round(211 + (211 - 211) * localRatio)}, ${Math.round(238 + (238 - 238) * localRatio)})`;
+    } else if (ratio < 0.5) {
+      // Cyan to green
+      const localRatio = (ratio - 0.25) / 0.25;
+      return `rgb(${Math.round(34 + (123 - 34) * localRatio)}, ${Math.round(211 + (248 - 211) * localRatio)}, ${Math.round(238 + (172 - 238) * localRatio)})`;
+    } else if (ratio < 0.75) {
+      // Green to yellow
+      const localRatio = (ratio - 0.5) / 0.25;
+      return `rgb(${Math.round(123 + (245 - 123) * localRatio)}, ${Math.round(248 + (158 - 248) * localRatio)}, ${Math.round(172 + (11 - 172) * localRatio)})`;
+    } else {
+      // Yellow to red
+      const localRatio = (ratio - 0.75) / 0.25;
+      return `rgb(${Math.round(245 + (239 - 245) * localRatio)}, ${Math.round(158 + (68 - 158) * localRatio)}, ${Math.round(11 + (68 - 11) * localRatio)})`;
+    }
   };
 
   const handlePointClick = (data: any, index: number) => {
@@ -573,7 +766,7 @@ const AnalysisPage: React.FC = () => {
                 Vitesse
               </span>
               <span className="text-white font-mono">
-                {(selectedPoint.speed || 0).toFixed(2)} m/s
+                {((selectedPoint.speed || 0) * 3.6).toFixed(1)} km/h
               </span>
             </div>
 
@@ -694,10 +887,10 @@ const AnalysisPage: React.FC = () => {
   }, [selectedSession, sessions]);
 
   return (
-    <main className="flex-1 md:ml-11 ml-0 relative h-screen flex flex-col overflow-hidden">
-        <Header />
+    <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-y-auto md:overflow-hidden">
+      <Header />
 
-        <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
+        <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 md:overflow-hidden flex flex-col">
           {/* Top Bar */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 shrink-0 border-b border-[#262626] pb-4 gap-4 md:gap-0">
             <div>
@@ -709,12 +902,12 @@ const AnalysisPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex gap-3 w-full md:w-auto">
-              <div className="relative flex-1 md:flex-none">
+            <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-none min-w-0">
                 <select
                   value={selectedSession}
                   onChange={(e: any) => setSelectedSession(e.target.value)}
-                  className="w-full md:w-auto appearance-none bg-[#16181d] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer min-w-[200px]"
+                  className="w-full md:w-auto appearance-none bg-[#16181d] border border-[#262626] text-white pl-3 pr-8 py-1.5 rounded text-xs focus:outline-none focus:border-white transition-colors cursor-pointer md:min-w-[200px]"
                 >
                   <option value="" disabled>Select Session</option>
                   {sessions.map((s: Session) => (
@@ -750,6 +943,31 @@ const AnalysisPage: React.FC = () => {
               >
                 {showOptimalTrajectory ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
+
+              {trajectory.length > 0 && optimalTrajectory.length > 0 && (
+                <div className="flex border border-[#262626] rounded">
+                  <button
+                    onClick={() => setDisplayMode('speed')}
+                    className={`px-2 py-1 text-xs transition-colors ${
+                      displayMode === 'speed'
+                        ? 'bg-[#7bf8ac] text-black'
+                        : 'bg-[#16181d] text-[#94a3b8] hover:text-white'
+                    }`}
+                  >
+                    Vitesse
+                  </button>
+                  <button
+                    onClick={() => setDisplayMode('accuracy')}
+                    className={`px-2 py-1 text-xs transition-colors ${
+                      displayMode === 'accuracy'
+                        ? 'bg-[#7bf8ac] text-black'
+                        : 'bg-[#16181d] text-[#94a3b8] hover:text-white'
+                    }`}
+                  >
+                    Précision
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -757,7 +975,15 @@ const AnalysisPage: React.FC = () => {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
           {/* Stats Column */}
-          <div className="lg:col-span-1 flex flex-row lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden pr-0 lg:pr-1 pb-2 lg:pb-0">
+          {sessionsLoading ? (
+            <div className="lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-3 lg:overflow-y-auto lg:pr-1">
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={2} />
+              <SkeletonCard lines={4} />
+              <SkeletonCard lines={3} />
+            </div>
+          ) : (
+          <div className="lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-3 lg:overflow-y-auto lg:pr-1">
             <StatItem
               label="Data Points"
               value={stats?.total_points?.toLocaleString() || '0'}
@@ -815,9 +1041,113 @@ const AnalysisPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Trajectory Accuracy */}
+            {trajectory.length > 0 && optimalTrajectory.length > 0 && (() => {
+              const accuracy = calculateTrajectoryAccuracy();
+              return (
+                <div className="card">
+                  <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                    <Target size={12} />
+                    Précision Trajectoire
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[#a3a3a3] text-xs">Précision globale</span>
+                      <span className="font-mono text-sm font-bold" style={{ color: accuracy.color }}>
+                        {accuracy.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#262626] h-2 rounded-full overflow-hidden">
+                      <div
+                        className="h-full transition-all duration-500"
+                        style={{
+                          width: `${accuracy.percentage}%`,
+                          backgroundColor: accuracy.color
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-[#a3a3a3] pt-1">
+                      Largeur circuit: {calculateCircuitWidth().toFixed(1)}m
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Speed/Accuracy Color Legend */}
+            <div className="card">
+              <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                <Gauge size={12} />
+                {displayMode === 'speed' ? 'Vitesse' : 'Précision'}
+              </h3>
+              <div className="space-y-2">
+                <div className="text-xs text-[#a3a3a3] mb-2">Échelle de couleur:</div>
+                {displayMode === 'speed' ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#22d3ee]"></div>
+                      <span className="text-xs text-white">Lent</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#7bf8ac]"></div>
+                      <span className="text-xs text-white">Modéré</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+                      <span className="text-xs text-white">Rapide</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+                      <span className="text-xs text-white">Très rapide</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#22c55e]"></div>
+                      <span className="text-xs text-white">Excellent (80-100%)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#eab308]"></div>
+                      <span className="text-xs text-white">Bon (60-80%)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#f97316]"></div>
+                      <span className="text-xs text-white">Moyen (40-60%)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+                      <span className="text-xs text-white">Mauvais (0-40%)</span>
+                    </div>
+                  </div>
+                )}
+                {trajectory.length > 0 && displayMode === 'speed' && (() => {
+                  const speeds = calculateSpeeds();
+                  const maxSpeed = Math.max(...speeds);
+                  const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+                  return (
+                    <div className="pt-2 border-t border-[#262626] space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[#a3a3a3]">Vitesse max</span>
+                        <span className="font-mono text-white">{(maxSpeed * 3.6).toFixed(0)} km/h</span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-[#a3a3a3]">Vitesse moy</span>
+                        <span className="font-mono text-white">{(avgSpeed * 3.6).toFixed(0)} km/h</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
+          )}
 
           {/* Map / Visualization Column */}
+          {sessionsLoading ? (
+            <SkeletonChart className="lg:col-span-3 min-h-[300px]" />
+          ) : (
           <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
             <div className="absolute top-4 left-4 z-20 flex gap-2">
               <div className="px-2 py-1 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#94a3b8] border border-[#262626] rounded">
@@ -941,36 +1271,93 @@ const AnalysisPage: React.FC = () => {
                         shape={<circle r={0} />}
                       />
 
-                      {/* Trajectory */}
-                      <Scatter
-                        name="Trajectory"
-                        data={trajectory}
-                        fill="#7bf8ac"
-                        line={{ stroke: '#7bf8ac', strokeWidth: 1.5 }}
-                        lineType="joint"
-                        shape={(props: any) => {
-                          const isClosest = closestPoint && props.index === closestPoint.index;
-                          const isHovered = hoveredPoint && props.index === hoveredPoint.index;
-                          const radius = isClosest ? 6 : (showPoints ? 4 : 3);
-                          const fill = isClosest ? '#10b981' : (showPoints ? '#7bf8ac' : 'rgba(34, 211, 238, 0.3)');
+                      {/* Trajectory with individual segment colors */}
+                      {(() => {
+                        if (displayMode === 'accuracy' && optimalTrajectory.length > 0) {
+                          const accuracyData = calculateTrajectoryAccuracy();
 
+                          return accuracyData.points.map((pointData, index) => {
+                            if (index === 0) return null;
+
+                            const prevPoint = trajectory[index - 1];
+                            const currentPoint = trajectory[index];
+
+                            return (
+                              <Scatter
+                                key={`segment-${index}`}
+                                data={[prevPoint, currentPoint]}
+                                fill="none"
+                                line={{
+                                  stroke: pointData.color,
+                                  strokeWidth: 2
+                                }}
+                                lineType="joint"
+                                shape={<circle r={0} />}
+                              />
+                            );
+                          });
+                        } else {
+                          // Default speed-based trajectory
                           return (
-                            <circle
-                              cx={props.cx}
-                              cy={props.cy}
-                              r={radius}
-                              fill={fill}
-                              stroke={isClosest ? '#10b981' : '#7bf8ac'}
-                              strokeWidth={isClosest ? 2 : 1}
-                              className="cursor-pointer transition-all duration-150"
-                              style={{
-                                filter: isClosest ? 'drop-shadow(0 0 4px rgba(16, 185, 129, 0.8))' : 'none'
+                            <Scatter
+                              name="Trajectory"
+                              data={trajectory}
+                              fill="#7bf8ac"
+                              line={{
+                                stroke: displayMode === 'accuracy' && optimalTrajectory.length > 0
+                                  ? calculateTrajectoryAccuracy().color
+                                  : '#7bf8ac',
+                                strokeWidth: 1.5
                               }}
+                              lineType="joint"
+                              shape={(props: any) => {
+                                const isClosest = closestPoint && props.index === closestPoint.index;
+                                const isHovered = hoveredPoint && props.index === hoveredPoint.index;
+                                const radius = isClosest ? 6 : (showPoints ? 4 : 3);
+
+                                let fill, stroke;
+
+                                if (displayMode === 'accuracy' && optimalTrajectory.length > 0) {
+                                  // Use accuracy colors
+                                  const accuracyData = calculateTrajectoryAccuracy();
+                                  const pointAccuracy = accuracyData.points.find(p => p.index === props.index);
+                                  if (pointAccuracy) {
+                                    fill = pointAccuracy.color;
+                                    stroke = isClosest ? '#ffffff' : pointAccuracy.color;
+                                  } else {
+                                    fill = '#7bf8ac';
+                                    stroke = isClosest ? '#ffffff' : '#7bf8ac';
+                                  }
+                                } else {
+                                  // Use speed colors (default)
+                                  const speeds = calculateSpeeds();
+                                  const maxSpeed = Math.max(...speeds);
+                                  const currentSpeed = speeds[props.index] || 0;
+                                  const speedColor = getSpeedColor(currentSpeed, maxSpeed);
+                                  fill = speedColor;
+                                  stroke = isClosest ? '#ffffff' : speedColor;
+                                }
+
+                                return (
+                                  <circle
+                                    cx={props.cx}
+                                    cy={props.cy}
+                                    r={radius}
+                                    fill={fill}
+                                    stroke={stroke}
+                                    strokeWidth={isClosest ? 2 : 1}
+                                    className="cursor-pointer transition-all duration-150"
+                                    style={{
+                                      filter: isClosest ? 'drop-shadow(0 0 6px rgba(255, 255, 255, 0.8))' : 'drop-shadow(0 0 2px rgba(0, 0, 0, 0.3))'
+                                    }}
+                                  />
+                                );
+                              }}
+                              onClick={handlePointClick}
                             />
                           );
-                        }}
-                        onClick={handlePointClick}
-                      />
+                        }
+                      })()}
 
                       {/* Optimal Trajectory */}
                       {showOptimalTrajectory && optimalTrajectory.length > 0 && (
@@ -979,7 +1366,7 @@ const AnalysisPage: React.FC = () => {
                           data={[...optimalTrajectory.map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 })),
                                 ...optimalTrajectory.slice(0, 1).map((point: OptimalTrajectoryPoint) => ({ x: point.x, y: point.y, timestamp: 0 }))]}
                           fill="none"
-                          line={{ stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5 5' }}
+                          line={{ stroke: '#f59e0b', strokeWidth: 2, strokeDasharray: '5 5' }}
                           lineType="joint"
                           shape={<circle r={0} />}
                         />
@@ -995,6 +1382,7 @@ const AnalysisPage: React.FC = () => {
               )}
             </div>
           </div>
+          )}
         </div>
         </div>
 
