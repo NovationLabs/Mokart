@@ -25,7 +25,7 @@ interface HardwareModule {
   kart_id: string;
   module_type: 'rpi' | 'imu' | 'rtk' | 'uwb' | 'battery' | 'motor_controller';
   name: string;
-  status: 'online' | 'offline' | 'error' | 'calibrating' | 'updating';
+  status: 'online' | 'offline' | 'error' | 'warning' | 'calibrating' | 'updating';
   battery_voltage?: number;
   signal_strength?: number;
   temperature?: number;
@@ -130,7 +130,7 @@ const HardwarePage: React.FC = () => {
 
     const role = getUserRole();
     setUserRole(role);
-    
+
     if (!canManageHardware()) {
       navigate('/');
       return;
@@ -150,20 +150,20 @@ const HardwarePage: React.FC = () => {
         if (module.id === moduleId) {
           switch (action) {
             case 'calibrate':
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'calibrating',
                 data: { ...module.data, calibration_status: 'Calibrating...' }
               };
             case 'reboot':
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'offline',
                 last_seen: new Date().toISOString()
               };
             case 'ota_update':
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'updating',
                 firmware_version: 'Updating...'
               };
@@ -172,9 +172,9 @@ const HardwarePage: React.FC = () => {
         return module;
       }));
 
-      setMessage({ 
-        type: 'success', 
-        text: `${action === 'calibrate' ? 'Calibration' : action === 'reboot' ? 'Redémarrage' : 'Mise à jour'} démarré(e)` 
+      setMessage({
+        type: 'success',
+        text: `${action === 'calibrate' ? 'Calibration' : action === 'reboot' ? 'Redémarrage' : 'Mise à jour'} démarré(e)`
       });
 
       // Simuler la fin de l'action
@@ -182,20 +182,20 @@ const HardwarePage: React.FC = () => {
         setModules(prev => prev.map(module => {
           if (module.id === moduleId) {
             if (action === 'calibrate') {
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'online',
                 data: { ...module.data, calibration_status: 'Calibrated' }
               };
             } else if (action === 'reboot') {
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'online',
                 last_seen: new Date().toISOString()
               };
             } else if (action === 'ota_update') {
-              return { 
-                ...module, 
+              return {
+                ...module,
                 status: 'online',
                 firmware_version: 'v2.1.4'
               };
@@ -330,7 +330,7 @@ const HardwarePage: React.FC = () => {
                     <span className="text-xs text-[#94a3b8]">Type</span>
                     <span className="text-xs text-white capitalize">{module.module_type.replace('_', ' ')}</span>
                   </div>
-                  
+
                   {module.firmware_version && (
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-[#94a3b8]">Firmware</span>
@@ -396,9 +396,9 @@ const HardwarePage: React.FC = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-[#94a3b8]">Dernière activité</span>
                     <span className="text-xs text-white">
-                      {new Date(module.last_seen).toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
+                      {new Date(module.last_seen).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit'
                       })}
                     </span>
                   </div>
