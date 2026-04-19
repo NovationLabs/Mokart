@@ -139,10 +139,13 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
   const roles = [
     { id: 'admin', name: 'Admin', icon: '👑' },
-    { id: 'driver', name: 'Pilote', icon: '🏎️' },
+    { id: 'track_manager', name: 'Track Manager', icon: '🏆' },
+    { id: 'commissaire', name: 'Commissaire', icon: '�️' },
     { id: 'mechanic', name: 'Mécanicien', icon: '🔧' },
-    { id: 'observer', name: 'Observateur', icon: '👁️' },
-    { id: 'commissaire_piste', name: 'Commissaire', icon: '🏁️' },
+    { id: 'instructor', name: 'Instructeur', icon: '👨‍🏫' },
+    { id: 'driver', name: 'Pilote', icon: '🏎️' },
+    { id: 'spectator', name: 'Spectateur', icon: '👁️' },
+    { id: 'device_kart', name: 'Device Kart', icon: '📱' },
   ];
 
   // ── Search keyboard navigation ──────────────────────────────────

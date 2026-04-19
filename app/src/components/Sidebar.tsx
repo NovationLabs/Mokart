@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Activity, LogOut, Settings, Users, Play } from 'lucide-react';
+import { LayoutDashboard, Activity, LogOut, Settings, Users, Play, Wrench, Flag, Car, CreditCard } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 
 const NAV = [
   { to: '/',           icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/analysis',   icon: Activity,        label: 'Analysis',            permission: 'analysis.read' },
   { to: '/simulation', icon: Play,            label: 'Simulation',          permission: 'sessions.read' },
+  { to: '/race-control', icon: Flag,          label: 'Race Control',        permission: 'race.control' },
+  { to: '/karts',      icon: Car,            label: 'Karts',               permission: 'karts.read' },
+  { to: '/hardware',   icon: Wrench,          label: 'Hardware',            permission: 'hardware.calibrate' },
+  { to: '/billing',    icon: CreditCard,      label: 'Billing',             permission: 'billing.read' },
   { to: '/users',      icon: Users,           label: 'Utilisateurs',        permission: 'users.read' },
   { to: '/settings',   icon: Settings,        label: 'Settings'             },
 ];

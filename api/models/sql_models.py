@@ -15,8 +15,13 @@ class User(Base):
     last_name = Column(String)
     phone = Column(String)
     kart = Column(String)
-    role = Column(String, default="driver")  # admin, driver, mechanic, observer, commissaire
+    role = Column(String, default="driver")  # admin, track_manager, commissaire, mechanic, instructor, driver, spectator, device_kart
+    is_active = Column(String, default=True)
+    license_number = Column(String)
+    license_expiry = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_login = Column(DateTime(timezone=True))
 
 class Session(Base):
     __tablename__ = "sessions"

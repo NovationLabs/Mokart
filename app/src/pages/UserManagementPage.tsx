@@ -22,7 +22,9 @@ import {
   Phone,
   AlertTriangle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trophy,
+  Smartphone
 } from 'lucide-react';
 import { User as UserType, UserRole, UserCreate, UserUpdate, UserStats, ROLE_LABELS, ROLE_DESCRIPTIONS } from '../types/user';
 import { api } from '../services/api';
@@ -275,11 +277,13 @@ const UserManagementPage: React.FC = () => {
   const getRoleIcon = (role: UserRole) => {
     switch (role) {
       case UserRole.ADMIN: return <Shield className="w-4 h-4 text-red-500" />;
+      case UserRole.TRACK_MANAGER: return <Trophy className="w-4 h-4 text-purple-500" />;
       case UserRole.COMMISSAIRE: return <UserCheck className="w-4 h-4 text-blue-500" />;
       case UserRole.MECHANIC: return <Edit2 className="w-4 h-4 text-orange-500" />;
       case UserRole.INSTRUCTOR: return <User className="w-4 h-4 text-green-500" />;
       case UserRole.DRIVER: return <User className="w-4 h-4 text-cyan-500" />;
       case UserRole.SPECTATOR: return <Eye className="w-4 h-4 text-gray-500" />;
+      case UserRole.DEVICE_KART: return <Smartphone className="w-4 h-4 text-indigo-500" />;
       default: return <User className="w-4 h-4" />;
     }
   };
