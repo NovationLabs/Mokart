@@ -9,6 +9,10 @@ import SimulationPage from './pages/SimulationPage';
 import AuthPage from './pages/AuthPage';
 import SettingsPage from './pages/SettingsPage';
 import UserManagementPage from './pages/UserManagementPage';
+import RaceControlPage from './pages/RaceControlPage';
+import KartsPage from './pages/KartsPage';
+import HardwarePage from './pages/HardwarePage';
+import BillingPage from './pages/BillingPage';
 
 const App: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('mokart_session');
@@ -26,6 +30,10 @@ const App: React.FC = () => {
             <Route path="/simulation" element={<SimulationPage />} />
             <Route path="/settings"   element={<SettingsPage />} />
             <Route path="/users"      element={<UserManagementPage />} />
+            <Route path="/race-control" element={<RaceControlPage />} />
+            <Route path="/karts"      element={<KartsPage />} />
+            <Route path="/hardware"   element={<HardwarePage />} />
+            <Route path="/billing"    element={<BillingPage />} />
           </Route>
         ) : (
           <Route path="*" element={<Navigate to="/login" />} />
