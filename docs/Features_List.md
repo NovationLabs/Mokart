@@ -14,6 +14,7 @@ Ce document présente l'ensemble des fonctionnalités disponibles dans la platef
 ### Home.tsx - Vue d'ensemble
 - **Statistiques en temps réel**
   - Nombre de karts actifs
+  - Nombre de pilotes attachés au circuit/centre de pilotage
   - Sessions en cours
   - Utilisateurs connectés
   - État du système
@@ -83,7 +84,7 @@ Ce document présente l'ensemble des fonctionnalités disponibles dans la platef
 - **Tracking temps réel**
   - Positions des karts sur circuit
   - Vitesse et accélération
-  - Données télémétrie 50Hz
+  - Données télémétrie 20Hz
 - **Interface HUD**
   - Style embarqué kart
   - Informations essentielles
@@ -128,6 +129,7 @@ Ce document présente l'ensemble des fonctionnalités disponibles dans la platef
   - Tutoriels intégrés
   - Aide à la conduite
   - Analyse des erreurs
+  - Score global/secteur de précision de conduite
 
 ---
 
@@ -310,7 +312,7 @@ Ce document présente l'ensemble des fonctionnalités disponibles dans la platef
 
 ---
 
-## �️ Fonctionnalités Visuelles - Dash Raspberry Pi
+## 🎨 Fonctionnalités Visuelles - Dash Raspberry Pi
 
 L'interface tourne localement sur le Raspberry Pi avec un design minimaliste et très contrasté (fond noir, typographie grasse blanche/jaune/rouge/verte).
 
@@ -354,6 +356,12 @@ Vue principale en roulage avec zéro distraction.
   - Indicateur visuel de distance
   - Priorité basse (non distractive)
 
+- **Personnalisation**
+  - Choix des éléments à afficher
+  - Positionnement des éléments
+  - Taille des polices et couleurs
+  - Mode restreint/compétition
+
 ### B. Mode "Race Control & Safety" (Priorité Absolue)
 Override direction course pour sécurité.
 
@@ -393,7 +401,7 @@ Vue technique pour mécaniciens stands.
 
 ---
 
-## �📱 Interface Utilisateur
+## 🎨 Interface Utilisateur
 
 ### Design & UX
 - **Responsive**
