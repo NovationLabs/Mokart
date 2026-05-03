@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoKart - Espace Pilote</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        mk: {
+                            bg: '#0a0a0c',
+                            card: '#131316',
+                            border: '#27272a',
+                            primary: '#3B82F6',   // Blue
+                            accent: '#06b6d4',    // Cyan
+                            purple: '#8B5CF6',    // Purple sectors (Absolute Best)
+                            green: '#10B981',     // Green sectors (Personal Best)
+                            yellow: '#eab308',    // Warning/Yellow Flag
+                            red: '#ef4444'        // Error/Red Flag
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+        /* Glassmorphism & Cards */
+        .glass-card {
+            background: linear-gradient(145deg, rgba(24,24,27,0.8) 0%, rgba(15,15,18,0.95) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Typography Effects */
+        .purple-glow { text-shadow: 0 0 16px rgba(139, 92, 246, 0.6); }
+        .text-gradient { background: linear-gradient(135deg, #3B82F6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Hover Animations */
+        .hover-lift { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.6); border-color: rgba(59, 130, 246, 0.4); }
+
+        /* Grid Background Pattern */
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="bg-mk-bg text-slate-300 font-sans h-screen flex overflow-hidden antialiased selection:bg-mk-primary selection:text-white bg-grid-pattern">
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-20 lg:w-64 bg-mk-card/90 border-r border-mk-border flex flex-col transition-all duration-300 z-20 shrink-0 backdrop-blur-xl">
+        <!-- Logo -->
+        <div class="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-mk-border/50">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-mk-primary to-mk-accent flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.4)] lg:mr-3 shrink-0">
+                <i class="ph-bold ph-steering-wheel text-white text-xl"></i>
+            </div>
+            <span class="hidden lg:block text-2xl font-black text-white tracking-widest uppercase italic">Mo<span class="text-mk-primary">Kart</span></span>
+        </div>
+
+        <!-- Links -->
+        <nav class="flex-1 overflow-y-auto py-6 space-y-2 px-3">
+            <p class="hidden lg:block text-xs font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Tableau de bord</p>
+            <a href="#" class="flex items-center px-3 py-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/30 font-semibold group relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <i class="ph-fill ph-gauge text-2xl lg:mr-3 relative z-10"></i>
+                <span class="hidden lg:block relative z-10">Vue d'ensemble</span>
+            </a>
+            <a href="#" class="flex items-center px-3 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
+                <i class="ph ph-flag-checkered text-2xl lg:mr-3 group-hover:text-mk-primary transition-colors"></i>
+                <span class="hidden lg:block">Historique Sessions</span>
+            </a>
+
+            <p class="hidden lg:block text-xs font-bold text-slate-500 uppercase tracking-wider px-3 mt-6 mb-2">Performance</p>
+            <a href="#" class="flex items-center px-3 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
+                <i class="ph ph-chart-line-up text-2xl lg:mr-3 group-hover:text-mk-purple transition-colors"></i>
+                <span class="hidden lg:block">Télémétrie Avancée</span>
+            </a>
+            <a href="#" class="flex items-center px-3 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all group relative">
+                <i class="ph ph-trophy text-2xl lg:mr-3 group-hover:text-mk-yellow transition-colors"></i>
+                <span class="hidden lg:block">Leaderboard Global</span>
+            </a>
+            <a href="#" class="flex items-center px-3 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all group">
+                <i class="ph ph-virtual-reality text-2xl lg:mr-3 group-hover:text-mk-accent transition-colors"></i>
+                <span class="hidden lg:block">Mode Simulateur</span>
+            </a>
+        </nav>
+
+        <!-- Bottom User Profile & XP -->
+        <div class="p-4 border-t border-mk-border/50 bg-black/20">
+            <div class="flex items-center cursor-pointer group">
+                <div class="relative">
+                    <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Alex&backgroundColor=1e293b" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-mk-border group-hover:border-mk-primary transition-colors">
+                    <div class="absolute bottom-0 right-0 w-3 h-3 bg-mk-green border-2 border-mk-card rounded-full"></div>
+                </div>
+                <div class="hidden lg:block ml-3 flex-1 overflow-hidden">
+                    <p class="text-sm font-bold text-white truncate">Alexandre D.</p>
+                    <p class="text-xs text-mk-primary font-medium truncate">Licence Pro</p>
+                </div>
+                <i class="ph-bold ph-caret-right text-slate-500 hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity"></i>
+            </div>
+            <!-- XP Bar -->
+            <div class="hidden lg:block mt-3">
+                <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                    <span>NIVEAU 42</span>
+                    <span>1200 / 1500 XP</span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-mk-primary to-mk-accent rounded-full" style="width: 80%"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+        <!-- Radial Gradient Background -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-mk-primary/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+        <!-- HEADER -->
+        <header class="h-20 border-b border-mk-border/30 flex items-center justify-between px-6 md:px-10 z-10 relative backdrop-blur-md bg-mk-bg/60">
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-tight">Espace Pilote</h1>
+                <p class="text-sm text-slate-400 font-medium hidden sm:block">Complexe Karting Paris-Sud</p>
+            </div>
+
+            <div class="flex items-center space-x-3 sm:space-x-5">
+                <!-- Status Piste (Live API) -->
+                <div class="hidden md:flex items-center bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <span class="relative flex h-2 w-2 mr-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mk-green opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-mk-green"></span>
+                    </span>
+                    <span class="text-xs font-bold text-mk-green tracking-widest uppercase">Piste Ouverte</span>
+                </div>
+
+                <!-- Quick QR Action -->
+                <button class="flex items-center bg-white/10 hover:bg-white/20 border border-white/5 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all shadow-lg">
+                    <i class="ph-bold ph-qr-code text-lg mr-2"></i>
+                    <span class="hidden sm:inline">Connecter un Kart</span>
+                </button>
+
+                <!-- Notifications -->
+                <button class="relative p-2.5 text-slate-400 hover:text-white bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5">
+                    <i class="ph-bold ph-bell text-lg"></i>
+                    <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-mk-primary rounded-full border-2 border-mk-bg"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD CONTENT (Scrollable) -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 z-10 relative scroll-smooth">
+            <div class="max-w-7xl mx-auto space-y-8">
+
+                <!-- 1. ACCÈS RAPIDES (Quick Actions Grid) -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button class="glass-card hover-lift p-4 rounded-2xl flex flex-col items-center justify-center text-center group border-mk-primary/30">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <i class="ph-fill ph-steering-wheel text-2xl text-mk-primary"></i>
+                        </div>
+                        <span class="text-sm font-bold text-white">Réserver session</span>
+                        <span class="text-xs text-slate-500 mt-1">Prochaine dispo: 18h30</span>
+                    </button>
+
+                    <button class="glass-card hover-lift p-4 rounded-2xl flex flex-col items-center justify-center text-center group">
+                        <div class="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <i class="ph-fill ph-chart-line text-2xl text-mk-purple"></i>
+                        </div>
+                        <span class="text-sm font-bold text-white">Analyser S-442</span>
+                        <span class="text-xs text-slate-500 mt-1">Dernière course</span>
+                    </button>
+
+                    <button class="glass-card hover-lift p-4 rounded-2xl flex flex-col items-center justify-center text-center group">
+                        <div class="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <i class="ph-fill ph-medal text-2xl text-mk-yellow"></i>
+                        </div>
+                        <span class="text-sm font-bold text-white">Voir Classement</span>
+                        <span class="text-xs text-slate-500 mt-1">Ligue Régionale</span>
+                    </button>
+
+                    <button class="glass-card hover-lift p-4 rounded-2xl flex flex-col items-center justify-center text-center group">
+                        <div class="w-12 h-12 rounded-full bg-cyan-500/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                            <i class="ph-fill ph-virtual-reality text-2xl text-mk-accent"></i>
+                        </div>
+                        <span class="text-sm font-bold text-white">Lancer Simulateur</span>
+                        <span class="text-xs text-slate-500 mt-1">Ghost Laps dispo</span>
+                    </button>
+                </div>
+
+                <!-- 2. HERO BANNER : Gamification / Dernière perf -->
+                <div class="relative rounded-3xl overflow-hidden glass-card group border-mk-purple/20">
+                    <div class="absolute inset-0 bg-gradient-to-r from-mk-card via-mk-card to-mk-purple/10 z-0"></div>
+                    <div class="absolute top-0 right-0 w-[500px] h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-50 mix-blend-overlay"></div>
+
+                    <div class="p-8 md:p-10 flex flex-col lg:flex-row items-center justify-between relative z-10 gap-8">
+                        <div class="flex-1">
+                            <div class="inline-flex items-center px-3 py-1 bg-mk-purple/20 text-mk-purple border border-mk-purple/30 rounded-full text-xs font-bold uppercase tracking-wider mb-4 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+                                <i class="ph-fill ph-star mr-1.5"></i> Record Personnel Battu
+                            </div>
+                            <h2 class="text-4xl md:text-5xl font-black text-white mb-3 uppercase italic tracking-tighter">
+                                Impressionnant, Alexandre !
+                            </h2>
+                            <p class="text-slate-400 text-base max-w-2xl leading-relaxed">
+                                Lors de la session S-442 d'hier, tu as amélioré ton meilleur temps sur le <strong class="text-slate-200">Circuit Loisir</strong> de 0.421s. Ton freinage dans l'épingle nord (Secteur 2) est désormais dans le top 5% de la ligue.
+                            </p>
+                            <button class="mt-6 px-6 py-2.5 bg-mk-primary hover:bg-blue-600 text-white rounded-xl text-sm font-bold transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+                                Voir la télémétrie complète
+                            </button>
+                        </div>
+
+                        <!-- Telemetry Snippet Box -->
+                        <div class="flex flex-col items-center justify-center p-6 bg-black/60 rounded-2xl border border-white/10 backdrop-blur-md min-w-[280px]">
+                            <span class="text-xs text-slate-400 uppercase tracking-widest font-bold mb-2">Meilleur Tour Absolu</span>
+                            <div class="flex items-baseline space-x-1">
+                                <span class="text-6xl font-mono font-black text-white purple-glow">44<span class="text-4xl text-slate-300">.182</span></span>
+                            </div>
+                            <div class="flex items-center mt-3 space-x-3 bg-white/5 px-4 py-2 rounded-lg w-full justify-center">
+                                <div class="flex items-center text-mk-purple font-bold text-sm" title="Secteur 1 : Record Absolu">
+                                    <div class="w-2 h-2 rounded-full bg-mk-purple mr-1.5 animate-pulse"></div> S1
+                                </div>
+                                <div class="flex items-center text-mk-green font-bold text-sm" title="Secteur 2 : Record Perso">
+                                    <div class="w-2 h-2 rounded-full bg-mk-green mr-1.5"></div> S2
+                                </div>
+                                <div class="flex items-center text-mk-green font-bold text-sm" title="Secteur 3 : Record Perso">
+                                    <div class="w-2 h-2 rounded-full bg-mk-green mr-1.5"></div> S3
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. KPIs RAPIDES -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div class="glass-card rounded-2xl p-5 hover-lift cursor-default border-t-2 border-t-mk-primary/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sessions</span>
+                            <i class="ph-bold ph-steering-wheel text-xl text-mk-primary"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-white font-mono">128</h3>
+                        <p class="text-xs text-slate-500 mt-1">+3 cette semaine</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 hover-lift cursor-default border-t-2 border-t-mk-yellow/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Classement</span>
+                            <i class="ph-bold ph-trophy text-xl text-mk-yellow"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-white font-mono">Top 8%</h3>
+                        <p class="text-xs text-mk-green mt-1 font-semibold flex items-center"><i class="ph-bold ph-trend-up mr-1"></i> +2% (1 mois)</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 hover-lift cursor-default border-t-2 border-t-mk-accent/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Vitesse Max</span>
+                            <i class="ph-bold ph-speedometer text-xl text-mk-accent"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-white font-mono flex items-baseline">86.4 <span class="text-sm font-sans text-slate-500 ml-1">km/h</span></h3>
+                        <p class="text-xs text-slate-500 mt-1">Ligne droite stands</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 hover-lift cursor-default border-t-2 border-t-mk-green/50">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Précision Traj.</span>
+                            <i class="ph-bold ph-crosshair text-xl text-mk-green"></i>
+                        </div>
+                        <h3 class="text-3xl font-black text-mk-green font-mono">A+</h3>
+                        <p class="text-xs text-slate-500 mt-1">Score IA Simulateur</p>
+                    </div>
+                </div>
+
+                <!-- 4. GRAPHIQUE & LEADERBOARD AMIS -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+
+                    <!-- Graphique Progression (2/3) -->
+                    <div class="xl:col-span-2 glass-card rounded-2xl p-6 flex flex-col border border-white/5">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h3 class="text-lg font-bold text-white flex items-center"><i class="ph-fill ph-trend-down text-mk-accent mr-2"></i> Évolution Temps au Tour</h3>
+                                <p class="text-xs text-slate-400 mt-1">Meilleurs temps sur tes 10 dernières sessions (Circuit Loisir)</p>
+                            </div>
+                            <!-- Filtre rapide -->
+                            <div class="hidden sm:flex bg-black/50 rounded-lg p-1 border border-white/5">
+                                <button class="px-3 py-1 bg-white/10 rounded-md text-xs font-bold text-white shadow-sm">Loisir</button>
+                                <button class="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white transition-colors">Pro</button>
+                                <button class="px-3 py-1 text-xs font-bold text-slate-400 hover:text-white transition-colors">Inverse</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 relative min-h-[280px]">
+                            <canvas id="progressionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Amis (1/3) -->
+                    <div class="glass-card rounded-2xl p-6 flex flex-col border border-white/5">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-white flex items-center"><i class="ph-fill ph-users text-mk-primary mr-2"></i> Amis & Rivaux</h3>
+                            <span class="text-[10px] font-bold bg-blue-500/20 text-blue-400 px-2 py-1 rounded border border-blue-500/20 uppercase tracking-wider">Cette semaine</span>
+                        </div>
+
+                        <div class="space-y-3 flex-1">
+                            <!-- User 1 -->
+                            <div class="flex items-center p-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+                                <div class="font-black text-lg text-yellow-500 w-6 text-center">1</div>
+                                <img src="https://api.dicebear.com/7.x/initials/svg?seed=MB" class="w-10 h-10 rounded-full mx-3 bg-mk-card">
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-white">Maxime B.</p>
+                                    <p class="text-xs text-slate-500">K-12 • Il y a 2h</p>
+                                </div>
+                                <div class="font-mono text-sm font-bold text-white">43.850</div>
+                            </div>
+
+                            <!-- User 2 (Current User) -->
+                            <div class="flex items-center p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 cursor-pointer relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-mk-primary"></div>
+                                <div class="font-black text-lg text-slate-300 w-6 text-center">2</div>
+                                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Alex&backgroundColor=1e293b" class="w-10 h-10 rounded-full border-2 border-mk-primary mx-3 bg-mk-card">
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-white">Moi</p>
+                                    <p class="text-xs text-mk-primary">K-04 • Hier</p>
+                                </div>
+                                <div class="font-mono text-sm font-bold text-mk-purple purple-glow">44.182</div>
+                            </div>
+
+                            <!-- User 3 -->
+                            <div class="flex items-center p-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5">
+                                <div class="font-black text-lg text-orange-500 w-6 text-center">3</div>
+                                <img src="https://api.dicebear.com/7.x/initials/svg?seed=SL" class="w-10 h-10 rounded-full mx-3 bg-mk-card">
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-white">Sarah L.</p>
+                                    <p class="text-xs text-slate-500">K-08 • Jeu.</p>
+                                </div>
+                                <div class="font-mono text-sm font-bold text-white">44.910</div>
+                            </div>
+
+                            <!-- User 4 -->
+                            <div class="flex items-center p-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer border border-transparent hover:border-white/5 opacity-70">
+                                <div class="font-black text-lg text-slate-500 w-6 text-center">4</div>
+                                <img src="https://api.dicebear.com/7.x/initials/svg?seed=TR" class="w-10 h-10 rounded-full mx-3 bg-mk-card">
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-slate-400">Thomas R.</p>
+                                    <p class="text-xs text-slate-600">K-02 • Lun.</p>
+                                </div>
+                                <div class="font-mono text-sm font-bold text-slate-400">45.220</div>
+                            </div>
+                        </div>
+
+                        <button class="w-full mt-4 py-2.5 border border-white/10 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+                            Voir tout le classement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5. HISTORIQUE RÉCENT (Tableau optimisé) -->
+                <div class="glass-card rounded-2xl overflow-hidden border border-white/5">
+                    <div class="p-5 md:p-6 border-b border-white/5 flex justify-between items-center bg-black/20">
+                        <h3 class="text-lg font-bold text-white flex items-center"><i class="ph-fill ph-flag-checkered mr-2 text-slate-400"></i> Historique Récent</h3>
+                        <a href="#" class="text-xs text-mk-primary hover:text-blue-400 transition-colors font-bold uppercase tracking-wider flex items-center">
+                            Tout voir <i class="ph-bold ph-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead>
+                                <tr class="bg-black/40 text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-white/5">
+                                    <th class="px-6 py-4">Date & Piste</th>
+                                    <th class="px-6 py-4 text-center">Kart</th>
+                                    <th class="px-6 py-4 text-center">Tours</th>
+                                    <th class="px-6 py-4">Meilleur Tour</th>
+                                    <th class="px-6 py-4">Télémétrie</th>
+                                    <th class="px-6 py-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                <!-- Row 1 : Dernière perf -->
+                                <tr class="hover:bg-white/5 transition-colors group cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm font-bold text-white">Hier, 14:30</p>
+                                        <p class="text-xs text-slate-400 mt-0.5">Circuit Loisir (Session S-442)</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 bg-white/10 border border-white/10 rounded-md font-mono text-xs text-white">
+                                            <i class="ph-fill ph-steering-wheel mr-1 text-slate-400"></i> K-04
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-slate-300 font-mono text-sm">15</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center">
+                                            <span class="font-mono text-sm font-bold text-mk-purple purple-glow">44.182</span>
+                                            <span class="ml-3 flex space-x-1 border-l border-white/10 pl-3">
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-purple" title="Secteur 1 Absolu"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-green" title="Secteur 2 Amélioré"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-green" title="Secteur 3 Amélioré"></div>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center text-xs font-bold px-2 py-1 bg-blue-500/10 text-mk-primary rounded-md inline-flex border border-blue-500/20">
+                                            <i class="ph-bold ph-activity mr-1.5"></i> 50Hz HD
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="px-4 py-2 bg-mk-primary hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)] opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+                                            Ouvrir l'Analyse
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Row 2 -->
+                                <tr class="hover:bg-white/5 transition-colors group cursor-pointer">
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm font-bold text-slate-300">12 Mai 2026, 18:00</p>
+                                        <p class="text-xs text-slate-500 mt-0.5">Circuit Loisir (Session S-390)</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 bg-white/5 border border-white/5 rounded-md font-mono text-xs text-slate-400">
+                                            K-12
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-slate-400 font-mono text-sm">12</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center">
+                                            <span class="font-mono text-sm font-bold text-mk-green">44.603</span>
+                                            <span class="ml-3 flex space-x-1 border-l border-white/10 pl-3">
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-green"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-yellow"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-green"></div>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center text-xs font-bold px-2 py-1 bg-white/5 text-slate-400 rounded-md inline-flex">
+                                            <i class="ph-bold ph-check mr-1.5"></i> Standard
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+                                            Détails
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                <!-- Row 3 (Drapeau rouge) -->
+                                <tr class="hover:bg-white/5 transition-colors group cursor-pointer opacity-70">
+                                    <td class="px-6 py-4">
+                                        <p class="text-sm font-bold text-slate-400">05 Mai 2026, 10:15</p>
+                                        <p class="text-xs text-mk-red mt-0.5 font-bold flex items-center"><i class="ph-fill ph-flag mr-1"></i> Interrompue (Drapeau Rouge)</p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 bg-white/5 border border-white/5 rounded-md font-mono text-xs text-slate-400">
+                                            K-07
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-slate-500 font-mono text-sm">4 <span class="text-xs">/ 20</span></td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center">
+                                            <span class="font-mono text-sm font-bold text-slate-400">52.190</span>
+                                            <span class="ml-3 flex space-x-1 border-l border-white/10 pl-3">
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-yellow"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-mk-yellow"></div>
+                                                <div class="w-2.5 h-2.5 rounded-sm bg-slate-700"></div>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center text-xs font-bold px-2 py-1 bg-white/5 text-slate-500 rounded-md inline-flex">
+                                            <i class="ph-bold ph-warning-circle mr-1.5 text-mk-red"></i> Partielle
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold transition-all opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0">
+                                            Détails
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer spacing -->
+                <div class="h-10"></div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- JS Logic -->
+    <script>
+        // Init Chart.js (Progression Chart - Sleeker design)
+        Chart.defaults.color = '#71717a'; // slate-500
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        const ctx = document.getElementById('progressionChart').getContext('2d');
+
+        // Custom gradient for the fill area
+        let gradient = ctx.createLinearGradient(0, 0, 0, 350);
+        gradient.addColorStop(0, 'rgba(6, 182, 212, 0.5)'); // Cyan top
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)'); // Blue bottom fade
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['S-312', 'S-324', 'S-345', 'S-370', 'S-390', 'S-412', 'S-442'],
+                datasets: [{
+                    label: 'Meilleur Temps',
+                    data: [46.5, 46.2, 45.8, 45.5, 44.9, 44.6, 44.18],
+                    borderColor: '#06b6d4',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#0a0a0c', // bg match
+                    pointBorderColor: '#06b6d4',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#06b6d4',
+                    pointHoverBorderColor: '#fff',
+                    fill: true,
+                    tension: 0.4 // Very smooth bezier curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 15, 18, 0.9)',
+                        titleColor: '#a1a1aa',
+                        titleFont: { size: 11, weight: 'bold' },
+                        bodyColor: '#06b6d4',
+                        bodyFont: { family: 'JetBrains Mono', weight: '900', size: 16 },
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        cornerRadius: 8,
+                        callbacks: {
+                            title: function(context) { return 'Session ' + context[0].label; },
+                            label: function(context) { return context.parsed.y + ' sec'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#52525b', font: { size: 11, weight: '600' } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+                        min: 43.5,
+                        max: 47.0,
+                        ticks: {
+                            stepSize: 0.5,
+                            padding: 10,
+                            callback: function(value) { return value.toFixed(1) + 's'; },
+                            font: { family: 'JetBrains Mono', size: 10 }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
