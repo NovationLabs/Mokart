@@ -52,7 +52,7 @@ Le système abandonne la simple vérification de rôles au profit d'une vérific
 ### 🎓 INSTRUCTOR (Coach Sportif)
 - **Scopes :** `sessions.read`, `analysis.read`, `analysis.export`.
 - **Accès Web :** Outils d'analyse poussés (deltas, G-Force, trajectoires).
-- **Impact Hardware :** Lecture seule des données haute fréquence (50Hz) générées par les capteurs.
+- **Impact Hardware :** Lecture seule des données haute fréquence (20Hz) générées par les capteurs.
 
 ### 🏎️ DRIVER (Pilote)
 - **Scopes :** `sessions.read` (self), `sessions.join`, `analysis.read` (self).
