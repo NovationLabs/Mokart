@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoKart - Espace Pilote</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        mk: {
+                            bg: '#050505',
+                            card: '#0e0e0e',
+                            surface: '#151515',
+                            border: '#222222',
+                            primary: '#4F46E5',   // Indigo
+                            accent: '#0EA5E9',    // Sky Blue
+                            purple: '#A855F7',    // Purple
+                            green: '#10B981',     // Emerald
+                            yellow: '#F59E0B',    // Amber
+                            red: '#EF4444'        // Red
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 15px rgba(79, 70, 229, 0.3)',
+                        'neon-strong': '0 0 25px rgba(79, 70, 229, 0.5)',
+                        'soft-glow': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Neumorphic Dark Cards */
+        .neo-card {
+            background: #0e0e0e;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            box-shadow:
+                -5px -5px 10px rgba(255,255,255,0.02),
+                5px 5px 10px rgba(0,0,0,0.5),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .neo-card:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                -2px -2px 5px rgba(255,255,255,0.02),
+                8px 8px 15px rgba(0,0,0,0.6),
+                inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Gradient Text */
+        .text-gradient {
+            background: linear-gradient(to right, #4F46E5, #0EA5E9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Micro interactions */
+        .btn-hover {
+            transition: transform 0.1s;
+        }
+        .btn-hover:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="text-gray-300 font-sans h-screen flex overflow-hidden antialiased selection:bg-mk-primary selection:text-white">
+
+    <!-- FLOATING SIDEBAR NAVIGATION -->
+    <aside class="w-20 lg:w-24 bg-transparent flex flex-col items-center py-6 z-20 shrink-0 border-r border-mk-border/30 backdrop-blur-sm">
+        <!-- Logo -->
+        <div class="mb-10 group cursor-pointer btn-hover">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-mk-primary to-mk-purple flex items-center justify-center shadow-neon group-hover:shadow-neon-strong transition-all">
+                <i class="ph-bold ph-steering-wheel text-white text-2xl"></i>
+            </div>
+        </div>
+
+        <!-- Links -->
+        <nav class="flex-1 flex flex-col gap-6 w-full px-4">
+            <a href="#" class="relative flex justify-center p-3 rounded-2xl bg-mk-surface text-mk-primary shadow-soft-glow border border-mk-border group">
+                <i class="ph-fill ph-squares-four text-2xl relative z-10"></i>
+                <div class="absolute inset-0 bg-mk-primary/10 rounded-2xl opacity-100 blur-sm"></div>
+                <!-- Tooltip -->
+                <span class="absolute left-16 bg-mk-card border border-mk-border px-3 py-1 rounded-lg text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Dashboard</span>
+            </a>
+
+            <a href="#" class="flex justify-center p-3 rounded-2xl text-gray-500 hover:text-white hover:bg-mk-surface transition-all group relative">
+                <i class="ph ph-flag-checkered text-2xl"></i>
+                <span class="absolute left-16 bg-mk-card border border-mk-border px-3 py-1 rounded-lg text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Historique</span>
+            </a>
+
+            <a href="#" class="flex justify-center p-3 rounded-2xl text-gray-500 hover:text-white hover:bg-mk-surface transition-all group relative">
+                <i class="ph ph-chart-line-up text-2xl group-hover:text-mk-purple transition-colors"></i>
+                <span class="absolute left-16 bg-mk-card border border-mk-border px-3 py-1 rounded-lg text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Télémétrie</span>
+            </a>
+
+            <a href="#" class="flex justify-center p-3 rounded-2xl text-gray-500 hover:text-white hover:bg-mk-surface transition-all group relative">
+                <i class="ph ph-trophy text-2xl group-hover:text-mk-yellow transition-colors"></i>
+                <span class="absolute left-16 bg-mk-card border border-mk-border px-3 py-1 rounded-lg text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Leaderboard</span>
+            </a>
+        </nav>
+
+        <!-- Bottom Actions -->
+        <div class="flex flex-col gap-4 mt-auto">
+            <button class="p-3 rounded-full text-gray-500 hover:text-white bg-mk-surface/50 hover:bg-mk-surface transition-all border border-transparent hover:border-mk-border">
+                <i class="ph-bold ph-gear text-xl"></i>
+            </button>
+            <div class="w-12 h-12 rounded-full p-1 border-2 border-mk-primary cursor-pointer btn-hover">
+                <img src="https://api.dicebear.com/7.x/notionists/svg?seed=Alex&backgroundColor=1e293b" alt="Avatar" class="w-full h-full rounded-full bg-mk-surface">
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+
+        <!-- HEADER -->
+        <header class="h-24 flex items-center justify-between px-8 z-10">
+            <div>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Bonjour, Alexandre</h1>
+                <p class="text-sm text-gray-500 font-medium mt-1">Complexe Karting Paris-Sud • Licence Pro</p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Status Piste (Live API) -->
+                <div class="hidden md:flex items-center bg-mk-surface border border-mk-border rounded-full px-5 py-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-mk-green mr-3 shadow-[0_0_8px_#10B981]"></div>
+                    <span class="text-xs font-bold text-gray-300 uppercase tracking-widest">Piste Ouverte</span>
+                </div>
+
+                <!-- Quick QR Action -->
+                <button class="flex items-center bg-gradient-to-r from-mk-primary to-mk-accent hover:from-mk-primary/90 hover:to-mk-accent/90 px-6 py-2.5 rounded-full text-sm font-bold text-white transition-all shadow-neon btn-hover">
+                    <i class="ph-bold ph-scan text-lg mr-2"></i>
+                    <span class="hidden sm:inline">Scanner Kart</span>
+                </button>
+
+                <!-- Notifications -->
+                <button class="relative p-3 text-gray-400 hover:text-white bg-mk-surface rounded-full transition-colors border border-mk-border btn-hover">
+                    <i class="ph-bold ph-bell text-xl"></i>
+                    <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-mk-accent rounded-full shadow-[0_0_8px_#0EA5E9]"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD CONTENT (Scrollable) -->
+        <div class="flex-1 overflow-y-auto px-8 pb-10 z-10 relative scroll-smooth">
+            <div class="max-w-[1600px] mx-auto space-y-8">
+
+                <!-- MAIN GRID: Hero + Quick Stats -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+                    <!-- HERO BANNER (Span 2) -->
+                    <div class="xl:col-span-2 neo-card relative overflow-hidden p-8 md:p-10 flex flex-col justify-center">
+                        <!-- Abstract Background Shapes -->
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-mk-primary/20 rounded-full blur-[80px]"></div>
+                        <div class="absolute right-40 -bottom-20 w-64 h-64 bg-mk-purple/20 rounded-full blur-[80px]"></div>
+
+                        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                            <div class="max-w-lg">
+                                <div class="inline-flex items-center px-3 py-1 bg-mk-green/10 text-mk-green border border-mk-green/20 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                                    <i class="ph-fill ph-trend-up mr-1.5"></i> Progression +12%
+                                </div>
+                                <h2 class="text-4xl font-black text-white mb-4 leading-tight">
+                                    Ton dernier run était <br><span class="text-gradient">exceptionnel.</span>
+                                </h2>
+                                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                                    Session S-442 : Tu as amélioré ton temps de 0.421s. Ton freinage tardif au T3 te place dans le Top 5% du circuit.
+                                </p>
+                                <button class="px-6 py-3 bg-white text-black hover:bg-gray-200 rounded-xl text-sm font-bold transition-all flex items-center btn-hover">
+                                    Ouvrir la télémétrie <i class="ph-bold ph-arrow-right ml-2"></i>
+                                </button>
+                            </div>
+
+                            <!-- Large Lap Time Display -->
+                            <div class="flex-shrink-0 flex flex-col items-end">
+                                <span class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Meilleur Tour</span>
+                                <div class="font-mono font-black text-7xl text-white tracking-tighter" style="text-shadow: 0 0 40px rgba(255,255,255,0.1);">
+                                    44<span class="text-5xl text-gray-400">.182</span>
+                                </div>
+                                <div class="flex gap-2 mt-4">
+                                    <div class="px-3 py-1 bg-mk-purple/20 border border-mk-purple/30 rounded-md text-mk-purple font-bold text-xs font-mono shadow-[0_0_10px_rgba(168,85,247,0.2)]">S1 P.B.</div>
+                                    <div class="px-3 py-1 bg-mk-green/20 border border-mk-green/30 rounded-md text-mk-green font-bold text-xs font-mono">S2 P.B.</div>
+                                    <div class="px-3 py-1 bg-mk-green/20 border border-mk-green/30 rounded-md text-mk-green font-bold text-xs font-mono">S3 P.B.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STATS STACK (Span 1) -->
+                    <div class="flex flex-col gap-4">
+                        <div class="neo-card p-6 flex items-center justify-between flex-1">
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Niveau Pilote</p>
+                                <h3 class="text-2xl font-black text-white">Lvl. 42</h3>
+                                <div class="w-full bg-mk-border h-1.5 rounded-full mt-3 w-32">
+                                    <div class="bg-gradient-to-r from-mk-primary to-mk-purple h-full rounded-full" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-mk-surface border border-mk-border flex items-center justify-center">
+                                <i class="ph-fill ph-star text-2xl text-mk-yellow"></i>
+                            </div>
+                        </div>
+
+                        <div class="neo-card p-6 flex items-center justify-between flex-1">
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Classement</p>
+                                <h3 class="text-2xl font-black text-white">Top 8%</h3>
+                                <p class="text-xs text-mk-green mt-1 font-semibold flex items-center"><i class="ph-bold ph-arrow-up-right mr-1"></i> +2 places</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-mk-surface border border-mk-border flex items-center justify-center">
+                                <i class="ph-fill ph-trophy text-2xl text-gray-400"></i>
+                            </div>
+                        </div>
+
+                        <div class="neo-card p-6 flex items-center justify-between flex-1">
+                            <div>
+                                <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Score IA</p>
+                                <h3 class="text-2xl font-black text-mk-accent font-mono">A+</h3>
+                                <p class="text-xs text-gray-500 mt-1">Précision trajectoire</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-mk-surface border border-mk-border flex items-center justify-center">
+                                <i class="ph-fill ph-brain text-2xl text-mk-accent"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM SECTION: Chart & Recent -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+                    <!-- Graphique Progression (2/3) -->
+                    <div class="xl:col-span-2 neo-card p-6 md:p-8 flex flex-col">
+                        <div class="flex justify-between items-center mb-8">
+                            <div>
+                                <h3 class="text-xl font-bold text-white">Évolution des temps</h3>
+                                <p class="text-sm text-gray-500 mt-1">10 dernières sessions sur Circuit Loisir</p>
+                            </div>
+                            <!-- Minimalist Tabs -->
+                            <div class="flex bg-mk-surface p-1 rounded-xl border border-mk-border">
+                                <button class="px-4 py-1.5 bg-mk-card border border-mk-border/50 rounded-lg text-sm font-bold text-white shadow-sm">Loisir</button>
+                                <button class="px-4 py-1.5 text-sm font-bold text-gray-500 hover:text-white transition-colors">Pro</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 relative min-h-[300px]">
+                            <canvas id="progressionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Historique Compact (1/3) -->
+                    <div class="neo-card p-6 md:p-8 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-white">Sessions Récentes</h3>
+                            <button class="text-mk-primary hover:text-white transition-colors p-2 bg-mk-surface rounded-lg btn-hover">
+                                <i class="ph-bold ph-list text-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col gap-3 flex-1 overflow-y-auto pr-2">
+                            <!-- Session Item 1 -->
+                            <div class="p-4 rounded-2xl bg-mk-surface border border-mk-border/50 hover:border-mk-primary/30 transition-colors cursor-pointer group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-mk-primary shadow-[0_0_8px_#4F46E5]"></div>
+                                        <span class="text-sm font-bold text-white">Session S-442</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500 font-medium">Hier, 14:30</span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div class="flex gap-3">
+                                        <span class="text-xs font-mono text-gray-400 bg-mk-card px-2 py-1 rounded-md border border-mk-border"><i class="ph-fill ph-steering-wheel mr-1"></i>K-04</span>
+                                        <span class="text-xs font-mono text-gray-400 bg-mk-card px-2 py-1 rounded-md border border-mk-border">15 Laps</span>
+                                    </div>
+                                    <span class="font-mono text-lg font-black text-mk-purple" style="text-shadow: 0 0 10px rgba(168,85,247,0.3);">44.182</span>
+                                </div>
+                            </div>
+
+                            <!-- Session Item 2 -->
+                            <div class="p-4 rounded-2xl bg-mk-surface/50 border border-transparent hover:border-mk-border transition-colors cursor-pointer group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-gray-600"></div>
+                                        <span class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Session S-390</span>
+                                    </div>
+                                    <span class="text-xs text-gray-600 font-medium">12 Mai</span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div class="flex gap-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <span class="text-xs font-mono text-gray-500 bg-mk-card px-2 py-1 rounded-md border border-transparent">K-12</span>
+                                        <span class="text-xs font-mono text-gray-500 bg-mk-card px-2 py-1 rounded-md border border-transparent">12 Laps</span>
+                                    </div>
+                                    <span class="font-mono text-lg font-bold text-gray-400">44.603</span>
+                                </div>
+                            </div>
+
+                            <!-- Session Item 3 -->
+                            <div class="p-4 rounded-2xl bg-mk-surface/50 border border-transparent hover:border-mk-border transition-colors cursor-pointer group">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-mk-red"></div>
+                                        <span class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Session S-345</span>
+                                    </div>
+                                    <span class="text-xs text-gray-600 font-medium">05 Mai</span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <div class="flex gap-3 opacity-70 group-hover:opacity-100 transition-opacity">
+                                        <span class="text-xs font-mono text-gray-500 bg-mk-card px-2 py-1 rounded-md border border-transparent">K-07</span>
+                                        <span class="text-xs font-mono text-gray-500 bg-mk-card px-2 py-1 rounded-md border border-transparent">4 Laps</span>
+                                    </div>
+                                    <span class="font-mono text-lg font-bold text-gray-500">52.190</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- JS Logic -->
+    <script>
+        // Init Chart.js
+        Chart.defaults.color = '#52525b';
+        Chart.defaults.font.family = 'Outfit, sans-serif';
+
+        const ctx = document.getElementById('progressionChart').getContext('2d');
+
+        // Custom gradient
+        let gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)'); // Primary Indigo
+        gradient.addColorStop(1, 'rgba(79, 70, 229, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['S-312', 'S-324', 'S-345', 'S-370', 'S-390', 'S-412', 'S-442'],
+                datasets: [{
+                    label: 'Temps (s)',
+                    data: [46.5, 46.2, 45.8, 45.5, 44.9, 44.6, 44.18],
+                    borderColor: '#4F46E5',
+                    backgroundColor: gradient,
+                    borderWidth: 4,
+                    pointBackgroundColor: '#0e0e0e',
+                    pointBorderColor: '#4F46E5',
+                    pointBorderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#4F46E5',
+                    pointHoverBorderColor: '#fff',
+                    fill: true,
+                    tension: 0.4 // Smooth curves
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#151515',
+                        titleColor: '#a1a1aa',
+                        titleFont: { size: 12, weight: '600', family: 'Outfit' },
+                        bodyColor: '#fff',
+                        bodyFont: { family: 'Fira Code', weight: '700', size: 16 },
+                        borderColor: '#222',
+                        borderWidth: 1,
+                        padding: 16,
+                        displayColors: false,
+                        cornerRadius: 12,
+                        callbacks: {
+                            title: function(context) { return 'Session ' + context[0].label; },
+                            label: function(context) { return context.parsed.y + 's'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#71717a', font: { size: 12, weight: '500' } }
+                    },
+                    y: {
+                        grid: { color: '#1a1a1a', drawBorder: false, borderDash: [5, 5] },
+                        min: 43.5,
+                        max: 47.0,
+                        ticks: {
+                            stepSize: 0.5,
+                            padding: 15,
+                            callback: function(value) { return value.toFixed(1) + 's'; },
+                            font: { family: 'Fira Code', size: 11, color: '#71717a' }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
