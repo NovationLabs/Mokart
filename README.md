@@ -73,3 +73,4 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - **Clément DORGE**
 - **Selim BOUASKER**
 - **Anthony COLOMBANI-GAILLEUR**
+- **Tom CLERC**
