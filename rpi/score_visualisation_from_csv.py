@@ -105,7 +105,8 @@ def compute_jerk_and_score(df: pd.DataFrame):
 # Génération d'un exemple de signal
 time = np.linspace(0, 10, 500)
 
-df = load_imu_data("imu_mock_data.csv")
+filename = input("Filename CSV (ex: imu_mock_data.csv) : ")
+df = load_imu_data(filename)
 
 # =============================================================
 # CALCULS

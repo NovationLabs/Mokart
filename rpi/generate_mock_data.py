@@ -14,6 +14,80 @@ G = 9.81
 
 
 # =========================================================
+# PROFILS PILOTES
+# =========================================================
+
+DRIVER_PROFILES = {
+
+    "expert": {
+
+        # dynamique
+        "accel_g": 0.45,
+        "brake_g": -1.1,
+        "corner_g": 1.25,
+        "yaw_rate": 95,
+
+        # fluidité
+        "transition_alpha": 0.035,
+
+        # bruit IMU
+        "imu_noise": 0.06,
+        "gyro_noise": 0.8,
+
+        # corrections volant
+        "steering_jitter": 0.3,
+
+        # erreurs / vibreurs
+        "curb_probability": 0.004,
+
+        # durée des états
+        "state_min": 1.5,
+        "state_max": 4.0,
+    },
+
+    "average": {
+
+        "accel_g": 0.32,
+        "brake_g": -0.75,
+        "corner_g": 0.9,
+        "yaw_rate": 70,
+
+        "transition_alpha": 0.02,
+
+        "imu_noise": 0.12,
+        "gyro_noise": 1.5,
+
+        "steering_jitter": 1.0,
+
+        "curb_probability": 0.002,
+
+        "state_min": 2.0,
+        "state_max": 6.0,
+    },
+
+    "beginner": {
+
+        "accel_g": 0.18,
+        "brake_g": -0.45,
+        "corner_g": 0.55,
+        "yaw_rate": 40,
+
+        "transition_alpha": 0.008,
+
+        "imu_noise": 0.22,
+        "gyro_noise": 3.0,
+
+        "steering_jitter": 3.5,
+
+        "curb_probability": 0.008,
+
+        "state_min": 3.0,
+        "state_max": 8.0,
+    }
+}
+
+
+# =========================================================
 # UTILITAIRES
 # =========================================================
 
@@ -36,8 +110,16 @@ def low_pass(current, target, alpha=0.02):
 def generate_mock_imu_data(
     sampling_rate: int,
     duration: int,
-    output_file: str
+    output_file: str,
+    driver_profile: str = "average"
 ):
+
+    if driver_profile not in DRIVER_PROFILES:
+        raise ValueError(
+            f"Profil inconnu : {driver_profile}"
+        )
+
+    profile = DRIVER_PROFILES[driver_profile]
 
     samples = sampling_rate * duration
 
@@ -58,8 +140,7 @@ def generate_mock_imu_data(
         # ÉTAT DU KART
         # =====================================================
 
-        speed = 0.0            # m/s
-        yaw = 0.0              # degrés
+        yaw = 0.0
 
         ax = 0.0
         ay = 0.0
@@ -74,7 +155,6 @@ def generate_mock_imu_data(
 
         temperature = 35.0
 
-        # états possibles
         states = [
             "straight",
             "accelerate",
@@ -98,10 +178,9 @@ def generate_mock_imu_data(
 
                 current_state = random.choice(states)
 
-                # durée de l'état : 2 à 6 secondes
                 duration_state = random.randint(
-                    2 * sampling_rate,
-                    6 * sampling_rate
+                    int(profile["state_min"] * sampling_rate),
+                    int(profile["state_max"] * sampling_rate)
                 )
 
                 next_state_change = i + duration_state
@@ -122,33 +201,31 @@ def generate_mock_imu_data(
 
             elif current_state == "accelerate":
 
-                # +0.35 g
-                target_ax = 0.35 * G
+                target_ax = profile["accel_g"] * G
 
             elif current_state == "brake":
 
-                # -0.8 g
-                target_ax = -0.8 * G
+                target_ax = profile["brake_g"] * G
 
             elif current_state == "left_turn":
 
-                # virage gauche
-                target_ay = 0.9 * G
-                target_gz = 75.0
+                target_ay = profile["corner_g"] * G
+                target_gz = profile["yaw_rate"]
 
             elif current_state == "right_turn":
 
-                # virage droite
-                target_ay = -0.9 * G
-                target_gz = -75.0
+                target_ay = -profile["corner_g"] * G
+                target_gz = -profile["yaw_rate"]
 
             # =================================================
             # TRANSITIONS FLUIDES
             # =================================================
 
-            ax = low_pass(ax, target_ax, alpha=0.015)
-            ay = low_pass(ay, target_ay, alpha=0.02)
-            gz = low_pass(gz, target_gz, alpha=0.02)
+            alpha = profile["transition_alpha"]
+
+            ax = low_pass(ax, target_ax, alpha=alpha)
+            ay = low_pass(ay, target_ay, alpha=alpha)
+            gz = low_pass(gz, target_gz, alpha=alpha)
 
             # =================================================
             # VIBRATIONS KART
@@ -160,22 +237,28 @@ def generate_mock_imu_data(
 
             curb_vibration = 0.0
 
-            # parfois le kart roule sur un vibreur
-            if random.random() < 0.002:
+            if random.random() < profile["curb_probability"]:
 
                 curb_vibration = random.uniform(-2.0, 2.0)
 
-            # bruit IMU réaliste
-            noise_ax = random.gauss(0, 0.12)
-            noise_ay = random.gauss(0, 0.12)
-            noise_az = random.gauss(0, 0.15)
+            # =================================================
+            # BRUIT IMU
+            # =================================================
+
+            imu_noise = profile["imu_noise"]
+
+            noise_ax = random.gauss(0, imu_noise)
+            noise_ay = random.gauss(0, imu_noise)
+            noise_az = random.gauss(0, imu_noise * 1.2)
 
             # =================================================
             # ACCÉLÉROMÈTRE
             # =================================================
 
             ax_real = ax + noise_ax + engine_vibration
+
             ay_real = ay + noise_ay
+
             az_real = (
                 G
                 + noise_az
@@ -187,10 +270,21 @@ def generate_mock_imu_data(
             # GYROSCOPE
             # =================================================
 
-            gx = random.gauss(0, 1.5)
-            gy = random.gauss(0, 1.5)
+            gyro_noise = profile["gyro_noise"]
 
-            gz_real = gz + random.gauss(0, 2.0)
+            gx = random.gauss(0, gyro_noise)
+            gy = random.gauss(0, gyro_noise)
+
+            steering_jitter = random.gauss(
+                0,
+                profile["steering_jitter"]
+            )
+
+            gz_real = (
+                gz
+                + steering_jitter
+                + random.gauss(0, gyro_noise)
+            )
 
             # =================================================
             # ORIENTATION
@@ -200,17 +294,31 @@ def generate_mock_imu_data(
 
             yaw += gz_real * dt
 
-            # garde le yaw entre 0 et 360
             yaw = yaw % 360
 
-            # roulis dépend du virage
-            target_roll = clamp(ay_real * 2.0, -15, 15)
+            target_roll = clamp(
+                ay_real * 2.0,
+                -15,
+                15
+            )
 
-            # pitch dépend accélération/freinage
-            target_pitch = clamp(-ax_real * 1.5, -10, 10)
+            target_pitch = clamp(
+                -ax_real * 1.5,
+                -10,
+                10
+            )
 
-            roll = low_pass(roll, target_roll, alpha=0.03)
-            pitch = low_pass(pitch, target_pitch, alpha=0.03)
+            roll = low_pass(
+                roll,
+                target_roll,
+                alpha=0.03
+            )
+
+            pitch = low_pass(
+                pitch,
+                target_pitch,
+                alpha=0.03
+            )
 
             # =================================================
             # MAGNÉTOMÈTRE
@@ -218,8 +326,16 @@ def generate_mock_imu_data(
 
             heading_rad = math.radians(yaw)
 
-            mx = 35 * math.cos(heading_rad) + random.gauss(0, 1.0)
-            my = 35 * math.sin(heading_rad) + random.gauss(0, 1.0)
+            mx = (
+                35 * math.cos(heading_rad)
+                + random.gauss(0, 1.0)
+            )
+
+            my = (
+                35 * math.sin(heading_rad)
+                + random.gauss(0, 1.0)
+            )
+
             mz = random.gauss(0, 2.0)
 
             # =================================================
@@ -233,6 +349,7 @@ def generate_mock_imu_data(
             # =================================================
 
             row = [
+
                 round(t, 3),
 
                 round(ax_real, 3),
@@ -263,10 +380,36 @@ def generate_mock_imu_data(
 
 if __name__ == "__main__":
 
+    print("\n=== Générateur IMU Karting ===\n")
+
+    print("Profils disponibles :")
+    print("1 - expert")
+    print("2 - average")
+    print("3 - beginner")
+
+    choice = input("\nChoisissez un profil : ")
+
+    profile_map = {
+        "1": "expert",
+        "2": "average",
+        "3": "beginner"
+    }
+
+    driver_profile = profile_map.get(choice)
+
+    if driver_profile is None:
+
+        print("\nChoix invalide.")
+        exit()
+
+    output_file = f"imu_{driver_profile}.csv"
+
     generate_mock_imu_data(
         sampling_rate=SAMPLING_RATE,
         duration=DURATION,
-        output_file="imu_mock_data.csv"
+        output_file=output_file,
+        driver_profile=driver_profile
     )
 
-    print("Fichier généré : imu_mock_data.csv")
+    print(f"\nFichier généré : {output_file}")
+    print(f"Profil utilisé : {driver_profile}")
