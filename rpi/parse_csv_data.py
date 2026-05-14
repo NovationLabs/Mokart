@@ -13,7 +13,7 @@ def load_imu_data(filepath: str) -> pd.DataFrame:
     
     expected_columns = {
         "timestamp","ax","ay","az",
-        "gx","gy","gz",-
+        "gx","gy","gz",
         "roll","pitch","yaw",
         "mx","my","mz",
         "temperature"
@@ -61,3 +61,40 @@ def send_imu_data(df: pd.DataFrame):
             "imu_gy": row["gy"],
             "imu_gz": row["gz"],
         }
+
+def get_score_from_G_variation(df: pd.DataFrame):
+    jerk_x = []
+    jerk_y = []
+    jerk_total = []
+    prev_t = None
+    prev_ax = None
+    prev_ay = None
+
+    for t, row in df.iterrows():
+        
+        if prev_t is None:
+            prev_t = t
+            prev_ax = row["ax"]
+            prev_ay = row["ay"]
+            continue
+
+        dt = t - prev_t
+        if dt == 0:
+            continue
+
+        jerk_x_val = (row["ax"] - prev_ax) / dt
+        jerk_y_val = (row["ay"] - prev_ay) / dt
+        jerk_x.append(jerk_x_val)
+        jerk_y.append(jerk_y_val)
+        jerk_total.append(np.sqrt(jerk_x_val**2 + jerk_y_val**2))
+
+        prev_t = t
+        prev_ax = row["ax"]
+        prev_ay = row["ay"]
+
+    if not jerk_total:
+        return 0.0
+
+    jerk_rms = np.sqrt(np.mean(np.array(jerk_total) ** 2))
+    score = max(0.0, 100.0 - (jerk_rms / 10.0) * 100.0)
+    return score
