@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+
 from parse_csv_data import load_imu_data
 
 
@@ -83,7 +84,7 @@ def compute_jerk_and_score(df: pd.DataFrame):
         # =====================================================
         # SCORE DE FLUIDITÉ
         # =====================================================
-        score = 100 * (1 - min(jerk_rms / MAX_JERK, 1))
+        score = max(0.0, 100.0 - (jerk_rms / MAX_JERK) * 100.0)
 
         # stockage
         times.append(t)
@@ -102,25 +103,46 @@ def compute_jerk_and_score(df: pd.DataFrame):
 # EXEMPLE D'UTILISATION
 # =============================================================
 
-# Génération d'un exemple de signal
-time = np.linspace(0, 10, 500)
-
 filename = input("Filename CSV (ex: imu_mock_data.csv) : ")
+
 df = load_imu_data(filename)
 
 # =============================================================
 # CALCULS
 # =============================================================
-times, jerk_values, smoothness_scores, df_filtered = compute_jerk_and_score(df)
+
+times, jerk_values, smoothness_scores, df_filtered = (
+    compute_jerk_and_score(df)
+)
+
+# =============================================================
+# CALCUL G TOTAL
+# =============================================================
+
+g_total = np.sqrt(
+    df_filtered["ax"]**2 +
+    df_filtered["ay"]**2
+)
+
+session_gmax = g_total.max()
+session_gmean = g_total.mean()
+
+print(f"G max session : {session_gmax:.2f} g")
+print(f"G moyen session : {session_gmean:.2f} g")
 
 # =============================================================
 # VISUALISATION
 # =============================================================
 
-fig, axs = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
+fig, axs = plt.subplots(
+    4,
+    1,
+    figsize=(14, 14),
+    sharex=False
+)
 
 # -------------------------------------------------------------
-# 1. ACCÉLÉRATIONS BRUTES
+# 1. ACCÉLÉRATIONS
 # -------------------------------------------------------------
 axs[0].plot(
     df_filtered.index,
@@ -136,8 +158,9 @@ axs[0].plot(
     label="ay"
 )
 
-axs[0].set_title("Accélérations brutes")
-axs[0].set_ylabel("Accélération")
+axs[0].set_title("Accélérations IMU")
+axs[0].set_ylabel("Accélération (g)")
+
 axs[0].legend()
 axs[0].grid(True)
 
@@ -153,6 +176,7 @@ axs[1].plot(
 
 axs[1].set_title("Jerk instantané")
 axs[1].set_ylabel("Jerk")
+
 axs[1].legend()
 axs[1].grid(True)
 
@@ -167,15 +191,77 @@ axs[2].plot(
 )
 
 axs[2].set_title("Score de fluidité")
+
 axs[2].set_xlabel("Temps (s)")
 axs[2].set_ylabel("Score")
+
 axs[2].set_ylim(0, 100)
 
 axs[2].legend()
 axs[2].grid(True)
 
+# -------------------------------------------------------------
+# 4. DIAGRAMME G-G
+# -------------------------------------------------------------
+scatter = axs[3].scatter(
+    df_filtered["ax"],
+    df_filtered["ay"],
+    c=df_filtered.index,
+    cmap="viridis",
+    s=10,
+    alpha=0.7
+)
+
+# cercle du G max
+circle = plt.Circle(
+    (0, 0),
+    session_gmax,
+    color='red',
+    fill=False,
+    linestyle='--',
+    linewidth=2,
+    label=f"G max = {session_gmax:.2f} g"
+)
+
+axs[3].add_patch(circle)
+
+# axes centraux
+axs[3].axhline(
+    0,
+    color='black',
+    linewidth=0.8
+)
+
+axs[3].axvline(
+    0,
+    color='black',
+    linewidth=0.8
+)
+
+axs[3].set_title("Diagramme G-G")
+
+axs[3].set_xlabel("ax (g)")
+axs[3].set_ylabel("ay (g)")
+
+# aspect carré
+axs[3].set_aspect(
+    'equal',
+    adjustable='box'
+)
+
+axs[3].legend()
+axs[3].grid(True)
+
+# colorbar temps
+fig.colorbar(
+    scatter,
+    ax=axs[3],
+    label="Temps (s)"
+)
+
 # =============================================================
 # AFFICHAGE
 # =============================================================
+
 plt.tight_layout()
 plt.show()
