@@ -140,7 +140,7 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
   const roles = [
     { id: 'admin', name: 'Admin', icon: '👑' },
     { id: 'track_manager', name: 'Track Manager', icon: '🏆' },
-    { id: 'commissaire', name: 'Commissaire', icon: '�️' },
+    { id: 'commissaire', name: 'Commissaire', icon: '👮' },
     { id: 'mechanic', name: 'Mécanicien', icon: '🔧' },
     { id: 'instructor', name: 'Instructeur', icon: '👨‍🏫' },
     { id: 'driver', name: 'Pilote', icon: '🏎️' },
@@ -260,10 +260,10 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'warning': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-      case 'error': return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default: return <Info className="w-4 h-4 text-blue-500" />;
+      case 'success': return <CheckCircle className="w-4 h-4 text-[#10B981]" />;
+      case 'warning': return <AlertCircle className="w-4 h-4 text-[#eab308]" />;
+      case 'error': return <AlertCircle className="w-4 h-4 text-[#ef4444]" />;
+      default: return <Info className="w-4 h-4 text-[#3B82F6]" />;
     }
   };
 
@@ -275,70 +275,68 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
 
   return (
     <>
-      <header className={`flex-shrink-0 h-12 flex items-center bg-[#0d0f12]/95 border-b border-[#262626] px-4 backdrop-blur-xl relative z-40 ${className || ''}`}>
-        {/* ── Left: Breadcrumb (Supabase style) ──────────────────────── */}
-        <div className="flex items-center gap-0 min-w-0">
-          <img
-            src="/icon_inverse.png"
-            alt="Mokart"
-            className="w-4 h-4 object-contain opacity-60 mr-2 hidden sm:block"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <span className="text-[#737373] text-sm hover:text-[#a3a3a3] cursor-default hidden sm:inline transition-colors">Mokart</span>
-          <span className="text-[#404040] mx-2 hidden sm:inline">/</span>
-          <span className="text-white text-sm font-medium truncate">{currentPage}</span>
+      <header className={`flex-shrink-0 h-20 border-b border-[#27272a]/30 flex items-center justify-between px-6 md:px-10 z-40 relative backdrop-blur-md bg-[#0a0a0c]/60 ${className || ''}`}>
+
+        {/* ── Left: Titles ────────────────────────────────────────────── */}
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight capitalize">{currentPage}</h1>
+          <p className="text-sm text-slate-400 font-medium hidden sm:block">MoKart Management System</p>
         </div>
 
-        <div className="flex-1" />
-
         {/* ── Right: Actions ────────────────────────────────────────── */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center space-x-3 sm:space-x-5">
+
+          {/* Status Piste */}
+          <div className="hidden md:flex items-center bg-green-500/10 border border-green-500/20 rounded-full px-4 py-1.5 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+            <span className="relative flex h-2 w-2 mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
+            </span>
+            <span className="text-xs font-bold text-[#10B981] tracking-widest uppercase">Système Actif</span>
+          </div>
 
           {/* Search (cmd+K) */}
           <button
             onClick={openSearch}
-            className="flex items-center gap-2 h-7 px-2.5 text-[#737373] hover:text-[#a3a3a3] hover:border-[#404040] bg-[#16181d] border border-[#262626] rounded-md text-xs transition-colors"
+            className="flex items-center bg-white/5 hover:bg-white/10 border border-white/5 px-4 py-2 rounded-xl text-sm font-bold text-white transition-all shadow-lg group"
           >
-            <Search className="w-3.5 h-3.5" />
+            <Search className="w-4 h-4 sm:mr-2 text-slate-400 group-hover:text-white transition-colors" />
             <span className="hidden sm:inline">Rechercher</span>
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 bg-[#0d0f12] border border-[#333] rounded text-[10px] text-[#555] font-mono">
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 ml-3 px-1.5 py-0.5 bg-black/40 border border-white/10 rounded-md text-[10px] text-slate-400 font-mono">
               <Command className="w-2.5 h-2.5" />K
             </kbd>
           </button>
-
-          <div className="w-px h-5 bg-[#262626] mx-1.5" />
 
           {/* Role switcher (demo) */}
           {isDemoUser() && (
             <div className="relative" ref={roleSwitcherRef}>
               <button
                 onClick={() => setShowRoleSwitcher(!showRoleSwitcher)}
-                className="flex items-center gap-1.5 h-7 px-2 text-[#a3a3a3] hover:text-white bg-[#16181d] border border-[#262626] rounded-md text-xs transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-sm font-bold text-white transition-all shadow-lg"
               >
                 <span className="text-sm">{roles.find(r => r.id === getCurrentRole())?.icon}</span>
-                <span className="hidden sm:inline capitalize">{getCurrentRole()}</span>
+                <span className="hidden sm:inline capitalize">{roles.find(r => r.id === getCurrentRole())?.name}</span>
               </button>
 
               {showRoleSwitcher && (
-                <div className="absolute right-0 mt-2 w-48 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-[200]">
-                  <div className="p-3 border-b border-[#262626]">
-                    <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Changer de Rôle</h3>
-                    <p className="text-xs text-[#737373] mt-1">Mode démo uniquement</p>
+                <div className="absolute right-0 mt-3 w-48 bg-[#131316]/95 backdrop-blur-xl border border-[#27272a] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-[200] overflow-hidden">
+                  <div className="p-4 border-b border-white/5 bg-black/20">
+                    <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Changer de Rôle</h3>
                   </div>
-                  <div className="py-1">
+                  <div className="py-2">
                     {roles.map((role) => (
                       <button
                         key={role.id}
                         onClick={() => switchRole(role.id)}
-                        className={`flex items-center gap-3 w-full px-3 py-2 text-sm transition-colors ${
+                        className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${
                           getCurrentRole() === role.id
-                            ? 'bg-[#7bf8ac]/10 text-[#7bf8ac]'
-                            : 'text-[#a3a3a3] hover:text-white hover:bg-[#262626]'
+                            ? 'bg-[#3B82F6]/10 text-[#3B82F6]'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                         }`}
                       >
                         <span className="text-base">{role.icon}</span>
-                        <span className="font-medium">{role.name}</span>
-                        {getCurrentRole() === role.id && <Check className="w-3.5 h-3.5 ml-auto" />}
+                        <span className="font-semibold">{role.name}</span>
+                        {getCurrentRole() === role.id && <Check className="w-4 h-4 ml-auto" />}
                       </button>
                     ))}
                   </div>
@@ -351,45 +349,43 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative flex items-center justify-center w-7 h-7 text-[#737373] hover:text-white rounded-md hover:bg-[#1c1f26] transition-colors"
+              className="relative p-2.5 text-slate-400 hover:text-white bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5 shadow-lg"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-[#7bf8ac] text-black text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {unreadCount}
-                </span>
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#3B82F6] rounded-full border-2 border-[#0a0a0c]"></span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-80 bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
-                <div className="p-3 border-b border-[#262626] flex items-center justify-between">
-                  <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Notifications</h3>
+              <div className="absolute right-0 sm:right-0 mt-3 w-[calc(100vw-2rem)] sm:w-80 max-w-80 bg-[#131316]/95 backdrop-blur-xl border border-[#27272a] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-black/20 flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Notifications</h3>
                   {unreadCount > 0 && (
-                    <button onClick={markAllNotificationsAsRead} className="text-xs text-[#7bf8ac] hover:text-[#34d399] transition-colors">
+                    <button onClick={markAllNotificationsAsRead} className="text-xs text-[#3B82F6] hover:text-[#60a5fa] font-semibold transition-colors">
                       Tout marquer lu
                     </button>
                   )}
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-[#737373] text-sm">Aucune notification</div>
+                    <div className="p-6 text-center text-slate-500 text-sm font-medium">Aucune notification</div>
                   ) : (
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-3 border-b border-[#262626]/50 hover:bg-[#1c1f26] transition-colors cursor-pointer ${!notification.read ? 'bg-[#1a1c21]' : ''}`}
+                        className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notification.read ? 'bg-white/[0.02]' : ''}`}
                         onClick={() => !notification.read && markNotificationAsRead(notification.id)}
                       >
-                        <div className="flex items-start gap-2.5">
-                          {getNotificationIcon(notification.type)}
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5">{getNotificationIcon(notification.type)}</div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-xs font-medium text-white truncate">{notification.title}</h4>
-                              {!notification.read && <div className="w-1.5 h-1.5 bg-[#7bf8ac] rounded-full ml-2 flex-shrink-0" />}
+                              <h4 className={`text-sm font-bold truncate ${!notification.read ? 'text-white' : 'text-slate-300'}`}>{notification.title}</h4>
+                              {!notification.read && <div className="w-1.5 h-1.5 bg-[#3B82F6] rounded-full ml-2 flex-shrink-0" />}
                             </div>
-                            <p className="text-xs text-[#737373] mt-0.5 line-clamp-2">{notification.message}</p>
-                            <p className="text-[10px] text-[#555] mt-1">
+                            <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">{notification.message}</p>
+                            <p className="text-[10px] text-slate-500 mt-2 font-medium">
                               {new Date(notification.created_at).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -402,37 +398,32 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             )}
           </div>
 
-          <div className="w-px h-5 bg-[#262626] mx-1.5" />
-
           {/* User menu */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 h-7 pl-1 pr-2 text-[#a3a3a3] hover:text-white rounded-md hover:bg-[#1c1f26] transition-colors"
+              className="relative p-1 text-slate-400 hover:text-white bg-white/5 rounded-full hover:bg-white/10 transition-colors border border-white/5 shadow-lg group"
             >
-              <div className="w-5 h-5 rounded-full bg-[#7bf8ac]/20 text-[#7bf8ac] flex items-center justify-center text-[10px] font-bold">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#3B82F6] to-[#06b6d4] flex items-center justify-center text-white text-xs font-bold shadow-inner group-hover:scale-105 transition-transform">
                 {getUserInitials()}
               </div>
-              <span className="text-xs hidden sm:inline max-w-[100px] truncate">
-                {userProfile ? (userProfile.first_name || userProfile.username) : '...'}
-              </span>
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-2rem)] bg-[#16181d] border border-[#262626] rounded-lg shadow-xl z-50">
-                <div className="p-3 border-b border-[#262626]">
-                  <p className="text-sm font-medium text-white">
+              <div className="absolute right-0 mt-3 w-56 max-w-[calc(100vw-2rem)] bg-[#131316]/95 backdrop-blur-xl border border-[#27272a] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 overflow-hidden">
+                <div className="p-4 border-b border-white/5 bg-black/20">
+                  <p className="text-sm font-bold text-white">
                     {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() || userProfile.username : '...'}
                   </p>
-                  <p className="text-xs text-[#737373] mt-0.5">{userProfile?.email}</p>
+                  <p className="text-xs text-slate-400 mt-1">{userProfile?.email}</p>
                 </div>
-                <div className="py-1">
-                  <a href="/settings" className="flex items-center gap-2.5 px-3 py-2 text-xs text-[#a3a3a3] hover:text-white hover:bg-[#1c1f26] transition-colors">
-                    <Settings className="w-3.5 h-3.5" />
+                <div className="py-2">
+                  <a href="/settings" className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+                    <Settings className="w-4 h-4" />
                     Paramètres
                   </a>
-                  <button onClick={handleLogout} className="flex items-center gap-2.5 px-3 py-2 text-xs text-[#a3a3a3] hover:text-white hover:bg-[#1c1f26] transition-colors w-full text-left">
-                    <LogOut className="w-3.5 h-3.5" />
+                  <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors w-full text-left">
+                    <LogOut className="w-4 h-4" />
                     Déconnexion
                   </button>
                 </div>
@@ -445,36 +436,37 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
       {/* ── Command Palette (cmd+K) ─────────────────────────────────── */}
       {showSearch && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh]">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeSearch} />
-          <div className="relative w-full max-w-lg mx-4 bg-[#16181d] border border-[#262626] rounded-xl shadow-2xl overflow-hidden">
+          <div className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-sm transition-opacity" onClick={closeSearch} />
+          <div className="relative w-full max-w-lg mx-4 bg-[#131316] border border-[#27272a] rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.8)] overflow-hidden">
+
             {/* Search input */}
-            <div className="flex items-center gap-3 px-4 h-12 border-b border-[#262626]">
-              <Search className="w-4 h-4 text-[#737373] flex-shrink-0" />
+            <div className="flex items-center gap-3 px-5 h-14 border-b border-[#27272a]">
+              <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Aller à une page, action..."
+                placeholder="Rechercher une page ou une action..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="flex-1 bg-transparent text-sm text-white placeholder-[#555] focus:outline-none"
+                className="flex-1 bg-transparent text-base text-white placeholder-slate-500 focus:outline-none"
               />
-              <kbd className="px-1.5 py-0.5 bg-[#0d0f12] border border-[#333] rounded text-[10px] text-[#555] font-mono">ESC</kbd>
+              <kbd className="px-1.5 py-0.5 bg-black/40 border border-white/10 rounded-md text-[10px] text-slate-400 font-mono">ESC</kbd>
             </div>
 
             {/* Results */}
-            <div className="max-h-80 overflow-y-auto py-1">
+            <div className="max-h-[60vh] overflow-y-auto py-2">
               {filteredItems.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-[#555]">
-                  Aucun résultat pour "{searchQuery}"
+                <div className="px-5 py-8 text-center text-sm font-medium text-slate-500">
+                  Aucun résultat trouvé pour "{searchQuery}"
                 </div>
               ) : (
                 <>
                   {/* Pages */}
                   {pageItems.length > 0 && (
                     <>
-                      <div className="px-3 pt-2 pb-1">
-                        <span className="text-[10px] font-semibold text-[#555] uppercase tracking-wider">Pages</span>
+                      <div className="px-4 pt-2 pb-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pages</span>
                       </div>
                       {pageItems.map((item) => {
                         const globalIndex = filteredItems.indexOf(item);
@@ -483,21 +475,21 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                             key={item.id}
                             onClick={() => { item.action(); closeSearch(); }}
                             onMouseEnter={() => setSelectedIndex(globalIndex)}
-                            className={`flex items-center gap-3 w-full px-3 py-2 text-left transition-colors ${
+                            className={`flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors ${
                               selectedIndex === globalIndex
-                                ? 'bg-[#7bf8ac]/10 text-white'
-                                : 'text-[#a3a3a3] hover:bg-[#1c1f26]'
+                                ? 'bg-[#3B82F6]/10 text-white border-l-2 border-[#3B82F6]'
+                                : 'text-slate-400 hover:bg-white/5 border-l-2 border-transparent'
                             }`}
                           >
-                            <span className={selectedIndex === globalIndex ? 'text-[#7bf8ac]' : 'text-[#555]'}>{item.icon}</span>
+                            <span className={selectedIndex === globalIndex ? 'text-[#3B82F6]' : 'text-slate-500'}>{item.icon}</span>
                             <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium">{item.label}</span>
+                              <span className="text-sm font-bold">{item.label}</span>
                               {item.description && (
-                                <span className="text-xs text-[#555] ml-2">{item.description}</span>
+                                <span className="text-xs text-slate-500 ml-2 font-medium hidden sm:inline">{item.description}</span>
                               )}
                             </div>
                             {selectedIndex === globalIndex && (
-                              <ArrowRight className="w-3.5 h-3.5 text-[#7bf8ac] flex-shrink-0" />
+                              <ArrowRight className="w-4 h-4 text-[#3B82F6] flex-shrink-0" />
                             )}
                           </button>
                         );
@@ -508,8 +500,8 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                   {/* Actions */}
                   {actionItems.length > 0 && (
                     <>
-                      <div className="px-3 pt-3 pb-1 border-t border-[#262626] mt-1">
-                        <span className="text-[10px] font-semibold text-[#555] uppercase tracking-wider">Actions</span>
+                      <div className="px-4 pt-4 pb-1 border-t border-white/5 mt-2">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Actions</span>
                       </div>
                       {actionItems.map((item) => {
                         const globalIndex = filteredItems.indexOf(item);
@@ -518,16 +510,16 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
                             key={item.id}
                             onClick={() => { item.action(); closeSearch(); }}
                             onMouseEnter={() => setSelectedIndex(globalIndex)}
-                            className={`flex items-center gap-3 w-full px-3 py-2 text-left transition-colors ${
+                            className={`flex items-center gap-3 w-full px-4 py-2.5 text-left transition-colors ${
                               selectedIndex === globalIndex
-                                ? 'bg-[#7bf8ac]/10 text-white'
-                                : 'text-[#a3a3a3] hover:bg-[#1c1f26]'
+                                ? 'bg-[#3B82F6]/10 text-white border-l-2 border-[#3B82F6]'
+                                : 'text-slate-400 hover:bg-white/5 border-l-2 border-transparent'
                             }`}
                           >
-                            <span className={selectedIndex === globalIndex ? 'text-[#7bf8ac]' : 'text-[#555]'}>{item.icon}</span>
-                            <span className="text-sm font-medium">{item.label}</span>
+                            <span className={selectedIndex === globalIndex ? 'text-[#3B82F6]' : 'text-slate-500'}>{item.icon}</span>
+                            <span className="text-sm font-bold">{item.label}</span>
                             {selectedIndex === globalIndex && (
-                              <ArrowRight className="w-3.5 h-3.5 text-[#7bf8ac] flex-shrink-0 ml-auto" />
+                              <ArrowRight className="w-4 h-4 text-[#3B82F6] flex-shrink-0 ml-auto" />
                             )}
                           </button>
                         );
@@ -539,18 +531,18 @@ const Header: React.FC<HeaderProps> = ({ className }) => {
             </div>
 
             {/* Footer hints */}
-            <div className="flex items-center gap-4 px-3 py-2 border-t border-[#262626] text-[10px] text-[#555]">
-              <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-[#0d0f12] border border-[#333] rounded font-mono">↑↓</kbd>
-                naviguer
+            <div className="flex items-center gap-4 px-4 py-3 border-t border-[#27272a] bg-black/20 text-[10px] font-medium text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-black/40 border border-white/10 rounded font-mono">↑↓</kbd>
+                Naviguer
               </span>
-              <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-[#0d0f12] border border-[#333] rounded font-mono">↵</kbd>
-                ouvrir
+              <span className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-black/40 border border-white/10 rounded font-mono">↵</kbd>
+                Ouvrir
               </span>
-              <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 bg-[#0d0f12] border border-[#333] rounded font-mono">esc</kbd>
-                fermer
+              <span className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-black/40 border border-white/10 rounded font-mono">esc</kbd>
+                Fermer
               </span>
             </div>
           </div>
