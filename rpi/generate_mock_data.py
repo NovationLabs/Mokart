@@ -21,48 +21,40 @@ DRIVER_PROFILES = {
 
     "expert": {
 
-        # dynamique
         "accel_g": 0.45,
-        "brake_g": -1.1,
+        "brake_g": -1.10,
         "corner_g": 1.25,
         "yaw_rate": 95,
 
-        # fluidité
-        "transition_alpha": 0.035,
+        "transition_alpha": 0.04,
 
-        # bruit IMU
-        "imu_noise": 0.06,
-        "gyro_noise": 0.8,
+        "imu_noise": 0.05,
+        "gyro_noise": 0.6,
 
-        # corrections volant
-        "steering_jitter": 0.3,
+        "steering_jitter": 0.25,
 
-        # erreurs / vibreurs
-        "curb_probability": 0.004,
+        "curb_probability": 0.02,
 
-        # durée des états
-        "state_min": 1.5,
-        "state_max": 4.0,
+        "state_variation": 0.08,
     },
 
     "average": {
 
         "accel_g": 0.32,
         "brake_g": -0.75,
-        "corner_g": 0.9,
+        "corner_g": 0.90,
         "yaw_rate": 70,
 
-        "transition_alpha": 0.02,
+        "transition_alpha": 0.025,
 
-        "imu_noise": 0.12,
-        "gyro_noise": 1.5,
+        "imu_noise": 0.10,
+        "gyro_noise": 1.2,
 
-        "steering_jitter": 1.0,
+        "steering_jitter": 0.8,
 
-        "curb_probability": 0.002,
+        "curb_probability": 0.04,
 
-        "state_min": 2.0,
-        "state_max": 6.0,
+        "state_variation": 0.15,
     },
 
     "beginner": {
@@ -72,19 +64,38 @@ DRIVER_PROFILES = {
         "corner_g": 0.55,
         "yaw_rate": 40,
 
-        "transition_alpha": 0.008,
+        "transition_alpha": 0.012,
 
-        "imu_noise": 0.22,
-        "gyro_noise": 3.0,
+        "imu_noise": 0.20,
+        "gyro_noise": 2.5,
 
-        "steering_jitter": 3.5,
+        "steering_jitter": 3.0,
 
-        "curb_probability": 0.008,
+        "curb_probability": 0.08,
 
-        "state_min": 3.0,
-        "state_max": 8.0,
+        "state_variation": 0.30,
     }
 }
+
+
+# =========================================================
+# CIRCUIT
+# =========================================================
+
+TRACK_SEGMENTS = [
+
+    {"type": "straight",    "duration": 4.0},
+    {"type": "brake",       "duration": 1.2},
+    {"type": "left_turn",   "duration": 2.5},
+    {"type": "accelerate",  "duration": 2.0},
+
+    {"type": "straight",    "duration": 3.5},
+    {"type": "brake",       "duration": 1.0},
+    {"type": "right_turn",  "duration": 2.2},
+    {"type": "accelerate",  "duration": 1.8},
+
+    {"type": "straight",    "duration": 5.0},
+]
 
 
 # =========================================================
@@ -95,16 +106,12 @@ def clamp(value, min_value, max_value):
     return max(min_value, min(value, max_value))
 
 
-def low_pass(current, target, alpha=0.02):
-    """
-    Transition progressive vers une cible.
-    alpha petit = mouvement plus fluide.
-    """
+def low_pass(current, target, alpha):
     return current + (target - current) * alpha
 
 
 # =========================================================
-# GÉNÉRATION IMU KARTING
+# GÉNÉRATION
 # =========================================================
 
 def generate_mock_imu_data(
@@ -115,13 +122,42 @@ def generate_mock_imu_data(
 ):
 
     if driver_profile not in DRIVER_PROFILES:
-        raise ValueError(
-            f"Profil inconnu : {driver_profile}"
-        )
+        raise ValueError("Profil inconnu")
 
     profile = DRIVER_PROFILES[driver_profile]
 
     samples = sampling_rate * duration
+
+    # =====================================================
+    # ÉTAT GLOBAL
+    # =====================================================
+
+    yaw = 0.0
+
+    ax = 0.0
+    ay = 0.0
+    az = G
+
+    gz = 0.0
+
+    roll = 0.0
+    pitch = 0.0
+
+    roll_velocity = 0.0
+    pitch_velocity = 0.0
+
+    temperature = 35.0
+
+    steering_memory = 0.0
+
+    imu_noise_memory_x = 0.0
+    imu_noise_memory_y = 0.0
+    imu_noise_memory_z = 0.0
+
+    segment_index = 0
+    segment_elapsed = 0
+
+    current_segment = TRACK_SEGMENTS[0]
 
     with open(output_file, "w", newline="") as f:
 
@@ -136,217 +172,378 @@ def generate_mock_imu_data(
             "temperature"
         ])
 
-        # =====================================================
-        # ÉTAT DU KART
-        # =====================================================
-
-        yaw = 0.0
-
-        ax = 0.0
-        ay = 0.0
-        az = G
-
-        gx = 0.0
-        gy = 0.0
-        gz = 0.0
-
-        roll = 0.0
-        pitch = 0.0
-
-        temperature = 35.0
-
-        states = [
-            "straight",
-            "accelerate",
-            "brake",
-            "left_turn",
-            "right_turn"
-        ]
-
-        current_state = "straight"
-        next_state_change = 0
+        # =================================================
+        # BOUCLE PRINCIPALE
+        # =================================================
 
         for i in range(samples):
 
             t = i / sampling_rate
+            dt = 1.0 / sampling_rate
 
-            # =================================================
-            # CHANGEMENT D'ÉTAT
-            # =================================================
+            # =============================================
+            # FATIGUE / CONCENTRATION
+            # =============================================
 
-            if i >= next_state_change:
+            fatigue = (
+                math.sin(t * 0.015) * 0.15
+                + math.sin(t * 0.003) * 0.1
+            )
 
-                current_state = random.choice(states)
+            # =============================================
+            # SEGMENT CIRCUIT
+            # =============================================
 
-                duration_state = random.randint(
-                    int(profile["state_min"] * sampling_rate),
-                    int(profile["state_max"] * sampling_rate)
+            segment_type = current_segment["type"]
+
+            segment_duration = (
+                current_segment["duration"]
+                * random.uniform(
+                    1.0 - profile["state_variation"],
+                    1.0 + profile["state_variation"]
                 )
+            )
 
-                next_state_change = i + duration_state
+            segment_samples = int(
+                segment_duration * sampling_rate
+            )
 
-            # =================================================
-            # CIBLES SELON L'ÉTAT
-            # =================================================
+            phase = segment_elapsed / max(segment_samples, 1)
+
+            if segment_elapsed >= segment_samples:
+
+                segment_index = (
+                    segment_index + 1
+                ) % len(TRACK_SEGMENTS)
+
+                current_segment = TRACK_SEGMENTS[
+                    segment_index
+                ]
+
+                segment_elapsed = 0
+
+                segment_type = current_segment["type"]
+
+            segment_elapsed += 1
+
+            # =============================================
+            # VARIABILITÉ HUMAINE
+            # =============================================
+
+            corner_strength = random.uniform(0.9, 1.08)
+            brake_strength = random.uniform(0.92, 1.05)
+            accel_strength = random.uniform(0.95, 1.03)
+
+            # =============================================
+            # CIBLES
+            # =============================================
 
             target_ax = 0.0
             target_ay = 0.0
             target_gz = 0.0
 
-            if current_state == "straight":
+            # ---------------------------------------------
+            # LIGNE DROITE
+            # ---------------------------------------------
 
-                target_ax = 0.0
-                target_ay = 0.0
-                target_gz = 0.0
+            if segment_type == "straight":
 
-            elif current_state == "accelerate":
+                target_ax = (
+                    math.sin(t * 0.4) * 0.1
+                )
 
-                target_ax = profile["accel_g"] * G
+            # ---------------------------------------------
+            # ACCÉLÉRATION
+            # ---------------------------------------------
 
-            elif current_state == "brake":
+            elif segment_type == "accelerate":
 
-                target_ax = profile["brake_g"] * G
+                accel_curve = math.sin(
+                    phase * math.pi / 2
+                )
 
-            elif current_state == "left_turn":
+                target_ax = (
+                    profile["accel_g"]
+                    * accel_strength
+                    * G
+                    * accel_curve
+                )
 
-                target_ay = profile["corner_g"] * G
-                target_gz = profile["yaw_rate"]
+            # ---------------------------------------------
+            # FREINAGE
+            # ---------------------------------------------
 
-            elif current_state == "right_turn":
+            elif segment_type == "brake":
 
-                target_ay = -profile["corner_g"] * G
-                target_gz = -profile["yaw_rate"]
+                brake_curve = math.sin(
+                    phase * math.pi / 2
+                )
 
-            # =================================================
+                target_ax = (
+                    profile["brake_g"]
+                    * brake_strength
+                    * G
+                    * brake_curve
+                )
+
+            # ---------------------------------------------
+            # VIRAGE GAUCHE
+            # ---------------------------------------------
+
+            elif segment_type == "left_turn":
+
+                corner_curve = math.sin(
+                    phase * math.pi
+                )
+
+                target_ay = (
+                    profile["corner_g"]
+                    * corner_strength
+                    * G
+                    * corner_curve
+                )
+
+                target_gz = (
+                    profile["yaw_rate"]
+                    * corner_curve
+                )
+
+            # ---------------------------------------------
+            # VIRAGE DROIT
+            # ---------------------------------------------
+
+            elif segment_type == "right_turn":
+
+                corner_curve = math.sin(
+                    phase * math.pi
+                )
+
+                target_ay = (
+                    -profile["corner_g"]
+                    * corner_strength
+                    * G
+                    * corner_curve
+                )
+
+                target_gz = (
+                    -profile["yaw_rate"]
+                    * corner_curve
+                )
+
+            # =============================================
             # TRANSITIONS FLUIDES
-            # =================================================
+            # =============================================
 
-            alpha = profile["transition_alpha"]
+            alpha = (
+                profile["transition_alpha"]
+                * (1.0 - fatigue * 0.2)
+            )
 
-            ax = low_pass(ax, target_ax, alpha=alpha)
-            ay = low_pass(ay, target_ay, alpha=alpha)
-            gz = low_pass(gz, target_gz, alpha=alpha)
+            ax = low_pass(ax, target_ax, alpha)
+            ay = low_pass(ay, target_ay, alpha)
+            gz = low_pass(gz, target_gz, alpha)
 
-            # =================================================
-            # VIBRATIONS KART
-            # =================================================
+            # =============================================
+            # VIBRATIONS MOTEUR
+            # =============================================
 
             engine_vibration = (
-                math.sin(2 * math.pi * 22 * t) * 0.15
+
+                math.sin(2 * math.pi * 22 * t) * 0.12
+                + math.sin(2 * math.pi * 41 * t) * 0.05
+                + math.sin(2 * math.pi * 9 * t) * 0.08
             )
+
+            # =============================================
+            # VIBREURS
+            # =============================================
 
             curb_vibration = 0.0
 
-            if random.random() < profile["curb_probability"]:
+            curb_probability = (
+                profile["curb_probability"]
+            )
 
-                curb_vibration = random.uniform(-2.0, 2.0)
+            if segment_type in [
+                "left_turn",
+                "right_turn"
+            ]:
+                curb_probability *= 3
 
-            # =================================================
-            # BRUIT IMU
-            # =================================================
+            if random.random() < curb_probability:
 
-            imu_noise = profile["imu_noise"]
+                curb_vibration = random.uniform(
+                    -2.5,
+                    2.5
+                )
 
-            noise_ax = random.gauss(0, imu_noise)
-            noise_ay = random.gauss(0, imu_noise)
-            noise_az = random.gauss(0, imu_noise * 1.2)
+            # =============================================
+            # BRUIT CORRÉLÉ
+            # =============================================
 
-            # =================================================
+            imu_noise = (
+                profile["imu_noise"]
+                * (1 + fatigue)
+            )
+
+            imu_noise_memory_x = low_pass(
+                imu_noise_memory_x,
+                random.gauss(0, imu_noise),
+                0.05
+            )
+
+            imu_noise_memory_y = low_pass(
+                imu_noise_memory_y,
+                random.gauss(0, imu_noise),
+                0.05
+            )
+
+            imu_noise_memory_z = low_pass(
+                imu_noise_memory_z,
+                random.gauss(0, imu_noise),
+                0.05
+            )
+
+            # =============================================
             # ACCÉLÉROMÈTRE
-            # =================================================
+            # =============================================
 
-            ax_real = ax + noise_ax + engine_vibration
+            ax_real = (
+                ax
+                + imu_noise_memory_x
+                + engine_vibration
+            )
 
-            ay_real = ay + noise_ay
+            ay_real = (
+                ay
+                + imu_noise_memory_y
+            )
 
             az_real = (
                 G
-                + noise_az
+                + imu_noise_memory_z
                 + abs(engine_vibration)
                 + curb_vibration
             )
 
-            # =================================================
+            # =============================================
             # GYROSCOPE
-            # =================================================
+            # =============================================
 
-            gyro_noise = profile["gyro_noise"]
+            gyro_noise = (
+                profile["gyro_noise"]
+                * (1 + fatigue)
+            )
 
             gx = random.gauss(0, gyro_noise)
             gy = random.gauss(0, gyro_noise)
 
-            steering_jitter = random.gauss(
-                0,
-                profile["steering_jitter"]
+            # =============================================
+            # MICRO-CORRECTIONS HUMAINES
+            # =============================================
+
+            steering_memory = low_pass(
+                steering_memory,
+                random.gauss(
+                    0,
+                    profile["steering_jitter"]
+                ),
+                0.03
             )
 
             gz_real = (
                 gz
-                + steering_jitter
+                + steering_memory
                 + random.gauss(0, gyro_noise)
             )
 
-            # =================================================
-            # ORIENTATION
-            # =================================================
+            # =============================================
+            # SOUS-VIRAGE
+            # =============================================
 
-            dt = 1.0 / sampling_rate
+            if abs(ay_real) > (
+                profile["corner_g"] * G * 0.9
+            ):
+                gz_real *= 0.93
+
+            # =============================================
+            # SURVIRAGE OCCASIONNEL
+            # =============================================
+
+            if random.random() < 0.002:
+
+                gz_real *= random.uniform(
+                    1.05,
+                    1.15
+                )
+
+            # =============================================
+            # ORIENTATION
+            # =============================================
 
             yaw += gz_real * dt
-
-            yaw = yaw % 360
+            yaw %= 360
 
             target_roll = clamp(
                 ay_real * 2.0,
-                -15,
-                15
+                -16,
+                16
             )
 
             target_pitch = clamp(
                 -ax_real * 1.5,
-                -10,
-                10
+                -12,
+                12
             )
 
-            roll = low_pass(
-                roll,
-                target_roll,
-                alpha=0.03
+            # =============================================
+            # INERTIE BIOMÉCANIQUE
+            # =============================================
+
+            roll_velocity += (
+                (target_roll - roll) * 0.02
             )
 
-            pitch = low_pass(
-                pitch,
-                target_pitch,
-                alpha=0.03
+            pitch_velocity += (
+                (target_pitch - pitch) * 0.02
             )
 
-            # =================================================
+            roll += roll_velocity
+            pitch += pitch_velocity
+
+            roll_velocity *= 0.94
+            pitch_velocity *= 0.94
+
+            # =============================================
             # MAGNÉTOMÈTRE
-            # =================================================
+            # =============================================
 
             heading_rad = math.radians(yaw)
 
             mx = (
                 35 * math.cos(heading_rad)
-                + random.gauss(0, 1.0)
+                + random.gauss(0, 1.2)
             )
 
             my = (
                 35 * math.sin(heading_rad)
-                + random.gauss(0, 1.0)
+                + random.gauss(0, 1.2)
             )
 
             mz = random.gauss(0, 2.0)
 
-            # =================================================
+            # =============================================
             # TEMPÉRATURE
-            # =================================================
+            # =============================================
 
-            temperature += random.gauss(0, 0.005)
+            temperature += random.gauss(
+                0,
+                0.003
+            )
 
-            # =================================================
-            # ÉCRITURE CSV
-            # =================================================
+            # =============================================
+            # CSV
+            # =============================================
 
             row = [
 
@@ -380,7 +577,7 @@ def generate_mock_imu_data(
 
 if __name__ == "__main__":
 
-    print("\n=== Générateur IMU Karting ===\n")
+    print("\n=== Générateur IMU Karting Réaliste ===\n")
 
     print("Profils disponibles :")
     print("1 - expert")
