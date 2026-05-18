@@ -266,7 +266,7 @@ const BillingPage: React.FC = () => {
 
   if (isAuthorized === false) {
     return (
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <div className="flex-1 md:ml-64 ml-0 relative z-10 flex flex-col h-screen">
         <Header className="flex-shrink-0" />
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 pb-20 md:pb-6">
@@ -291,7 +291,7 @@ const BillingPage: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+    <div className="flex-1 md:ml-64 ml-0 relative z-10 flex flex-col h-screen">
       <Header className="flex-shrink-0" />
 
       <main className="flex-1 overflow-y-auto">
