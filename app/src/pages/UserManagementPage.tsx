@@ -299,7 +299,7 @@ const UserManagementPage: React.FC = () => {
   // Afficher un message d'erreur si pas autorisé
   if (isAuthorized === false && userRole && userRole !== UserRole.ADMIN) {
     return (
-      <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+      <div className="flex-1 md:ml-64 ml-0 relative z-10 flex flex-col h-screen">
         <Header className="flex-shrink-0" />
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 pb-20 md:pb-6">
@@ -463,7 +463,7 @@ const UserManagementPage: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 md:ml-11 ml-0 relative z-10 flex flex-col h-screen">
+    <div className="flex-1 md:ml-64 ml-0 relative z-10 flex flex-col h-screen">
       <Header className="flex-shrink-0" />
 
         <main className="flex-1 overflow-y-auto">

@@ -425,7 +425,7 @@ const SimulationPage: React.FC = () => {
   const bounds = getCurrentBounds();
 
   return (
-    <main className="flex-1 md:ml-11 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
+    <main className="flex-1 md:ml-64 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
       <Header />
 
         <div className="flex-1 md:p-6 p-4 pb-20 md:pb-0 overflow-hidden flex flex-col">
