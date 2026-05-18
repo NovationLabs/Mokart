@@ -1,0 +1,15 @@
+packet,champ,type,unite
+0x51,ax,float,g
+0x51,ay,float,g
+0x51,az,float,g
+0x52,gx,float,deg/s
+0x52,gy,float,deg/s
+0x52,gz,float,deg/s
+0x53,roll,float,deg
+0x53,pitch,float,deg
+0x53,yaw,float,deg
+0x54,mx,float,uT
+0x54,my,float,uT
+0x54,mz,float,uT
+divers,temperature,float,C
+divers,timestamp,float,s
