@@ -68,7 +68,8 @@ const TermsOfService: React.FC = () => {
                             <h2 className="text-2xl font-bold text-white">Testing Partnership</h2>
                         </div>
                         <p className="text-gray-300 leading-relaxed">
-                            Official testing is conducted in partnership with <strong className="text-[#22D3EE]">SpeedKart</strong> in Hyères, France. Data collected during testing sessions is subject to this agreement and our Privacy Policy.
+                            {/* SpeedKart — partenariat en pause : Official testing is conducted in partnership with <strong className="text-[#22D3EE]">SpeedKart</strong> in Hyères, France. Data collected during testing sessions is subject to this agreement and our Privacy Policy. */}
+                            Official testing sessions are subject to this agreement and our Privacy Policy.
                         </p>
                     </div>
 

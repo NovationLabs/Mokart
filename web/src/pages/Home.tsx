@@ -378,6 +378,7 @@ const Home: React.FC = () => {
                             className="h-8 md:h-10 object-contain brightness-0 invert opacity-50 hover:opacity-100 transition-all duration-300"
                         />
                     </a>
+                    {/* SpeedKart — partenariat en pause
                     <a href="https://www.speedkart.fr/" target="_blank" rel="noopener noreferrer">
                         <img
                             src="/trusted_by/speedkart.png"
@@ -385,6 +386,7 @@ const Home: React.FC = () => {
                             className="h-8 md:h-10 object-contain brightness-0 invert opacity-50 hover:opacity-100 transition-all duration-300"
                         />
                     </a>
+                    */}
                 </div>
             </Section>
 
