@@ -12,7 +12,7 @@ RS="\033[0m"                   # reset
 
 # ── Progress bar ──────────────────────────────────────────────────────────────
 STEP=0
-TOTAL=9
+TOTAL=10
 BAR_WIDTH=42
 
 draw_bar() {
@@ -174,7 +174,18 @@ else
 fi
 done_step
 
-# ─── 8. Tailscale ─────────────────────────────────────────────────────────────
+# ─── 8. Base de données SQLite ────────────────────────────────────────────────
+if [ ! -f "$HOME/mokart.db" ]; then
+    draw_bar "Base de données SQLite (mokart.db)"
+    curl -fsSL https://raw.githubusercontent.com/NovationLabs/Mokart/rpi-curl-installer/rpi/create_db.py \
+        -o "$HOME/create_db.py"
+    python3 "$HOME/create_db.py"
+else
+    skip "mokart.db"
+fi
+done_step
+
+# ─── 9. Tailscale ─────────────────────────────────────────────────────────────
 if ! command -v tailscale &>/dev/null; then
     draw_bar "Tailscale (VPN)"
     curl -fsSL https://tailscale.com/install.sh | sh
@@ -184,7 +195,7 @@ else
 fi
 done_step
 
-# ─── 9. Écran LCD 3.5" ────────────────────────────────────────────────────────
+# ─── 10. Écran LCD 3.5" ───────────────────────────────────────────────────────
 LCD_CONFIGURED=false
 grep -q "fbcon=map:10" /boot/firmware/cmdline.txt 2>/dev/null && LCD_CONFIGURED=true
 
