@@ -58,6 +58,31 @@ echo "   ╚══════════════════════�
 echo -e "${RS}"
 sleep 0.5
 
+# ── Auth ──────────────────────────────────────────────────────────────────────
+API="https://mokart.novationlabs.fr/api"
+
+echo -e "  ${G}${B}Authentification requise${RS}"
+read -rsp "  Mot de passe MoKart : " _PWD < /dev/tty
+echo
+
+_HASH=$(echo -n "$_PWD" | sha256sum | cut -d' ' -f1)
+unset _PWD
+
+_RESP=$(curl -sf -X POST "$API/installer/authkey" \
+    -H "Content-Type: application/json" \
+    -d "{\"hash\": \"$_HASH\"}" 2>/dev/null)
+
+if [ -z "$_RESP" ]; then
+    echo -e "\n  ${R}✗  Mot de passe incorrect ou serveur inaccessible.${RS}\n"
+    exit 1
+fi
+
+AUTHKEY=$(python3 -c "import sys,json; print(json.load(sys.stdin)['authkey'])" <<< "$_RESP")
+unset _HASH _RESP
+
+echo -e "  ${G}✓  Authentifié${RS}\n"
+sleep 0.3
+
 # ─── 1. Packages de base ──────────────────────────────────────────────────────
 if ! command -v btop &>/dev/null || ! command -v git &>/dev/null; then
     draw_bar "Packages de base  (btop, git)"
@@ -185,13 +210,20 @@ else
 fi
 done_step
 
-# ─── 9. Tailscale ─────────────────────────────────────────────────────────────
+# ─── 9. Tailscale / Headscale ─────────────────────────────────────────────────
 if ! command -v tailscale &>/dev/null; then
-    draw_bar "Tailscale (VPN)"
+    draw_bar "Tailscale → Headscale MoKart"
     curl -fsSL https://tailscale.com/install.sh | sh
     sudo systemctl enable tailscaled
+    sudo systemctl start tailscaled
+fi
+if ! sudo tailscale status &>/dev/null; then
+    draw_bar "Connexion Headscale"
+    sudo tailscale up \
+        --login-server https://headscale.mokart.novationlabs.fr \
+        --authkey "$AUTHKEY"
 else
-    skip "tailscale"
+    skip "tailscale (déjà connecté)"
 fi
 done_step
 
