@@ -39,6 +39,7 @@ const About: React.FC = () => {
                         </p>
                     </div>
 
+                    {/* SpeedKart — partenariat en pause
                     <div className="glass-panel bg-white/[0.02] border border-white/10 p-8 rounded-xl transition-colors">
                         <div className="mb-6 p-3 rounded-lg bg-red-500/10 text-red-500 w-fit">
                              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -51,6 +52,7 @@ const About: React.FC = () => {
                             Our official testing ground in Hyères, France. SpeedKart provides the premier tracks where our hardware is pushed to the limit in real racing conditions.
                         </p>
                     </div>
+                    */}
 
                     <div className="glass-panel bg-white/[0.02] border border-white/10 p-8 rounded-xl transition-colors">
                         <div className="mb-6 p-3 rounded-lg bg-white/5 w-fit h-16 flex items-center justify-center">
