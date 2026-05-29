@@ -85,11 +85,11 @@ def find_imu_port():
     for p in ports:
         desc = (p.description or "").lower()
         hwid = (p.hwid or "").lower()
-        if any(k in desc for k in ["cp210", "cp2102", "silicon labs", "uart"]):
+        if any(k in desc for k in ["cp210", "cp2102", "silicon labs", "uart", "ch340", "ch341", "ftdi"]):
             return p.device
-        if any(k in hwid for k in ["10c4:ea60", "cp210"]):
+        if any(k in hwid for k in ["10c4:ea60", "cp210", "1a86:7523", "0403:6001"]):
             return p.device
-        if "usbserial" in p.device or "usbmodem" in p.device:
+        if any(k in p.device for k in ["ttyUSB", "ttyACM", "usbserial", "usbmodem"]):
             return p.device
     print("Available ports:")
     for p in ports:
