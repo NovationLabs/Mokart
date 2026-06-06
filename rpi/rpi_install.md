@@ -122,5 +122,7 @@ source ~/.zshrc
 ```
 
 ## Python & Dependencies
+```sh
 sudo apt install python3-numpy python3-psutil python3-pil
 wget https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf
+```
