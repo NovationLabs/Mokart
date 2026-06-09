@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.prod
     container_name: mokart-web-prod
     ports:
-      - "9980:80"
+      - "8080:80"
     restart: always
     depends_on:
       - api
@@ -16,7 +16,7 @@ services:
       dockerfile: Dockerfile
     container_name: mokart-api-prod
     ports:
-      - "9981:5000"
+      - "8081:5000"
     volumes:
       - ./api:/app
     environment:
@@ -31,9 +31,9 @@ services:
       dockerfile: Dockerfile.prod
     container_name: mokart-app-prod
     ports:
-      - "9979:80"
+      - "8000:80"
     environment:
-      - REACT_APP_API_URL=http://localhost:9981
+      - REACT_APP_API_URL=https://api.mokart.fr
     depends_on:
       - api
     restart: always
@@ -46,7 +46,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data_prod:/var/lib/postgresql/data
       - ./api/init.sql:/docker-entrypoint-initdb.d/01-init.sql
