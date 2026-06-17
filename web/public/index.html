@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- SEO Primary -->
-    <title>MoKart</title>
+    <title>Mokart — Data at the heart of racing</title>
     <meta name="description" content="Mokart brings real-time telemetry and precision analysis to rental karting. Dashboard, live timing, and centimeter-accurate trajectories for everyone.">
 
     <!-- Favicon -->
@@ -24,7 +24,33 @@
     <meta name="twitter:description" content="Real-time telemetry and 10cm precision analysis for rental karting. Discover our smart steering wheel box." />
     <meta name="twitter:image" content="%PUBLIC_URL%/mokart_prototype.png" />
 
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="preload" href="%PUBLIC_URL%/fonts/Iliad-Bold.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="%PUBLIC_URL%/fonts/Iliad-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <style>
+        @font-face {
+            font-family: 'Iliad';
+            src: url('%PUBLIC_URL%/fonts/Iliad-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Iliad';
+            src: url('%PUBLIC_URL%/fonts/Iliad-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Iliad';
+            src: url('%PUBLIC_URL%/fonts/Iliad-Light.ttf') format('truetype');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>

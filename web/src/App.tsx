@@ -11,20 +11,30 @@ const App: React.FC = () => {
   // Simple routing based on URL path
   const path = window.location.pathname;
 
-  switch (path) {
-    case '/about':
-      return <About />;
-    case '/soon':
-      return <Soon />;
-    case '/privacy-policy':
-      return <PrivacyPolicy />;
-    case '/terms-of-service':
-      return <TermsOfService />;
-    case '/style-guide':
-      return <StyleGuide />;
-    default:
-      return <Home />;
-  }
+  const page = (() => {
+    switch (path) {
+      case '/about':
+        return <About />;
+      case '/soon':
+        return <Soon />;
+      case '/privacy-policy':
+        return <PrivacyPolicy />;
+      case '/terms-of-service':
+        return <TermsOfService />;
+      case '/style-guide':
+        return <StyleGuide />;
+      default:
+        return <Home />;
+    }
+  })();
+
+  return (
+    <>
+      {page}
+      {/* Fixed film-grain tooth over the flat dark surface — site-wide */}
+      <div className="grain" aria-hidden="true" />
+    </>
+  );
 };
 
 export default App;

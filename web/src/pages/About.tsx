@@ -1,146 +1,137 @@
 import React from 'react';
-import { MoveLeft, Cpu, Users } from 'lucide-react';
+import '../styles/Main.css';
+import Nav from '../components/Nav';
+import Footer from '../components/Footer';
+import Reveal from '../components/Reveal';
+import { Cpu, Users } from 'lucide-react';
+
+const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="flex items-center gap-3 mb-5">
+        <span className="h-px w-8 bg-[#7bf8ac]/60 eyebrow-line" />
+        <span className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-white/50">{children}</span>
+    </div>
+);
 
 const About: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-gray-100 font-display selection:bg-[#A3E635] selection:text-black antialiased overflow-x-hidden relative">
-            {/* Background Texture */}
-            <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:20px_20px] opacity-20 pointer-events-none"></div>
+        <div className="min-h-screen bg-[#0d0f12] text-white antialiased overflow-x-hidden page-enter">
+            <Nav />
 
-            <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
-                {/* Header */}
-                <div className="mb-16">
-                    <a href="/" className="inline-flex items-center gap-2 text-[#22D3EE] transition-colors mb-8">
-                        <MoveLeft />
-                        Back to Home
-                    </a>
-                    <div className="max-w-3xl">
-                        <div className="inline-block text-[#A3E635] font-mono text-xs tracking-widest uppercase mb-4 border border-[#A3E635]/20 bg-[#A3E635]/5 px-3 py-1 rounded-full">
-                            Our Mission
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
-                            Democratizing Professional Telemetry.
+            <div className="max-w-6xl mx-auto px-6 pt-36 pb-24 relative z-10">
+                {/* ── Mission ── */}
+                <Reveal>
+                    <div className="max-w-3xl mb-24">
+                        <Eyebrow>Our mission</Eyebrow>
+                        <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight leading-[1.05] mb-6">
+                            Democratizing professional telemetry.
                         </h1>
-                        <p className="text-xl text-gray-400 leading-relaxed font-light">
-                            We bridge the gap between basic rental karting and professional racing analysis. By leveraging sub-decimeter RTK positioning, we give every driver access to the data they need to perfect their lap—millisecond by millisecond.
+                        <p className="text-lg md:text-xl text-white/55 leading-relaxed">
+                            We bridge the gap between basic rental karting and professional racing analysis.
+                            By leveraging sub-decimeter RTK positioning, we give every driver access to the
+                            data they need to perfect their lap — millisecond by millisecond.
                         </p>
                     </div>
-                </div>
+                </Reveal>
 
-                {/* Partners / Ecosystem */}
-                <div className="grid md:grid-cols-3 gap-6 mb-24">
-                    <div className="glass-panel bg-white/[0.02] border border-white/10 p-8 rounded-xl transition-colors">
-                        <div className="mb-6 p-3 rounded-lg bg-white/5 w-fit h-16 flex items-center justify-center">
-                            <img src="/logo/epitech.png" alt="Epitech Logo" className="h-full w-auto object-contain brightness-0 invert opacity-80" />
+                {/* ── Partners ── */}
+                <div className="grid md:grid-cols-2 gap-4 mb-24">
+                    <Reveal>
+                        <div className="hairline-card rounded-lg p-8 h-full">
+                            <div className="mb-6 h-12 flex items-center">
+                                <img src="/logo/epitech.png" alt="Epitech logo" loading="lazy" className="h-9 w-auto object-contain brightness-0 invert opacity-70" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Epitech</h3>
+                            <p className="text-white/45 text-sm leading-relaxed">
+                                Born at the heart of innovation. The Mokart project is developed by 4th-year
+                                engineering students from Epitech Marseille, combining academic rigor with
+                                real-world application.
+                            </p>
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Epitech</h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Born at the heart of innovation. The Mokart project is developed by 4th engineering students from Epitech Marseille, combining academic rigor with real-world application.
-                        </p>
-                    </div>
+                    </Reveal>
 
                     {/* SpeedKart — partenariat en pause
-                    <div className="glass-panel bg-white/[0.02] border border-white/10 p-8 rounded-xl transition-colors">
-                        <div className="mb-6 p-3 rounded-lg bg-red-500/10 text-red-500 w-fit">
-                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                                <line x1="4" y1="22" x2="4" y2="15" />
-                            </svg>
-                        </div>
+                    <div className="hairline-card rounded-lg p-8 h-full">
                         <h3 className="text-xl font-bold text-white mb-2">SpeedKart</h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Our official testing ground in Hyères, France. SpeedKart provides the premier tracks where our hardware is pushed to the limit in real racing conditions.
+                        <p className="text-white/45 text-sm leading-relaxed">
+                            Our official testing ground in Hyères, France. SpeedKart provides the premier
+                            tracks where our hardware is pushed to the limit in real racing conditions.
                         </p>
                     </div>
                     */}
 
-                    <div className="glass-panel bg-white/[0.02] border border-white/10 p-8 rounded-xl transition-colors">
-                        <div className="mb-6 p-3 rounded-lg bg-white/5 w-fit h-16 flex items-center justify-center">
-                              <img src="/logo/point_one.png" alt="Point One Navigation Logo" className="h-full w-auto object-contain brightness-0 invert opacity-80" />
+                    <Reveal delay={100}>
+                        <div className="hairline-card rounded-lg p-8 h-full">
+                            <div className="mb-6 h-12 flex items-center">
+                                <img src="/logo/point_one.png" alt="Point One Navigation logo" loading="lazy" className="h-9 w-auto object-contain brightness-0 invert opacity-70" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Point One Navigation</h3>
+                            <p className="text-white/45 text-sm leading-relaxed">
+                                Precision matters. Using Point One's Polaris RTK network, we achieve 10 cm
+                                accuracy, enabling true trajectory analysis impossible with standard GPS.
+                            </p>
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Point One Navigation</h3>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Precision matters. Using Point One's Polaris RTK network, we achieve 10cm accuracy, enabling true trajectory analysis impossible with standard GPS.
-                        </p>
-                    </div>
+                    </Reveal>
                 </div>
 
-                {/* Tech Stack */}
-                <div className="mb-24 bg-[#0a0a0a] border border-white/10 rounded-2xl p-8 md:p-12 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#A3E635]/5 blur-[100px] rounded-full pointer-events-none"></div>
-
-                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
-                        <div className="flex-1">
-                            <h2 className="text-3xl font-bold text-white mb-6">Engineered for Performance</h2>
-                            <p className="text-gray-400 mb-6 leading-relaxed">
-                                At the core of our embedded unit lies the <strong className="text-white">Raspberry Pi Zero 2W</strong> (64-bit). Its quad-core power handles sensor fusion, RTK corrections, and high-frequency data logging simultaneously.
-                            </p>
-                            <p className="text-gray-400 leading-relaxed">
-                                Data is synced instantly to our <strong className="text-white">Cloud SaaS Platform</strong>, where drivers can analyze their sessions on any device immediately after their race.
-                            </p>
-                        </div>
-                        <div className="flex-1 flex justify-center">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-[#A3E635] blur-2xl opacity-20"></div>
-                                <Cpu size={120} className="text-[#A3E635] relative z-10" strokeWidth={1} />
+                {/* ── Tech band ── */}
+                <Reveal>
+                    <div className="mb-24 rounded-xl border border-white/10 bg-[#11141a] p-8 md:p-12 relative overflow-hidden">
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                            <div className="flex-1">
+                                <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-6">Engineered for performance.</h2>
+                                <p className="text-white/45 mb-5 leading-relaxed">
+                                    At the core of our embedded unit lies the <strong className="text-white font-bold">Raspberry Pi Zero 2W</strong> (64-bit).
+                                    Its quad-core power handles sensor fusion, RTK corrections, and high-frequency
+                                    data logging simultaneously.
+                                </p>
+                                <p className="text-white/45 leading-relaxed">
+                                    Data is synced instantly to our <strong className="text-white font-bold">cloud platform</strong>,
+                                    where drivers can analyze their sessions on any device immediately after their race.
+                                </p>
+                            </div>
+                            <div className="shrink-0">
+                                <Cpu size={110} strokeWidth={1} className="text-[#7bf8ac]/80" />
                             </div>
                         </div>
                     </div>
-                </div>
+                </Reveal>
 
-                {/* Team Grid */}
+                {/* ── Team ── */}
                 <div>
-                    <div className="flex items-center gap-4 mb-12">
-                         <div className="p-2 rounded-lg bg-[#A3E635]/10 text-[#A3E635]">
-                            <Users size={24} />
+                    <Reveal>
+                        <div className="flex items-center gap-3 mb-12">
+                            <Users size={20} strokeWidth={1.5} className="text-[#7bf8ac]" />
+                            <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight">The team</h2>
                         </div>
-                        <h2 className="text-3xl font-bold text-white">The Team</h2>
+                    </Reveal>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                        {[
+                            { img: '/team/leo.png', name: 'Léo GREGORI' },
+                            { img: '/team/clement.png', name: 'Clément DORGE' },
+                            { img: '/team/anthony.png', name: 'Anthony COLOMBANI-GAILLEUR' },
+                            { img: '/team/selim.png', name: 'Selim BOUASKER' },
+                        ].map(({ img, name }, i) => (
+                            <Reveal key={name} delay={i * 70}>
+                                <div className="group">
+                                    <div className="aspect-square rounded-lg overflow-hidden mb-4 border border-white/10 bg-white/[0.02]">
+                                        <img
+                                            src={img}
+                                            alt={name}
+                                            loading="lazy"
+                                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                        />
+                                    </div>
+                                    <h3 className="text-white font-bold text-sm md:text-base">{name}</h3>
+                                    <p className="text-white/35 text-[10px] font-light uppercase tracking-[0.2em] mt-1">Software Engineer</p>
+                                </div>
+                            </Reveal>
+                        ))}
                     </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {/* Léo */}
-                        <div>
-                            <div className="aspect-square rounded-xl overflow-hidden mb-4 border border-white/10 bg-white/5">
-                                <img src="/team/leo.png" alt="Léo Gregori" className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-white font-bold text-lg">Léo GREGORI</h3>
-                            <p className="text-[#A3E635] text-xs uppercase tracking-widest font-mono">Software Engineer</p>
-                        </div>
-
-                        {/* Clément */}
-                        <div>
-                            <div className="aspect-square rounded-xl overflow-hidden mb-4 border border-white/10 bg-white/5">
-                                <img src="/team/clement.png" alt="Clément Dorge" className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-white font-bold text-lg">Clément DORGE</h3>
-                            <p className="text-[#A3E635] text-xs uppercase tracking-widest font-mono">Software Engineer</p>
-                        </div>
-
-                         {/* Anthony */}
-                         <div>
-                            <div className="aspect-square rounded-xl overflow-hidden mb-4 border border-white/10 bg-white/5">
-                                <img src="/team/anthony.png" alt="Anthony Colombani-Gailleur" className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-white font-bold text-lg">Anthony COLOMBANI-GAILLEUR</h3>
-                            <p className="text-[#A3E635] text-xs uppercase tracking-widest font-mono">Software Engineer</p>
-                        </div>
-
-                        {/* Selim */}
-                        <div>
-                            <div className="aspect-square rounded-xl overflow-hidden mb-4 border border-white/10 bg-white/5">
-                                <img src="/team/selim.png" alt="Selim Bouasker" className="w-full h-full object-cover grayscale" />
-                            </div>
-                            <h3 className="text-white font-bold text-lg">Selim BOUASKER</h3>
-                            <p className="text-[#A3E635] text-xs uppercase tracking-widest font-mono">Software Engineer</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer Copy */}
-                <div className="mt-24 pt-8 border-t border-white/10 text-center text-gray-600 text-xs uppercase tracking-widest">
-                    Mokart Engineering &copy; 2026
                 </div>
             </div>
+
+            <Footer />
         </div>
     );
 };

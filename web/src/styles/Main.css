@@ -2,55 +2,409 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────
+   Mokart design system
+   bg #0d0f12 · fg #ffffff · accent #7bf8ac
+   ───────────────────────────────────────────── */
+
+:root {
+    --mk-bg: #0d0f12;
+    --mk-surface: #11141a;
+    --mk-fg: #ffffff;
+    --mk-accent: #7bf8ac;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
 .font-display {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Iliad', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
+    /* Headlines are display copy — balance line lengths so no word is orphaned */
+    text-wrap: balance;
 }
 
-.font-mono-data {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-variant-numeric: tabular-nums;
+/* Body paragraphs: avoid single-word last lines without forcing balance */
+p {
+    text-wrap: pretty;
 }
 
-/* Subtle gradient background for depth without chaos */
-.bg-deep-space {
-    background: radial-gradient(circle at top center, #1a1a1a 0%, #050505 100%);
+/* ── Focus: a single branded ring for keyboard users (mouse clicks stay clean) ── */
+
+:focus-visible {
+    outline: 2px solid rgba(123, 248, 172, 0.75);
+    outline-offset: 2px;
+    border-radius: 3px;
 }
 
-/* Glassmorphism - Clean & Subtle */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible {
+    outline-offset: 3px;
 }
 
-.glass-header {
-    background: rgba(5, 5, 5, 0.85);
+/* ── Surfaces ── */
+
+.nav-blur {
+    background: rgba(13, 15, 18, 0.82);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(12px);
 }
 
-/* Lime Accent Gradient for Text */
-.text-lime-gradient {
-    background: linear-gradient(to right, #A3E635, #bef264);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+.hairline-card {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Button Styles - Clean Rectangles with Slight rounding */
-.btn-primary {
-    @apply bg-[#A3E635] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#84cc16] transition-colors duration-200 flex items-center gap-2;
+.hairline-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.03);
+    transform: translateY(-3px);
 }
 
-.btn-secondary {
-    @apply bg-white/10 text-white font-medium px-6 py-3 rounded-lg border border-white/10 hover:bg-white/20 transition-colors duration-200;
+/* Accent-tinted card hover — declared after .hairline-card:hover to win the cascade */
+.card-accent-green:hover {
+    border-color: rgba(123, 248, 172, 0.28);
+    box-shadow: 0 14px 44px -16px rgba(123, 248, 172, 0.22);
 }
 
-/* Grid Pattern Overlay - Extremely faint */
-.bg-grid-minimal {
-    background-size: 40px 40px;
+/* ── Spotlight cards: a green edge highlight tracks the cursor ──
+   Border-only (no fill glow) so it stays within the "hairline, no glassmorphism"
+   system — the radial gradient is masked to a 1px ring via the padding-box XOR
+   trick. Driven by --mx/--my (set by useSpotlight) and gated behind hover. */
+.spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 0%),
+        rgba(123, 248, 172, 0.55), transparent 65%);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+}
+
+.spotlight:hover::before {
+    opacity: 1;
+}
+
+/* ── Film grain: a fixed, ultra-subtle noise tooth over the flat dark surface ── */
+.grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    /* Normal blend at low opacity: on a near-black surface, overlay/soft-light
+       wash out — plain grey speckle is what actually reads as film grain here. */
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 150px 150px;
+}
+
+/* Faint radial glow used behind heroes — kept very low so it reads as depth, not decoration */
+.bg-hero-glow {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(123, 248, 172, 0.06), transparent 70%),
+        radial-gradient(circle at top center, #14181e 0%, #0d0f12 65%);
+}
+
+.bg-grid-faint {
+    background-size: 48px 48px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+}
+
+/* Section ambience: barely-there green washes that break the flat black */
+.section-ambient {
+    background:
+        radial-gradient(ellipse 45% 55% at 10% 0%, rgba(123, 248, 172, 0.035), transparent 65%),
+        radial-gradient(ellipse 45% 60% at 92% 100%, rgba(123, 248, 172, 0.03), transparent 65%);
+}
+
+/* Perspective floor grid (LiveKit-style horizon), slowly scrolling toward the viewer */
+.iso-grid {
+    position: absolute;
+    left: -20%;
+    right: -20%;
+    bottom: -5%;
+    height: 75%;
+    background-image:
+        linear-gradient(rgba(123, 248, 172, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 52px 52px;
+    transform: perspective(520px) rotateX(56deg);
+    transform-origin: center bottom;
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 90%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 90%);
+    animation: mk-grid-pan 24s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes mk-grid-pan {
+    from { background-position: 0 0; }
+    to { background-position: 0 52px; }
+}
+
+/* Section dividers: gradient hairlines instead of hard borders — no more flat black-on-black cuts */
+.divider-fade::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.1) 75%, transparent);
+}
+
+.divider-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.3) 50%, transparent);
+}
+
+/* ── Buttons ── */
+
+.btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-[#7bf8ac] text-black font-bold px-7 py-3 rounded-md text-sm transition-all duration-300;
+    font-family: 'Iliad', sans-serif;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0 24px rgba(123, 248, 172, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 border border-white/15 text-white font-normal px-7 py-3 rounded-md text-sm transition-colors duration-300 hover:border-white/40;
+    font-family: 'Iliad', sans-serif;
+}
+
+/* ── Scroll reveal ── */
+
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ── Racing line animations (SVG paths must set pathLength="100") ── */
+
+.track-comet {
+    stroke-dasharray: 12 88;
+    animation: mk-comet 8s linear infinite;
+}
+
+.track-comet-slow {
+    stroke-dasharray: 6 94;
+    animation: mk-comet 12s linear infinite;
+}
+
+@keyframes mk-comet {
+    from { stroke-dashoffset: 100; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* One-shot trace drawing for telemetry sparklines */
+.spark-draw {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: mk-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes mk-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+/* Live indicator pulse */
+.live-dot {
+    position: relative;
+}
+
+.live-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--mk-accent);
+    animation: mk-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes mk-ping {
+    75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ── Page entrance ── */
+
+.page-enter {
+    animation: mk-page-in 0.5s ease-out both;
+}
+
+@keyframes mk-page-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ── Hero boot sequence: staggered rise with a speed-blur, telemetry powering on ── */
+
+.boot {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(5px);
+    animation: mk-boot 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.boot-1 { animation-delay: 0.05s; }
+.boot-2 { animation-delay: 0.2s; }
+.boot-3 { animation-delay: 0.35s; }
+.boot-4 { animation-delay: 0.5s; }
+
+@keyframes mk-boot {
+    to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* ── Nav link underline: draws left-to-right like a sector line ── */
+
+.nav-link {
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    height: 1px;
+    width: 100%;
+    background: var(--mk-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link:hover::after {
+    transform: scaleX(1);
+}
+
+/* ── Wordmark: icon strokes draw themselves on load, wiggle on hover ── */
+
+.logo-draw rect,
+.logo-draw path {
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
+    animation: mk-draw-in 1s ease-out 0.1s forwards;
+}
+
+@keyframes mk-draw-in {
+    to { stroke-dashoffset: 0; }
+}
+
+.logo-mark {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+a:hover > .logo-mark {
+    transform: rotate(-8deg);
+}
+
+.logo-dot {
+    display: inline-block;
+}
+
+a:hover .logo-dot {
+    animation: mk-pop 0.35s ease-out;
+}
+
+@keyframes mk-pop {
+    50% { transform: scale(1.6); }
+}
+
+/* ── Eyebrow rule grows when its Reveal fires ── */
+
+.reveal .eyebrow-line {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.reveal.is-visible .eyebrow-line {
+    transform: scaleX(1);
+}
+
+/* ── Telemetry panel ── */
+
+/* Sparkline waits for the panel to enter the viewport (spark-draw is applied then) */
+.spark-wait {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+}
+
+/* Delta readout: each new value drops in like a timing-screen update */
+.tick-in {
+    display: inline-block;
+    animation: mk-tick 0.35s ease-out;
+}
+
+@keyframes mk-tick {
+    from { opacity: 0.2; transform: translateY(7px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Best-sector card breathes a faint glow */
+.breathe {
+    animation: mk-breathe 3s ease-in-out infinite;
+}
+
+@keyframes mk-breathe {
+    0%, 100% { box-shadow: 0 0 0 rgba(123, 248, 172, 0); }
+    50% { box-shadow: 0 0 16px rgba(123, 248, 172, 0.18); }
+}
+
+/* ── Motion safety: kill animations for reduced-motion users and cheap devices ── */
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .track-comet, .track-comet-slow, .spark-draw, .live-dot::after { animation: none; }
+    .spark-draw, .spark-wait { stroke-dashoffset: 0; }
+    .boot, .page-enter, .tick-in, .breathe { animation: none; opacity: 1; transform: none; filter: none; }
+    .logo-draw rect, .logo-draw path { animation: none; stroke-dashoffset: 0; }
+    .reveal .eyebrow-line { transform: none; transition: none; }
+    .nav-link::after { transition: none; }
+    .hairline-card, .hairline-card:hover { transform: none; }
+    .spotlight::before { transition: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .iso-grid { animation: none; }
+}
+
+@media (max-width: 640px) {
+    .track-comet, .track-comet-slow { animation-duration: 14s; }
+}
+
+@media (max-width: 768px) {
+    .iso-grid { animation: none; height: 55%; }
+    .section-ambient { background: none; }
 }
