@@ -20,7 +20,7 @@ const LegalCard: React.FC<{
 
 const PrivacyPolicy: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#0d0f12] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 relative z-10">

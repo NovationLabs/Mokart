@@ -4,7 +4,7 @@ import { MoveLeft } from 'lucide-react';
 
 const Soon: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#0d0f12] text-white antialiased flex flex-col items-center justify-center relative overflow-hidden px-6 page-enter">
+        <div className="min-h-screen bg-[#04130c] text-white antialiased flex flex-col items-center justify-center relative overflow-hidden px-6 page-enter">
             <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
 
             <div className="relative z-10 text-center max-w-2xl mx-auto">

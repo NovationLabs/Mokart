@@ -6,21 +6,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Dark-green canvas system. `bg` is the dominant surface, `accent`
+        // is the single locked signal-green used across the whole page.
         mokart: {
-          dark: '#0d0f12',
-          darker: '#0d0f12',
-          surface: '#121212',
-          primary: '#7bf8ac',
-          metallic: '#9ca3af',
-        }
+          bg: '#04130c',        // dominant canvas — deep racing green
+          bg2: '#061a10',       // alternating section tone
+          surface: '#0a2315',   // panels
+          surface2: '#0c2a19',  // elevated panels
+          line: '#16412b',      // hairline green
+          moss: '#1f7a4d',      // mid green for fills
+          primary: '#7bf8ac',   // accent / signal green (brand)
+          glow: '#adffce',      // bright highlight
+          // legacy aliases kept so older pages keep compiling
+          dark: '#04130c',
+          darker: '#04130c',
+          metallic: '#8fb4a1',
+        },
       },
       fontFamily: {
-        display: ['Iliad', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        display: ['Iliad', 'system-ui', 'sans-serif'],
+        mono: ['"Fira Code"', 'ui-monospace', 'monospace'],
       },
-      backgroundImage: {
-        'carbon-mesh': "repeating-linear-gradient(45deg, #111 25%, transparent 25%, transparent 75%, #111 75%, #111), repeating-linear-gradient(45deg, #111 25%, #0d0f12 25%, #0d0f12 75%, #111 75%, #111)",
-      }
     },
   },
   plugins: [],

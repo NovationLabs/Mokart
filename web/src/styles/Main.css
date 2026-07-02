@@ -2,16 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─────────────────────────────────────────────
-   Mokart design system
-   bg #0d0f12 · fg #ffffff · accent #7bf8ac
-   ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   MOKART — dark-green design system
+   Dominant canvas #04130c (deep racing green) · text #ffffff
+   Single locked accent: signal-green #7bf8ac
+   Radius lock: buttons = pill · panels/media = 1rem (rounded-2xl) · chips = pill
+   Motion: native CSS + rAF only (no Motion/GSAP dependency)
+   ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-    --mk-bg: #0d0f12;
-    --mk-surface: #11141a;
-    --mk-fg: #ffffff;
+    --mk-bg: #04130c;
+    --mk-bg2: #061a10;
+    --mk-surface: #0a2315;
+    --mk-surface2: #0c2a19;
+    --mk-line: #16412b;
+    --mk-moss: #1f7a4d;
     --mk-accent: #7bf8ac;
+    --mk-glow: #adffce;
+    --mk-fg: #ffffff;
 }
 
 html {
@@ -21,21 +29,18 @@ html {
 .font-display {
     font-family: 'Iliad', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
-    /* Headlines are display copy — balance line lengths so no word is orphaned */
     text-wrap: balance;
 }
 
-/* Body paragraphs: avoid single-word last lines without forcing balance */
 p {
     text-wrap: pretty;
 }
 
-/* ── Focus: a single branded ring for keyboard users (mouse clicks stay clean) ── */
-
+/* ── Focus ring ── */
 :focus-visible {
-    outline: 2px solid rgba(123, 248, 172, 0.75);
+    outline: 2px solid rgba(123, 248, 172, 0.8);
     outline-offset: 2px;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
 .btn-primary:focus-visible,
@@ -43,44 +48,50 @@ p {
     outline-offset: 3px;
 }
 
-/* ── Surfaces ── */
+/* ─────────────────────────────────────────────
+   SURFACES
+   ───────────────────────────────────────────── */
 
 .nav-blur {
-    background: rgba(13, 15, 18, 0.82);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(4, 19, 12, 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Top-of-page scroll progress meter (sits on the nav baseline) */
+.nav-progress {
+    transform-origin: left center;
+    background: linear-gradient(90deg, var(--mk-moss), var(--mk-accent) 60%, var(--mk-glow));
+    box-shadow: 0 0 12px rgba(123, 248, 172, 0.55);
 }
 
 .hairline-card {
-    background: rgba(255, 255, 255, 0.015);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(123, 248, 172, 0.018);
+    border: 1px solid rgba(123, 248, 172, 0.10);
+    transition: border-color 0.35s ease, background-color 0.35s ease,
+        transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s ease;
 }
 
 .hairline-card:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.03);
-    transform: translateY(-3px);
+    border-color: rgba(123, 248, 172, 0.22);
+    background: rgba(123, 248, 172, 0.04);
+    transform: translateY(-4px);
 }
 
-/* Accent-tinted card hover — declared after .hairline-card:hover to win the cascade */
 .card-accent-green:hover {
-    border-color: rgba(123, 248, 172, 0.28);
-    box-shadow: 0 14px 44px -16px rgba(123, 248, 172, 0.22);
+    border-color: rgba(123, 248, 172, 0.34);
+    box-shadow: 0 18px 50px -18px rgba(123, 248, 172, 0.28);
 }
 
-/* ── Spotlight cards: a green edge highlight tracks the cursor ──
-   Border-only (no fill glow) so it stays within the "hairline, no glassmorphism"
-   system — the radial gradient is masked to a 1px ring via the padding-box XOR
-   trick. Driven by --mx/--my (set by useSpotlight) and gated behind hover. */
+/* Spotlight ring that tracks the cursor (driven by --mx/--my from useSpotlight) */
 .spotlight::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 0%),
-        rgba(123, 248, 172, 0.55), transparent 65%);
+    background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 0%),
+        rgba(123, 248, 172, 0.6), transparent 65%);
     -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
@@ -95,56 +106,56 @@ p {
     opacity: 1;
 }
 
-/* ── Film grain: a fixed, ultra-subtle noise tooth over the flat dark surface ── */
+/* ── Film grain: fixed, subtle tooth over the flat surface ── */
 .grain {
     position: fixed;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    /* Normal blend at low opacity: on a near-black surface, overlay/soft-light
-       wash out — plain grey speckle is what actually reads as film grain here. */
-    opacity: 0.07;
+    opacity: 0.05;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 150px 150px;
 }
 
-/* Faint radial glow used behind heroes — kept very low so it reads as depth, not decoration */
+/* ─────────────────────────────────────────────
+   AMBIENCE & BACKGROUNDS
+   ───────────────────────────────────────────── */
+
 .bg-hero-glow {
     background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(123, 248, 172, 0.06), transparent 70%),
-        radial-gradient(circle at top center, #14181e 0%, #0d0f12 65%);
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(123, 248, 172, 0.10), transparent 70%),
+        radial-gradient(circle at top center, #0a2315 0%, #04130c 62%);
 }
 
 .bg-grid-faint {
-    background-size: 48px 48px;
+    background-size: 46px 46px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        linear-gradient(to right, rgba(123, 248, 172, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(123, 248, 172, 0.05) 1px, transparent 1px);
 }
 
-/* Section ambience: barely-there green washes that break the flat black */
 .section-ambient {
     background:
-        radial-gradient(ellipse 45% 55% at 10% 0%, rgba(123, 248, 172, 0.035), transparent 65%),
-        radial-gradient(ellipse 45% 60% at 92% 100%, rgba(123, 248, 172, 0.03), transparent 65%);
+        radial-gradient(ellipse 45% 55% at 8% 0%, rgba(123, 248, 172, 0.05), transparent 64%),
+        radial-gradient(ellipse 45% 60% at 94% 100%, rgba(123, 248, 172, 0.045), transparent 64%);
 }
 
-/* Perspective floor grid (LiveKit-style horizon), slowly scrolling toward the viewer */
+/* Perspective floor grid scrolling toward the viewer */
 .iso-grid {
     position: absolute;
     left: -20%;
     right: -20%;
     bottom: -5%;
-    height: 75%;
+    height: 78%;
     background-image:
-        linear-gradient(rgba(123, 248, 172, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+        linear-gradient(rgba(123, 248, 172, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(123, 248, 172, 0.06) 1px, transparent 1px);
     background-size: 52px 52px;
-    transform: perspective(520px) rotateX(56deg);
+    transform: perspective(520px) rotateX(58deg);
     transform-origin: center bottom;
-    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 90%);
-    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 90%);
-    animation: mk-grid-pan 24s linear infinite;
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, transparent 92%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, transparent 92%);
+    animation: mk-grid-pan 22s linear infinite;
     pointer-events: none;
 }
 
@@ -153,7 +164,7 @@ p {
     to { background-position: 0 52px; }
 }
 
-/* Section dividers: gradient hairlines instead of hard borders — no more flat black-on-black cuts */
+/* Section dividers: gradient hairlines */
 .divider-fade::before {
     content: '';
     position: absolute;
@@ -161,7 +172,7 @@ p {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.1) 75%, transparent);
+    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.14) 25%, rgba(123, 248, 172, 0.14) 75%, transparent);
 }
 
 .divider-glow::before {
@@ -171,36 +182,71 @@ p {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.3) 50%, transparent);
+    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.4) 50%, transparent);
 }
 
-/* ── Buttons ── */
+/* ─────────────────────────────────────────────
+   BUTTONS  (radius lock: pill)
+   ───────────────────────────────────────────── */
 
 .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-[#7bf8ac] text-black font-bold px-7 py-3 rounded-md text-sm transition-all duration-300;
+    @apply inline-flex items-center justify-center gap-2 bg-[#7bf8ac] text-[#04130c] font-bold px-7 py-3.5 rounded-full text-sm;
     font-family: 'Iliad', sans-serif;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* sheen sweep across the primary CTA */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-18deg);
+    transition: left 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-primary:hover {
-    box-shadow: 0 0 24px rgba(123, 248, 172, 0.35);
+    box-shadow: 0 0 30px rgba(123, 248, 172, 0.45);
     transform: translateY(-1px);
 }
 
+.btn-primary:hover::after {
+    left: 130%;
+}
+
 .btn-primary:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(0) scale(0.97);
 }
 
 .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 border border-white/15 text-white font-normal px-7 py-3 rounded-md text-sm transition-colors duration-300 hover:border-white/40;
+    @apply inline-flex items-center justify-center gap-2 border border-[#7bf8ac]/25 text-white font-normal px-7 py-3.5 rounded-full text-sm transition-all duration-300;
     font-family: 'Iliad', sans-serif;
 }
 
-/* ── Scroll reveal ── */
+.btn-ghost:hover {
+    border-color: rgba(123, 248, 172, 0.6);
+    background: rgba(123, 248, 172, 0.06);
+}
+
+/* Magnetic wrapper: the hook writes translate via style; CSS eases the return */
+.magnetic {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+}
+
+/* ─────────────────────────────────────────────
+   SCROLL REVEAL
+   ───────────────────────────────────────────── */
 
 .reveal {
     opacity: 0;
-    transform: translateY(18px);
-    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(22px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: opacity, transform;
 }
 
@@ -209,7 +255,10 @@ p {
     transform: none;
 }
 
-/* ── Racing line animations (SVG paths must set pathLength="100") ── */
+/* ─────────────────────────────────────────────
+   RACING-LINE / TELEMETRY ANIMATIONS
+   (SVG paths must declare pathLength="100")
+   ───────────────────────────────────────────── */
 
 .track-comet {
     stroke-dasharray: 12 88;
@@ -226,7 +275,6 @@ p {
     to { stroke-dashoffset: 0; }
 }
 
-/* One-shot trace drawing for telemetry sparklines */
 .spark-draw {
     stroke-dasharray: 100;
     stroke-dashoffset: 100;
@@ -235,6 +283,11 @@ p {
 
 @keyframes mk-draw {
     to { stroke-dashoffset: 0; }
+}
+
+.spark-wait {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
 }
 
 /* Live indicator pulse */
@@ -255,7 +308,9 @@ p {
     75%, 100% { transform: scale(2.4); opacity: 0; }
 }
 
-/* ── Page entrance ── */
+/* ─────────────────────────────────────────────
+   PAGE / HERO ENTRANCE
+   ───────────────────────────────────────────── */
 
 .page-enter {
     animation: mk-page-in 0.5s ease-out both;
@@ -266,26 +321,105 @@ p {
     to { opacity: 1; }
 }
 
-/* ── Hero boot sequence: staggered rise with a speed-blur, telemetry powering on ── */
-
 .boot {
     opacity: 0;
-    transform: translateY(16px);
-    filter: blur(5px);
-    animation: mk-boot 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: translateY(18px);
+    filter: blur(6px);
+    animation: mk-boot 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .boot-1 { animation-delay: 0.05s; }
-.boot-2 { animation-delay: 0.2s; }
-.boot-3 { animation-delay: 0.35s; }
-.boot-4 { animation-delay: 0.5s; }
+.boot-2 { animation-delay: 0.18s; }
+.boot-3 { animation-delay: 0.32s; }
+.boot-4 { animation-delay: 0.46s; }
+.boot-5 { animation-delay: 0.60s; }
 
 @keyframes mk-boot {
     to { opacity: 1; transform: none; filter: blur(0); }
 }
 
-/* ── Nav link underline: draws left-to-right like a sector line ── */
+/* ─────────────────────────────────────────────
+   KINETIC HEADLINE — rotating word flips through a vertical reel
+   ───────────────────────────────────────────── */
 
+.kw {
+    display: inline-grid;
+    vertical-align: bottom;
+    overflow: hidden;
+    position: relative;
+}
+
+.kw-item {
+    grid-area: 1 / 1;
+    color: var(--mk-accent);
+    opacity: 0;
+    transform: translateY(100%) rotateX(-40deg);
+    animation: mk-kw 9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes mk-kw {
+    0%, 8%   { opacity: 0; transform: translateY(110%) rotateX(-40deg); }
+    14%, 25% { opacity: 1; transform: translateY(0) rotateX(0); }
+    31%, 100%{ opacity: 0; transform: translateY(-110%) rotateX(40deg); }
+}
+
+/* Gradient text that sweeps a brighter band across itself */
+.text-sweep {
+    background: linear-gradient(100deg, var(--mk-accent) 0%, var(--mk-glow) 30%, var(--mk-accent) 60%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: mk-sweep 6s linear infinite;
+}
+
+@keyframes mk-sweep {
+    to { background-position: -220% 0; }
+}
+
+/* ─────────────────────────────────────────────
+   KINETIC MARQUEE  (one per page)
+   ───────────────────────────────────────────── */
+
+.marquee {
+    display: flex;
+    overflow: hidden;
+    user-select: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-track {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2.5rem;
+    padding-right: 2.5rem;
+    min-width: max-content;
+    animation: mk-marquee 32s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+@keyframes mk-marquee {
+    to { transform: translateX(-50%); }
+}
+
+/* ─────────────────────────────────────────────
+   TILT CARD (driven by useTilt → --rx/--ry)
+   ───────────────────────────────────────────── */
+
+.tilt {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+/* ── Nav link underline draws left-to-right ── */
 .nav-link {
     position: relative;
 }
@@ -294,8 +428,8 @@ p {
     content: '';
     position: absolute;
     left: 0;
-    bottom: -4px;
-    height: 1px;
+    bottom: -5px;
+    height: 1.5px;
     width: 100%;
     background: var(--mk-accent);
     transform: scaleX(0);
@@ -307,8 +441,7 @@ p {
     transform: scaleX(1);
 }
 
-/* ── Wordmark: icon strokes draw themselves on load, wiggle on hover ── */
-
+/* ── Wordmark draw-in ── */
 .logo-draw rect,
 .logo-draw path {
     stroke-dasharray: 100 100;
@@ -328,20 +461,7 @@ a:hover > .logo-mark {
     transform: rotate(-8deg);
 }
 
-.logo-dot {
-    display: inline-block;
-}
-
-a:hover .logo-dot {
-    animation: mk-pop 0.35s ease-out;
-}
-
-@keyframes mk-pop {
-    50% { transform: scale(1.6); }
-}
-
-/* ── Eyebrow rule grows when its Reveal fires ── */
-
+/* Eyebrow rule grows when its Reveal fires */
 .reveal .eyebrow-line {
     transform: scaleX(0);
     transform-origin: left;
@@ -352,15 +472,7 @@ a:hover .logo-dot {
     transform: scaleX(1);
 }
 
-/* ── Telemetry panel ── */
-
-/* Sparkline waits for the panel to enter the viewport (spark-draw is applied then) */
-.spark-wait {
-    stroke-dasharray: 100;
-    stroke-dashoffset: 100;
-}
-
-/* Delta readout: each new value drops in like a timing-screen update */
+/* Delta readout tick */
 .tick-in {
     display: inline-block;
     animation: mk-tick 0.35s ease-out;
@@ -371,33 +483,55 @@ a:hover .logo-dot {
     to { opacity: 1; transform: none; }
 }
 
-/* Best-sector card breathes a faint glow */
+/* Best-sector breathing glow */
 .breathe {
     animation: mk-breathe 3s ease-in-out infinite;
 }
 
 @keyframes mk-breathe {
     0%, 100% { box-shadow: 0 0 0 rgba(123, 248, 172, 0); }
-    50% { box-shadow: 0 0 16px rgba(123, 248, 172, 0.18); }
+    50% { box-shadow: 0 0 18px rgba(123, 248, 172, 0.22); }
 }
 
-/* ── Motion safety: kill animations for reduced-motion users and cheap devices ── */
+/* Slow ambient float for hero ornaments */
+.float-slow {
+    animation: mk-float 7s ease-in-out infinite;
+}
+
+@keyframes mk-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Conic sweep ring for the hero gauge */
+.gauge-sweep {
+    animation: mk-spin 5.5s linear infinite;
+}
+
+@keyframes mk-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─────────────────────────────────────────────
+   MOTION SAFETY
+   ───────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .reveal { opacity: 1; transform: none; transition: none; }
-    .track-comet, .track-comet-slow, .spark-draw, .live-dot::after { animation: none; }
+    .track-comet, .track-comet-slow, .spark-draw, .live-dot::after,
+    .iso-grid, .marquee-track, .kw-item, .text-sweep, .float-slow,
+    .gauge-sweep, .breathe, .tick-in { animation: none; }
     .spark-draw, .spark-wait { stroke-dashoffset: 0; }
-    .boot, .page-enter, .tick-in, .breathe { animation: none; opacity: 1; transform: none; filter: none; }
+    .kw-item { opacity: 1; transform: none; }
+    .kw-item:not(:first-child) { display: none; }
+    .text-sweep { -webkit-text-fill-color: var(--mk-accent); color: var(--mk-accent); }
+    .boot, .page-enter { animation: none; opacity: 1; transform: none; filter: none; }
     .logo-draw rect, .logo-draw path { animation: none; stroke-dashoffset: 0; }
     .reveal .eyebrow-line { transform: none; transition: none; }
     .nav-link::after { transition: none; }
-    .hairline-card, .hairline-card:hover { transform: none; }
-    .spotlight::before { transition: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .iso-grid { animation: none; }
+    .hairline-card, .hairline-card:hover, .tilt, .magnetic { transform: none; transition: none; }
+    .spotlight::before, .btn-primary::after { transition: none; }
 }
 
 @media (max-width: 640px) {
@@ -407,4 +541,5 @@ a:hover .logo-dot {
 @media (max-width: 768px) {
     .iso-grid { animation: none; height: 55%; }
     .section-ambient { background: none; }
+    .tilt { transform: none; }
 }

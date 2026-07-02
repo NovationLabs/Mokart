@@ -92,7 +92,7 @@ const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const StyleGuide: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#0d0f12] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             {/* ── Hero ── */}
@@ -117,8 +117,8 @@ const StyleGuide: React.FC = () => {
                 <div className="mb-10">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-6">Core Tokens</h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <ColorSwatch hex="#0d0f12" name="Background" role="Page background" />
-                        <ColorSwatch hex="#11141a" name="Surface" role="Panels, mockups" />
+                        <ColorSwatch hex="#04130c" name="Background" role="Page background" />
+                        <ColorSwatch hex="#0a2315" name="Surface" role="Panels, mockups" />
                         <ColorSwatch hex="#ffffff" name="White" role="Headings, primary text" light />
                         <ColorSwatch hex="#7bf8ac" name="Mint Green" role="Accent — CTAs, data, live" light />
                     </div>
@@ -256,7 +256,7 @@ const StyleGuide: React.FC = () => {
                         <Label>.hairline-card — feature</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-7 h-full">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-7 h-full">
                             <p className="text-[10px] font-light uppercase tracking-[0.2em] text-white/40 mb-2">Delta vs Best</p>
                             <p className="font-mono text-4xl font-bold text-[#7bf8ac] tabular-nums">-0.142</p>
                             <div className="mt-4 space-y-1.5 font-mono text-xs">
@@ -292,14 +292,14 @@ const StyleGuide: React.FC = () => {
             >
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-6 text-center">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
                             <p className="font-mono text-3xl text-white"><CountUp value={50} suffix=" Hz" /></p>
                             <p className="text-[10px] font-light uppercase tracking-[0.2em] text-white/35 mt-2">Update rate</p>
                         </div>
                         <Label>CountUp — ease-out-expo on view</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-6 text-center">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
                             <span className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] h-full py-3">
                                 <span className="live-dot w-1.5 h-1.5 rounded-full bg-[#7bf8ac]" />
                                 Live session
@@ -315,7 +315,7 @@ const StyleGuide: React.FC = () => {
                         <Label>.breathe — best-sector glow</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-6 text-center">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
                             <p className="boot font-mono text-sm text-white/70 py-3">Boot sequence</p>
                         </div>
                         <Label>.boot — hero entrance (blur rise)</Label>
@@ -324,7 +324,7 @@ const StyleGuide: React.FC = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-6 overflow-hidden">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 overflow-hidden">
                             <svg viewBox="0 0 400 90" className="w-full" fill="none" aria-hidden="true">
                                 <path d="M 0 60 C 70 60 80 20 140 20 S 220 70 280 70 S 360 25 400 30" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
                                 <path d="M 0 60 C 70 60 80 20 140 20 S 220 70 280 70 S 360 25 400 30" stroke="#7bf8ac" strokeWidth="1.5" pathLength={100} className="track-comet" strokeLinecap="round" />
@@ -333,7 +333,7 @@ const StyleGuide: React.FC = () => {
                         <Label>.track-comet — traveling racing line</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#11141a] p-6 overflow-hidden">
+                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 overflow-hidden">
                             <svg viewBox="0 0 400 90" className="w-full" fill="none" aria-hidden="true">
                                 {[20, 45, 70].map((y) => (
                                     <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 6" />

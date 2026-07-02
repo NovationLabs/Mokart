@@ -14,7 +14,7 @@ const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const About: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#0d0f12] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             <div className="max-w-6xl mx-auto px-6 pt-36 pb-24 relative z-10">
@@ -75,7 +75,7 @@ const About: React.FC = () => {
 
                 {/* ── Tech band ── */}
                 <Reveal>
-                    <div className="mb-24 rounded-xl border border-white/10 bg-[#11141a] p-8 md:p-12 relative overflow-hidden">
+                    <div className="mb-24 rounded-xl border border-white/10 bg-[#0a2315] p-8 md:p-12 relative overflow-hidden">
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
                             <div className="flex-1">
                                 <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-6">Engineered for performance.</h2>
