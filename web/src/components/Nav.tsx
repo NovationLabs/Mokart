@@ -15,7 +15,7 @@ const Nav: React.FC = () => {
     const progressRef = useScrollProgress<HTMLDivElement>();
 
     return (
-        <nav className="fixed top-0 left-0 w-full z-50 nav-blur border-b border-[#7bf8ac]/10">
+        <nav className="fixed top-0 left-0 w-full z-50 nav-blur border-b border-mokart-primary/10">
             <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
                 <Wordmark />
 
@@ -30,7 +30,7 @@ const Nav: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <a
                         href="https://app.novationlabs.fr"
-                        className="hidden sm:inline-flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-widest text-[#7bf8ac] border border-[#7bf8ac]/30 px-4 py-2 rounded-full hover:bg-[#7bf8ac]/10 transition-colors duration-200"
+                        className="nav-cta hidden sm:inline-flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-widest text-mokart-primary border border-mokart-primary/30 px-4 py-2 rounded-full hover:bg-mokart-primary/10 transition-all duration-200"
                     >
                         Get Access
                         <ArrowUpRight size={13} strokeWidth={2.5} />
@@ -41,7 +41,7 @@ const Nav: React.FC = () => {
                         onClick={() => setOpen((v) => !v)}
                         aria-label={open ? 'Close menu' : 'Open menu'}
                         aria-expanded={open}
-                        className="md:hidden grid place-items-center w-10 h-10 rounded-full border border-[#7bf8ac]/20 text-white/80 hover:text-white hover:border-[#7bf8ac]/45 transition-colors"
+                        className="md:hidden grid place-items-center w-10 h-10 rounded-full border border-mokart-primary/20 text-white/80 hover:text-white hover:border-mokart-primary/45 transition-colors"
                     >
                         {open ? <X size={18} /> : <Menu size={18} />}
                     </button>
@@ -55,14 +55,14 @@ const Nav: React.FC = () => {
 
             {/* Mobile sheet */}
             {open && (
-                <div className="md:hidden border-t border-[#7bf8ac]/10 nav-blur px-6 py-5">
+                <div className="md:hidden border-t border-mokart-primary/10 nav-blur px-6 py-5">
                     <div className="flex flex-col gap-1">
                         {links.map(({ label, href }) => (
                             <a
                                 key={label}
                                 href={href}
                                 onClick={() => setOpen(false)}
-                                className="py-2.5 text-white/70 hover:text-[#7bf8ac] transition-colors text-base"
+                                className="py-2.5 text-white/70 hover:text-mokart-primary transition-colors text-base"
                             >
                                 {label}
                             </a>

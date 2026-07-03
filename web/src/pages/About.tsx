@@ -7,14 +7,14 @@ import { Cpu, Users } from 'lucide-react';
 
 const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="flex items-center gap-3 mb-5">
-        <span className="h-px w-8 bg-[#7bf8ac]/60 eyebrow-line" />
+        <span className="h-px w-8 bg-mokart-primary/60 eyebrow-line" />
         <span className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-white/50">{children}</span>
     </div>
 );
 
 const About: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-mokart-bg text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             <div className="max-w-6xl mx-auto px-6 pt-36 pb-24 relative z-10">
@@ -75,7 +75,7 @@ const About: React.FC = () => {
 
                 {/* ── Tech band ── */}
                 <Reveal>
-                    <div className="mb-24 rounded-xl border border-white/10 bg-[#0a2315] p-8 md:p-12 relative overflow-hidden">
+                    <div className="mb-24 rounded-xl border border-white/10 bg-mokart-surface p-8 md:p-12 relative overflow-hidden">
                         <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
                             <div className="flex-1">
                                 <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-6">Engineered for performance.</h2>
@@ -90,7 +90,7 @@ const About: React.FC = () => {
                                 </p>
                             </div>
                             <div className="shrink-0">
-                                <Cpu size={110} strokeWidth={1} className="text-[#7bf8ac]/80" />
+                                <Cpu size={110} strokeWidth={1} className="text-mokart-primary/80" />
                             </div>
                         </div>
                     </div>
@@ -100,7 +100,7 @@ const About: React.FC = () => {
                 <div>
                     <Reveal>
                         <div className="flex items-center gap-3 mb-12">
-                            <Users size={20} strokeWidth={1.5} className="text-[#7bf8ac]" />
+                            <Users size={20} strokeWidth={1.5} className="text-mokart-primary" />
                             <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight">The team</h2>
                         </div>
                     </Reveal>

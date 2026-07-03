@@ -4,14 +4,14 @@ import { MoveLeft } from 'lucide-react';
 
 const Soon: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#04130c] text-white antialiased flex flex-col items-center justify-center relative overflow-hidden px-6 page-enter">
+        <div className="min-h-screen bg-mokart-bg text-white antialiased flex flex-col items-center justify-center relative overflow-hidden px-6 page-enter">
             <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
 
             <div className="relative z-10 text-center max-w-2xl mx-auto">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
-                    className="w-14 h-14 text-[#7bf8ac] mx-auto mb-8"
+                    className="w-14 h-14 text-mokart-primary mx-auto mb-8"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -24,9 +24,9 @@ const Soon: React.FC = () => {
                 </svg>
 
                 <div className="inline-flex items-center gap-3 mb-8">
-                    <span className="h-px w-8 bg-[#7bf8ac]/60" />
+                    <span className="h-px w-8 bg-mokart-primary/60" />
                     <span className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-white/50">Under construction</span>
-                    <span className="h-px w-8 bg-[#7bf8ac]/60" />
+                    <span className="h-px w-8 bg-mokart-primary/60" />
                 </div>
 
                 <h1 className="font-display text-5xl md:text-7xl font-bold tracking-tight leading-[1.05] mb-6">

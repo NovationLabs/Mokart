@@ -26,6 +26,13 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Horizontal-overflow guard that does NOT create a scroll container —
+   `overflow-x: hidden` would silently break position: sticky (the pinned
+   exploded view). `clip` clips without capturing scroll. */
+.overflow-x-clip-safe {
+    overflow-x: clip;
+}
+
 .font-display {
     font-family: 'Iliad', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
@@ -223,14 +230,45 @@ p {
     transform: translateY(0) scale(0.97);
 }
 
+/* Ghost CTA with a "liquid fill": a pill of accent rises from the baseline
+   on hover (translate/scale only — no width/height animation). */
 .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 border border-[#7bf8ac]/25 text-white font-normal px-7 py-3.5 rounded-full text-sm transition-all duration-300;
+    @apply inline-flex items-center justify-center gap-2 border border-mokart-primary/25 text-white font-normal px-7 py-3.5 rounded-full text-sm;
     font-family: 'Iliad', sans-serif;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition: color 0.35s ease, border-color 0.35s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ghost::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: 100%;
+    width: 140%;
+    aspect-ratio: 1 / 1;
+    border-radius: 9999px;
+    background: var(--mk-accent);
+    transform: translate(-50%, 0) scale(0);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-ghost:hover {
-    border-color: rgba(123, 248, 172, 0.6);
-    background: rgba(123, 248, 172, 0.06);
+    border-color: var(--mk-accent);
+    color: var(--mk-bg);
+}
+
+.btn-ghost:hover::before {
+    transform: translate(-50%, -50%) scale(2);
+}
+
+/* Instant press feedback — every clickable answers the finger */
+.btn-ghost:active,
+.nav-cta:active,
+.tilt:active {
+    transform: scale(0.97);
 }
 
 /* Magnetic wrapper: the hook writes translate via style; CSS eases the return */
@@ -328,7 +366,6 @@ p {
     animation: mk-boot 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.boot-1 { animation-delay: 0.05s; }
 .boot-2 { animation-delay: 0.18s; }
 .boot-3 { animation-delay: 0.32s; }
 .boot-4 { animation-delay: 0.46s; }
@@ -503,13 +540,182 @@ a:hover > .logo-mark {
     50% { transform: translateY(-10px); }
 }
 
-/* Conic sweep ring for the hero gauge */
-.gauge-sweep {
-    animation: mk-spin 5.5s linear infinite;
+/* ─────────────────────────────────────────────
+   KINETIC STATEMENT — oversized headline built word by word from scroll.
+   `--p` (0..1) is written by useSectionProgress('cross'); each word carries
+   its own reveal window via --wi (index) and --wn (word count).
+   ───────────────────────────────────────────── */
+
+.kinetic-line {
+    --p: 0;
 }
 
-@keyframes mk-spin {
-    to { transform: rotate(360deg); }
+.kinetic-word {
+    display: inline-block;
+    opacity: clamp(0.14, calc(var(--p) * (var(--wn) + 2) - var(--wi)), 1);
+    will-change: opacity;
+}
+
+/* ─────────────────────────────────────────────
+   THE UNIT — exploded-view scrollytelling.
+   A 300vh wrapper pins a full-viewport stage; useSectionProgress('pin')
+   writes `--p` on .unit-stage. Layers collapse by `--off` at --p:0 and
+   settle at their drawn (exploded) position at --p:1. Annotations open in
+   sequence through per-item thresholds (--nt). Transform/opacity only.
+   ───────────────────────────────────────────── */
+
+.unit-wrap {
+    height: 300vh;
+}
+
+.unit-sticky {
+    position: sticky;
+    top: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.unit-stage {
+    --p: 0;
+}
+
+.unit-layer {
+    transform: translateY(calc((1 - min(calc(var(--p) * 1.3), 1)) * var(--off, 0px)));
+    will-change: transform;
+}
+
+/* Spine + per-layer callout hairlines fade with the explosion */
+.unit-spine {
+    opacity: calc(min(calc(var(--p) * 1.3), 1) * 0.5);
+}
+
+.unit-callout {
+    opacity: clamp(0, calc((var(--p) - var(--nt, 0)) * 8), 0.65);
+}
+
+/* Sequenced datasheet annotations (right column) */
+.unit-note {
+    opacity: clamp(0, calc((var(--p) - var(--nt, 0)) * 6), 1);
+    transform: translateY(calc((1 - clamp(0, calc((var(--p) - var(--nt, 0)) * 6), 1)) * 10px));
+    will-change: transform, opacity;
+}
+
+/* Progress rail beside the notes */
+.unit-rail {
+    transform: scaleY(var(--p));
+    transform-origin: top;
+    will-change: transform;
+}
+
+/* ─────────────────────────────────────────────
+   BLUEPRINT CALLOUTS — hairlines that trace from the product photo to
+   spec labels once the hosting Reveal fires. Stagger via --d / --d2.
+   ───────────────────────────────────────────── */
+
+.callout-line {
+    height: 1px;
+    background: rgba(123, 248, 172, 0.45);
+    transform: scaleX(0);
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+}
+
+.reveal.is-visible .callout-line {
+    transform: scaleX(1);
+}
+
+.callout-label {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.6s ease var(--d2, 0.5s), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) var(--d2, 0.5s);
+}
+
+.reveal.is-visible .callout-label {
+    opacity: 1;
+    transform: none;
+}
+
+/* ─────────────────────────────────────────────
+   PIPELINE MICRO-SCHEMAS + BENTO MINI-STORIES
+   ───────────────────────────────────────────── */
+
+/* Session upload: a bar fills, holds, resets (scaleX only) */
+.upload-fill {
+    transform-origin: left;
+    animation: mk-upload 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes mk-upload {
+    0% { transform: scaleX(0); opacity: 1; }
+    62%, 86% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* Sensor-load equalizer bars (scaleY only) */
+.eq-bar {
+    transform-origin: bottom;
+    animation: mk-eq 1.5s ease-in-out infinite;
+}
+
+@keyframes mk-eq {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}
+
+/* Two-value vertical reel (mini chronometer inside a bento cell) */
+.reel {
+    display: inline-grid;
+    overflow: hidden;
+    vertical-align: bottom;
+}
+
+.reel-item {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: translateY(110%);
+    animation: mk-reel 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes mk-reel {
+    0%, 5% { opacity: 0; transform: translateY(110%); }
+    11%, 44% { opacity: 1; transform: none; }
+    50%, 100% { opacity: 0; transform: translateY(-110%); }
+}
+
+/* ─────────────────────────────────────────────
+   COMPARE TABLE — each row traces its hairline as the table reveals.
+   Stagger per row via --d (inline).
+   ───────────────────────────────────────────── */
+
+.cmp-row td {
+    position: relative;
+}
+
+.cmp-row td::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(123, 248, 172, 0.09);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+    pointer-events: none;
+}
+
+.reveal.is-visible .cmp-row td::after {
+    transform: scaleX(1);
+}
+
+/* KPI cells answer the cursor before the digits re-tick */
+.kpi-cell {
+    transition: background-color 0.3s ease;
+}
+
+.kpi-cell:hover {
+    background: rgba(123, 248, 172, 0.03);
 }
 
 /* ─────────────────────────────────────────────
@@ -521,10 +727,10 @@ a:hover > .logo-mark {
     .reveal { opacity: 1; transform: none; transition: none; }
     .track-comet, .track-comet-slow, .spark-draw, .live-dot::after,
     .iso-grid, .marquee-track, .kw-item, .text-sweep, .float-slow,
-    .gauge-sweep, .breathe, .tick-in { animation: none; }
+    .breathe, .tick-in, .upload-fill, .eq-bar, .reel-item { animation: none; }
     .spark-draw, .spark-wait { stroke-dashoffset: 0; }
-    .kw-item { opacity: 1; transform: none; }
-    .kw-item:not(:first-child) { display: none; }
+    .kw-item, .reel-item { opacity: 1; transform: none; }
+    .kw-item:not(:first-child), .reel-item:not(:first-child) { display: none; }
     .text-sweep { -webkit-text-fill-color: var(--mk-accent); color: var(--mk-accent); }
     .boot, .page-enter { animation: none; opacity: 1; transform: none; filter: none; }
     .logo-draw rect, .logo-draw path { animation: none; stroke-dashoffset: 0; }
@@ -532,6 +738,22 @@ a:hover > .logo-mark {
     .nav-link::after { transition: none; }
     .hairline-card, .hairline-card:hover, .tilt, .magnetic { transform: none; transition: none; }
     .spotlight::before, .btn-primary::after { transition: none; }
+    .btn-ghost::before { transition: none; }
+    .kinetic-line { --p: 1; }
+    .callout-line, .callout-label { transition: none; transform: none; opacity: 1; }
+    .cmp-row td::after { transition: none; transform: scaleX(1); }
+    .unit-layer, .unit-note, .unit-rail { will-change: auto; }
+    .kpi-cell { transition: none; }
+}
+
+/* The pinned exploded view collapses to its finished state whenever the
+   scroll driver is off (mobile and reduced motion — mirrors the JS guards
+   in useSectionProgress). */
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+    .unit-wrap { height: auto; }
+    .unit-sticky { position: static; min-height: 0; }
+    .unit-stage { --p: 1; }
+    .kinetic-line { --p: 1; }
 }
 
 @media (max-width: 640px) {

@@ -12,7 +12,7 @@ const LegalCard: React.FC<{
 }> = ({ icon: Icon, title, accent, children }) => (
     <div className={`hairline-card rounded-lg p-8 ${accent === 'warning' ? '!border-[#f87171]/25' : ''}`}>
         <div className="flex items-center gap-4 mb-6">
-            <Icon size={20} strokeWidth={1.5} className={accent === 'warning' ? 'text-[#f87171]' : 'text-[#7bf8ac]'} />
+            <Icon size={20} strokeWidth={1.5} className={accent === 'warning' ? 'text-[#f87171]' : 'text-mokart-primary'} />
             <h2 className="font-display text-xl font-bold text-white">{title}</h2>
         </div>
         {children}
@@ -21,7 +21,7 @@ const LegalCard: React.FC<{
 
 const TermsOfService: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-mokart-bg text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 relative z-10">

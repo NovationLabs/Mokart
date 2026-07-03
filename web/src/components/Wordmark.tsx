@@ -20,7 +20,7 @@ const Wordmark: React.FC<{ className?: string }> = ({ className = '' }) => (
         <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
-            className="w-6 h-6 text-[#7bf8ac] logo-mark logo-draw"
+            className="w-6 h-6 text-mokart-primary logo-mark logo-draw"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -32,7 +32,7 @@ const Wordmark: React.FC<{ className?: string }> = ({ className = '' }) => (
             <path d="M8 6V3a2 2 0 0 0-4 0v3" pathLength={100} />
         </svg>
         <span className="font-display text-xl font-bold text-white tracking-tight">
-            Mokart<span className="text-[#7bf8ac] logo-dot">.</span>
+            Mokart<span className="text-mokart-primary logo-dot">.</span>
         </span>
     </a>
 );

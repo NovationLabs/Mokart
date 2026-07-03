@@ -11,7 +11,7 @@ const LegalCard: React.FC<{
 }> = ({ icon: Icon, title, children }) => (
     <div className="hairline-card rounded-lg p-8">
         <div className="flex items-center gap-4 mb-6">
-            <Icon size={20} strokeWidth={1.5} className="text-[#7bf8ac]" />
+            <Icon size={20} strokeWidth={1.5} className="text-mokart-primary" />
             <h2 className="font-display text-xl font-bold text-white">{title}</h2>
         </div>
         {children}
@@ -20,7 +20,7 @@ const LegalCard: React.FC<{
 
 const PrivacyPolicy: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-mokart-bg text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             <div className="max-w-3xl mx-auto px-6 pt-36 pb-24 relative z-10">
@@ -33,15 +33,15 @@ const PrivacyPolicy: React.FC = () => {
                     <LegalCard icon={Database} title="Data Collection">
                         <ul className="space-y-4 text-white/60 text-sm leading-relaxed">
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">Telemetry Data:</strong> We collect high-frequency data including RTK GPS positioning (10cm precision), G-forces (IMU), RPM, and steering angle.</span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">Session Metrics:</strong> Lap times, sector times, and invalid lap markers.</span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">User Profiles:</strong> Basic driver information linked via QR code scans for personalized session history.</span>
                             </li>
                         </ul>
@@ -53,15 +53,15 @@ const PrivacyPolicy: React.FC = () => {
                         </p>
                         <ul className="space-y-4 text-white/60 text-sm leading-relaxed">
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">"Ideal vs Real":</strong> Comparing your actual racing line against the calculated optimal trajectory.</span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">Performance Coaching:</strong> Identifying braking points and acceleration zones to improve lap times.</span>
                             </li>
                             <li className="flex gap-3">
-                                <span className="text-[#7bf8ac]">·</span>
+                                <span className="text-mokart-primary">·</span>
                                 <span><strong className="text-white font-bold">Leaderboards:</strong> Generating accurate rankings for competitive events.</span>
                             </li>
                         </ul>

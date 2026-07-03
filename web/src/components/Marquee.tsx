@@ -13,7 +13,7 @@ const Marquee: React.FC<{ items: string[]; className?: string }> = ({ items, cla
                     <span className="font-display text-2xl md:text-4xl font-bold tracking-tight text-white/85 whitespace-nowrap">
                         {t}
                     </span>
-                    <span className="text-[#7bf8ac] text-xl md:text-2xl">/</span>
+                    <span className="text-mokart-primary text-xl md:text-2xl">/</span>
                 </React.Fragment>
             ))}
         </div>

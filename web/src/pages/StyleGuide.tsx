@@ -18,7 +18,7 @@ const Section: React.FC<{
     <section className="py-16 md:py-20 px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
             <div className="mb-12">
-                <span className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-[#7bf8ac] mb-2 block">Design System</span>
+                <span className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-mokart-primary mb-2 block">Design System</span>
                 <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight">{title}</h2>
                 {subtitle && <p className="text-white/45 mt-2 text-sm max-w-xl">{subtitle}</p>}
             </div>
@@ -55,12 +55,12 @@ const ColorSwatch: React.FC<{
                     </span>
                 </div>
                 <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${copied ? 'opacity-100' : 'opacity-0'}`}>
-                    <span className="flex items-center gap-1.5 rounded bg-black/50 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] backdrop-blur-sm">
+                    <span className="flex items-center gap-1.5 rounded bg-black/50 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-mokart-primary backdrop-blur-sm">
                         <Check size={11} strokeWidth={3} /> Copied
                     </span>
                 </div>
             </div>
-            <p className={`font-bold text-sm transition-colors ${copied ? 'text-[#7bf8ac]' : 'text-white'}`}>{name}</p>
+            <p className={`font-bold text-sm transition-colors ${copied ? 'text-mokart-primary' : 'text-white'}`}>{name}</p>
             <p className="font-mono text-xs text-white/40 mt-0.5">{hex}</p>
             <p className="text-white/30 text-[10px] font-light uppercase tracking-wider mt-1">{role}</p>
         </button>
@@ -92,7 +92,7 @@ const Label: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const StyleGuide: React.FC = () => {
     return (
-        <div className="min-h-screen bg-[#04130c] text-white antialiased overflow-x-hidden page-enter">
+        <div className="min-h-screen bg-mokart-bg text-white antialiased overflow-x-hidden page-enter">
             <Nav />
 
             {/* ── Hero ── */}
@@ -152,17 +152,17 @@ const StyleGuide: React.FC = () => {
             >
                 <div className="grid md:grid-cols-3 gap-4 mb-12">
                     <div className="hairline-card rounded-lg p-6">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] mb-4">Iliad Bold · 700</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-mokart-primary mb-4">Iliad Bold · 700</p>
                         <p className="font-display text-4xl font-bold tracking-tight leading-none mb-3">ABCDEFG</p>
                         <p className="text-white/40 text-sm">H1/H2 headings, wordmark, CTAs, stats</p>
                     </div>
                     <div className="hairline-card rounded-lg p-6">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] mb-4">Iliad Light · 300</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-mokart-primary mb-4">Iliad Light · 300</p>
                         <p className="font-display text-4xl font-light tracking-tight leading-none mb-3">ABCDEFG</p>
                         <p className="text-white/40 text-sm">Numbered section eyebrows only</p>
                     </div>
                     <div className="hairline-card rounded-lg p-6">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] mb-4">System Sans · 400</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-mokart-primary mb-4">System Sans · 400</p>
                         <p className="text-4xl font-normal tracking-tight leading-none mb-3">ABCDEFG</p>
                         <p className="text-white/40 text-sm">Body copy, card text, footer, UI chrome</p>
                     </div>
@@ -174,7 +174,7 @@ const StyleGuide: React.FC = () => {
                     <TypeSpecimen label="Card H3 — System Bold" className="text-base font-bold" text="RTK Positioning" meta="16px · 700 · system" />
                     <TypeSpecimen label="Body — System sans" className="text-base text-white/45 leading-relaxed" text="Professional-grade telemetry for rental karting. Real-time lap deltas, trajectory analysis, and cloud sync." meta="16px · 400 · system" />
                     <TypeSpecimen label="Eyebrow — Iliad Light tracked caps" className="font-display text-[11px] font-light uppercase tracking-[0.25em] text-white/50" text="Live Telemetry" meta="11px · 300 · Iliad" />
-                    <TypeSpecimen label="Mono data" className="text-3xl font-mono text-[#7bf8ac] font-bold" text="-0.142 · 51.847 · 50Hz" meta="30px · mono · accent" />
+                    <TypeSpecimen label="Mono data" className="text-3xl font-mono text-mokart-primary font-bold" text="-0.142 · 51.847 · 50Hz" meta="30px · mono · accent" />
                 </div>
             </Section>
 
@@ -193,13 +193,13 @@ const StyleGuide: React.FC = () => {
                         <Label>.btn-ghost</Label>
                     </div>
                     <div className="flex flex-col items-center gap-3">
-                        <button className="text-xs font-bold uppercase tracking-widest text-[#7bf8ac] border border-[#7bf8ac]/30 px-4 py-2 rounded-md hover:bg-[#7bf8ac]/10 transition-colors">
+                        <button className="text-xs font-bold uppercase tracking-widest text-mokart-primary border border-mokart-primary/30 px-4 py-2 rounded-md hover:bg-mokart-primary/10 transition-colors">
                             Get Access
                         </button>
                         <Label>Nav outline accent</Label>
                     </div>
                     <div className="flex flex-col items-center gap-3">
-                        <button disabled className="inline-flex items-center gap-2 bg-[#7bf8ac]/25 text-black/50 font-bold px-7 py-3 rounded-md text-sm cursor-not-allowed">
+                        <button disabled className="inline-flex items-center gap-2 bg-mokart-primary/25 text-black/50 font-bold px-7 py-3 rounded-md text-sm cursor-not-allowed">
                             Disabled
                         </button>
                         <Label>Disabled primary</Label>
@@ -215,21 +215,21 @@ const StyleGuide: React.FC = () => {
                 <div className="flex flex-wrap gap-10 items-start">
                     <div className="flex flex-col items-center gap-3">
                         <div className="flex items-center gap-3">
-                            <span className="font-mono text-[11px] text-[#7bf8ac]">01</span>
+                            <span className="font-mono text-[11px] text-mokart-primary">01</span>
                             <span className="h-px w-8 bg-white/15" />
                             <span className="text-[11px] font-light uppercase tracking-[0.25em] text-white/50">Live telemetry</span>
                         </div>
                         <Label>Numbered section eyebrow</Label>
                     </div>
                     <div className="flex flex-col items-center gap-3">
-                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac]">
-                            <span className="live-dot w-1.5 h-1.5 rounded-full bg-[#7bf8ac]" />
+                        <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-mokart-primary">
+                            <span className="live-dot w-1.5 h-1.5 rounded-full bg-mokart-primary" />
                             Live
                         </span>
                         <Label>Live status — pulsing</Label>
                     </div>
                     <div className="flex flex-col items-center gap-3">
-                        <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded font-mono text-[10px] text-[#7bf8ac] border border-[#7bf8ac]/20">
+                        <span className="bg-black/60 backdrop-blur px-2.5 py-1 rounded font-mono text-[10px] text-mokart-primary border border-mokart-primary/20">
                             Prototype v1
                         </span>
                         <Label>Media overlay badge</Label>
@@ -249,32 +249,32 @@ const StyleGuide: React.FC = () => {
                 <div className="grid md:grid-cols-3 gap-4">
                     <div>
                         <div className="hairline-card rounded-lg p-7 h-full">
-                            <MapPin size={20} strokeWidth={1.5} className="text-[#7bf8ac] mb-5" />
+                            <MapPin size={20} strokeWidth={1.5} className="text-mokart-primary mb-5" />
                             <h3 className="text-base font-bold mb-2">RTK Positioning</h3>
                             <p className="text-white/45 text-sm leading-relaxed">Sub-decimeter accuracy enables true racing-line analysis, unlike standard GPS.</p>
                         </div>
                         <Label>.hairline-card — feature</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-7 h-full">
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-7 h-full">
                             <p className="text-[10px] font-light uppercase tracking-[0.2em] text-white/40 mb-2">Delta vs Best</p>
-                            <p className="font-mono text-4xl font-bold text-[#7bf8ac] tabular-nums">-0.142</p>
+                            <p className="font-mono text-4xl font-bold text-mokart-primary tabular-nums">-0.142</p>
                             <div className="mt-4 space-y-1.5 font-mono text-xs">
                                 <div className="flex justify-between"><span className="text-white/30">L13</span><span className="text-white/60">52.190</span></div>
-                                <div className="flex justify-between"><span className="text-white/30">L14</span><span className="text-[#7bf8ac]">51.847 ●</span></div>
+                                <div className="flex justify-between"><span className="text-white/30">L14</span><span className="text-mokart-primary">51.847 ●</span></div>
                             </div>
                         </div>
                         <Label>Surface panel — telemetry data</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-[#7bf8ac]/25 bg-[#7bf8ac]/5 p-7 h-full">
+                        <div className="rounded-lg border border-mokart-primary/25 bg-mokart-primary/5 p-7 h-full">
                             <div className="flex items-center gap-2 mb-4">
-                                <CheckCircle2 size={16} className="text-[#7bf8ac]" strokeWidth={2.5} />
+                                <CheckCircle2 size={16} className="text-mokart-primary" strokeWidth={2.5} />
                                 <span className="font-bold text-sm">Mokart</span>
                             </div>
                             <div className="space-y-2">
                                 {['RTK Precision', 'Live Sector Delta', 'Trajectory Analysis'].map((f) => (
-                                    <div key={f} className="flex items-center gap-2 text-sm text-[#7bf8ac]">
+                                    <div key={f} className="flex items-center gap-2 text-sm text-mokart-primary">
                                         <Check size={13} /> {f}
                                     </div>
                                 ))}
@@ -292,30 +292,30 @@ const StyleGuide: React.FC = () => {
             >
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-6 text-center">
                             <p className="font-mono text-3xl text-white"><CountUp value={50} suffix=" Hz" /></p>
                             <p className="text-[10px] font-light uppercase tracking-[0.2em] text-white/35 mt-2">Update rate</p>
                         </div>
                         <Label>CountUp — ease-out-expo on view</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
-                            <span className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#7bf8ac] h-full py-3">
-                                <span className="live-dot w-1.5 h-1.5 rounded-full bg-[#7bf8ac]" />
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-6 text-center">
+                            <span className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-mokart-primary h-full py-3">
+                                <span className="live-dot w-1.5 h-1.5 rounded-full bg-mokart-primary" />
                                 Live session
                             </span>
                         </div>
                         <Label>.live-dot — telemetry pulse</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-[#7bf8ac]/30 bg-[#7bf8ac]/5 breathe p-6 text-center">
-                            <p className="font-mono text-sm text-[#7bf8ac]">S2 — 16.892</p>
+                        <div className="rounded-lg border border-mokart-primary/30 bg-mokart-primary/5 breathe p-6 text-center">
+                            <p className="font-mono text-sm text-mokart-primary">S2 — 16.892</p>
                             <p className="text-[10px] font-light uppercase tracking-[0.2em] text-white/35 mt-2">Best sector</p>
                         </div>
                         <Label>.breathe — best-sector glow</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 text-center">
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-6 text-center">
                             <p className="boot font-mono text-sm text-white/70 py-3">Boot sequence</p>
                         </div>
                         <Label>.boot — hero entrance (blur rise)</Label>
@@ -324,7 +324,7 @@ const StyleGuide: React.FC = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 overflow-hidden">
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-6 overflow-hidden">
                             <svg viewBox="0 0 400 90" className="w-full" fill="none" aria-hidden="true">
                                 <path d="M 0 60 C 70 60 80 20 140 20 S 220 70 280 70 S 360 25 400 30" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
                                 <path d="M 0 60 C 70 60 80 20 140 20 S 220 70 280 70 S 360 25 400 30" stroke="#7bf8ac" strokeWidth="1.5" pathLength={100} className="track-comet" strokeLinecap="round" />
@@ -333,7 +333,7 @@ const StyleGuide: React.FC = () => {
                         <Label>.track-comet — traveling racing line</Label>
                     </div>
                     <div>
-                        <div className="rounded-lg border border-white/10 bg-[#0a2315] p-6 overflow-hidden">
+                        <div className="rounded-lg border border-white/10 bg-mokart-surface p-6 overflow-hidden">
                             <svg viewBox="0 0 400 90" className="w-full" fill="none" aria-hidden="true">
                                 {[20, 45, 70].map((y) => (
                                     <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="rgba(255,255,255,0.05)" strokeDasharray="3 6" />
@@ -371,7 +371,7 @@ const StyleGuide: React.FC = () => {
                         { Icon: Check, name: 'Check' },
                     ].map(({ Icon, name }) => (
                         <div key={name} className="flex flex-col items-center gap-2 group">
-                            <div className="w-12 h-12 hairline-card rounded-lg flex items-center justify-center text-white/40 group-hover:text-[#7bf8ac] transition-colors">
+                            <div className="w-12 h-12 hairline-card rounded-lg flex items-center justify-center text-white/40 group-hover:text-mokart-primary transition-colors">
                                 <Icon size={18} strokeWidth={1.5} />
                             </div>
                             <span className="text-[9px] text-white/25 font-mono text-center leading-tight">{name}</span>
