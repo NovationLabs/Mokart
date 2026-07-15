@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mokart Agent</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/sql.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/lib/languages/bash.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
+</head>
+<body>
+
+    <!-- ── EMPTY STATE ─────────────────────────────────── -->
+    <div id="empty-state">
+        <div class="empty-hero">
+            <h1>Mokart Agent</h1>
+        </div>
+        <div id="empty-input-wrap">
+            <div id="input-container">
+                <textarea id="input" placeholder="Posez votre question..." rows="1" autofocus></textarea>
+                <div class="input-actions">
+                    <button id="send-btn" type="button" aria-label="Envoyer" disabled>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4l8 8-1.41 1.41L13 5.83V20h-2V5.83L4.41 13.41 3 12l9-8z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CHAT LAYOUT ─────────────────────────────────── -->
+    <div id="chat-layout">
+        <div class="header">
+            <div class="header-left">
+                <div>
+                    <h1>Mokart Agent</h1>
+                    <div class="header-meta">
+                        <div class="status-dot"></div>
+                        <span class="model-badge">{{ llm_model }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right"></div>
+        </div>
+
+        <div id="messages"></div>
+
+        <div id="chat-input-area"></div>
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

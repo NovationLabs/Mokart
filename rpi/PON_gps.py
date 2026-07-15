@@ -8,11 +8,15 @@ RTK corrections into the antenna, and reads NMEA sentences back.
 Install:
   pip install pyserial
 
-Run:
-  python3 pon_reader.py                          # auto-detect port
-  python3 pon_reader.py -p /dev/cu.usbserial-110 # explicit port
-  python3 pon_reader.py --no-ntrip               # NMEA only, no corrections
-  python3 pon_reader.py --baud 115200            # change baud rate
+Run (normal mode — read NMEA + RTK corrections):
+  python3 pon_gps.py                          # auto-detect port
+  python3 pon_gps.py -p /dev/ttyUSB0          # explicit port
+  python3 pon_gps.py --no-ntrip               # NMEA only, no corrections
+  python3 pon_gps.py --baud 115200            # explicit baud rate
+
+Configure antenna (one-shot — set update rate):
+  python3 pon_gps.py --set-rate 10            # set to 10 Hz (1, 2, 5, 10 supported)
+  python3 pon_gps.py -p /dev/ttyUSB0 --set-rate 10  # explicit port + rate
 
 Fix quality in GGA:
   0 = No fix
@@ -25,6 +29,7 @@ Fix quality in GGA:
 import argparse
 import base64
 import socket
+import os
 import threading
 import time
 import serial
@@ -34,8 +39,8 @@ import serial.tools.list_ports
 NTRIP_HOST     = "virtualrtk.pointonenav.com"
 NTRIP_PORT     = 2101
 NTRIP_MOUNTPT  = "AUTO"
-NTRIP_USER     = "vxuykevwn8"
-NTRIP_PASS     = "4yv7u82y3x"
+NTRIP_USER     = os.getenv("NTRIP_USER")
+NTRIP_PASS     = os.getenv("NTRIP_PASS")
 
 # ── Serial defaults ───────────────────────────────────────────────────
 DEFAULT_BAUD   = 38400
@@ -52,6 +57,48 @@ FIX_QUALITY = {
 }
 
 
+# ── NMEA command utilities ────────────────────────────────────────────
+
+def nmea_checksum_calc(body: str) -> str:
+    """Calculate NMEA checksum (XOR of all bytes in body)."""
+    cs = 0
+    for c in body:
+        cs ^= ord(c)
+    return f"{cs:02X}"
+
+
+def send_nmea_command(ser: serial.Serial, body: str, verbose: bool = True) -> bool:
+    """
+    Send an NMEA command (e.g., PAIR062,1,10) to the antenna.
+    Returns True if sent successfully.
+    """
+    cs = nmea_checksum_calc(body)
+    cmd = f"${body}*{cs}\r\n"
+    if verbose:
+        print(f"[gnss] Sending: {cmd.strip()}")
+    try:
+        ser.write(cmd.encode())
+        return True
+    except Exception as e:
+        print(f"[gnss] Failed to send command: {e}")
+        return False
+
+
+def set_update_rate(ser: serial.Serial, hz: int = 10) -> bool:
+    """
+    Set NMEA output rate using PAIR062 command.
+    Supported rates: 1, 2, 5, 10 Hz
+    """
+    if hz not in (1, 2, 5, 10):
+        print(f"[gnss] ERROR: unsupported rate {hz} Hz (use 1, 2, 5, or 10)")
+        return False
+    print(f"[gnss] Setting update rate to {hz} Hz...")
+    time.sleep(0.2)  # brief pause before command
+    success = send_nmea_command(ser, f"PAIR062,1,{hz}")
+    time.sleep(0.5)  # wait for antenna to process
+    return success
+
+
 # ── Port detection ────────────────────────────────────────────────────
 
 def find_gnss_port():
@@ -64,7 +111,7 @@ def find_gnss_port():
         # u-blox, FTDI, CH340, CP210x — typical USB-serial bridges
         if any(k in desc for k in ["u-blox", "ublox", "gnss", "gps", "ftdi"]):
             return dev
-        if any(k in hwid for k in ["1546:", "0403:", "10c4:", "067b:"]):
+        if any(k in hwid for k in ["1546:", "0403:", "10c4:", "067b:", "1a86:"]):
             return dev
         if "usbserial" in dev or "usbmodem" in dev:
             candidates.append(dev)
@@ -267,6 +314,26 @@ class NtripClient:
 
 # ── Main reader loop ──────────────────────────────────────────────────
 
+def config_loop(port: str, baud: int, hz: int):
+    """Configure the antenna update rate (one-shot), then exit."""
+    print(f"[gnss] Opening {port} at {baud} baud for configuration...")
+    try:
+        ser = serial.Serial(port, baud, timeout=1)
+        time.sleep(0.5)
+        ser.reset_input_buffer()
+
+        if set_update_rate(ser, hz):
+            print(f"[gnss] ✓ Update rate set to {hz} Hz")
+            print("[gnss] Configuration saved to antenna memory")
+            print("[gnss] You can now run the script in normal mode")
+        else:
+            print(f"[gnss] ✗ Failed to set rate")
+
+        ser.close()
+    except Exception as e:
+        print(f"[gnss] ERROR: {e}")
+
+
 def read_loop(port: str, baud: int, use_ntrip: bool, debug: bool = False):
     print(f"[gnss] Opening {port} at {baud} baud...")
     ser = serial.Serial(port, baud, timeout=1)
@@ -375,6 +442,8 @@ def main():
     parser.add_argument("--list-ports",     action="store_true")
     parser.add_argument("--debug",          action="store_true",
                         help="Print all raw NMEA sentences (for troubleshooting)")
+    parser.add_argument("--set-rate",       type=int, metavar="HZ",
+                        help="Configure antenna update rate (1, 2, 5, or 10 Hz) — one-shot config, then exit")
     args = parser.parse_args()
 
     if args.list_ports:
@@ -410,6 +479,11 @@ def main():
             print(f"[gnss] {b} baud failed: {e}")
     else:
         print("WARNING: Could not confirm NMEA at any baud — using default")
+
+    # Handle one-shot configuration mode
+    if args.set_rate:
+        config_loop(port, baud, args.set_rate)
+        return
 
     read_loop(port, baud, use_ntrip=not args.no_ntrip, debug=args.debug)
 

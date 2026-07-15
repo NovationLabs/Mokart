@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <mask id="ringMask" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256">
+      <rect x="19.5" y="47.5" width="217" height="165" rx="54.5" fill="white"/>
+      <rect x="64.5" y="92.5" width="127" height="75" rx="9.5" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Halo (anneau conique, tourne autour de la forme comme sur la référence) -->
+  <foreignObject x="0" y="0" width="256" height="256" mask="url(#ringMask)">
+    <div xmlns="http://www.w3.org/1999/xhtml"
+         style="width:256px;height:256px;background:conic-gradient(from -45deg at 50% 50%,
+           #3B82F6 0%, #22D3EE 12.5%, #4ADE80 25%, #FACC15 37.5%,
+           #FB923C 50%, #F43F5E 62.5%, #8B5CF6 75%, #C084FC 87.5%, #3B82F6 100%);">
+    </div>
+  </foreignObject>
+
+  <!-- Logo -->
+  <rect
+      x="42"
+      y="70"
+      width="172"
+      height="120"
+      rx="32"
+      stroke="#000"
+      stroke-linejoin="round"/>
+</svg>

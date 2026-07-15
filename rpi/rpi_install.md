@@ -1,11 +1,34 @@
-## Installations
+## Installations Init
 ```
 sudo apt update
-sudo apt install -y btop git
+
+sudo apt install -y btop git iw
+
 sudo loginctl enable-linger
+
+sudo tee /etc/systemd/system/wifi-power.service << 'EOF'
+[Unit]
+Description=Disable WiFi power management
+After=network-pre.target
+Before=network.target
+[Service]
+Type=oneshot
+ExecStart=/sbin/iw dev wlan0 set power_save off
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl enable wifi-power.service
+
 curl -fsSL https://tailscale.com/install.sh | sh
+
 sudo tailscale up
+
 sudo systemctl enable tailscaled
+
+sudo tee /etc/cron.d/tailscale-keepalive << 'EOF'
+*/5 * * * * root /usr/bin/tailscale status >/dev/null 2>&1 || /usr/bin/systemctl restart tailscaled
+EOF
 ```
 
 ## Wifi
