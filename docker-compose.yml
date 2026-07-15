@@ -70,5 +70,29 @@ services:
       - ./api/circuits.sql:/docker-entrypoint-initdb.d/02-circuits.sql
     restart: unless-stopped
 
+  ai-backend:
+    build:
+      context: ./ai-backend
+      dockerfile: Dockerfile
+    container_name: mokart-ai-backend
+    ports:
+      - "8002:8000"
+    env_file: .env
+    restart: unless-stopped
+
+  ai-front:
+    build:
+      context: ./ai-front
+      dockerfile: Dockerfile
+    container_name: mokart-ai-front
+    ports:
+      - "8003:4000"
+    environment:
+      - AGENT_API_URL=http://ai-backend:8000
+      - LLM_MODEL=${LLM_MODEL}
+    depends_on:
+      - ai-backend
+    restart: unless-stopped
+
 volumes:
   postgres_data:
