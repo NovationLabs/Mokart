@@ -13,6 +13,7 @@ import RaceControlPage from './pages/RaceControlPage';
 import KartsPage from './pages/KartsPage';
 import HardwarePage from './pages/HardwarePage';
 import BillingPage from './pages/BillingPage';
+import HudPage from './pages/HudPage';
 
 const App: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem('mokart_session');
@@ -20,6 +21,9 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
+        {/* HUD téléphone — route publique plein écran (ouverte par tag NFC),
+            hors AppLayout et hors gate d'auth. */}
+        <Route path="/hud/:sessionId" element={<HudPage />} />
         <Route path="/login" element={!isAuthenticated ? <AuthPage /> : <Navigate to="/" />} />
         {isAuthenticated ? (
           <Route element={<AppLayout />}>

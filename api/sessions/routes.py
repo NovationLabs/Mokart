@@ -2,11 +2,188 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session as DbSession
 from sqlalchemy import func
 from config.database import get_db
-from models.session import Session, SensorData, TrajectoryPoint
+from models.session import Session, SensorData, TrajectoryPoint, HudFrame, HudSession
 from models import sql_models
+import math
 import uuid
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+
+
+SPEED_MAX_KMH = 120.0   # au-delà = glitch GPS (kart de location ~90 km/h max)
+SPEED_EMA = 0.35        # lissage exponentiel de la vitesse
+TRACK_POINTS = 180      # résolution du tracé lissé renvoyé au HUD
+
+
+def _resample_loop(pts, k):
+    """Rééchantillonne une polyligne en k points équidistants (longueur d'arc)."""
+    if len(pts) < 2:
+        return [pts[0]] * k if pts else [(0.0, 0.0)] * k
+    seg = [0.0]
+    for i in range(1, len(pts)):
+        seg.append(seg[-1] + math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+    total = seg[-1]
+    if total == 0:
+        return [pts[0]] * k
+    out = []
+    j = 0
+    for m in range(k):
+        target = total * m / k
+        while j < len(seg) - 2 and seg[j + 1] < target:
+            j += 1
+        span = seg[j + 1] - seg[j]
+        f = (target - seg[j]) / span if span > 0 else 0.0
+        out.append((pts[j][0] + f * (pts[j + 1][0] - pts[j][0]),
+                    pts[j][1] + f * (pts[j + 1][1] - pts[j][1])))
+    return out
+
+
+def _smooth_closed(loop, win=5):
+    n = len(loop); h = win // 2
+    return [(
+        sum(loop[(i + d) % n][0] for d in range(-h, h + 1)) / win,
+        sum(loop[(i + d) % n][1] for d in range(-h, h + 1)) / win,
+    ) for i in range(n)]
+
+
+def _build_hud_frames(rows, dt_s: float, g_scale: float):
+    """Dérive les frames HUD (vitesse, G, tour, delta, secteur) à partir des
+    points bruts d'une session (position + IMU).
+
+    - position : uwb_x/uwb_y (mètres). Les trous sont comblés par la dernière valeur.
+    - vitesse : distance entre positions / dt_s → km/h, avec rejet des sauts GPS
+      aberrants (> SPEED_MAX_KMH) et lissage exponentiel pour une aiguille propre.
+    - G : gx = latéral (imu_ay), gy = longitudinal (imu_ax).
+    - tour : porte = frame la plus rapide (sur une ligne droite, franchie chaque
+      tour) — même méthode robuste que rpi/build_circuit.py, insensible au point
+      de départ (out-lap / paddock).
+    - delta : porté de rpi/prototype_pi.py::LapManager — écart du temps courant vs
+      le tour de référence à la même progression.
+    """
+    n = len(rows)
+
+    # ── Passe 1 : positions comblées + vitesse (clamp glitch + lissage) ──
+    px = [0.0] * n
+    py = [0.0] * n
+    speed = [0.0] * n
+    lx = ly = None
+    sm = 0.0
+    for i, r in enumerate(rows):
+        x = r.uwb_x if r.uwb_x is not None else (lx if lx is not None else 0.0)
+        y = r.uwb_y if r.uwb_y is not None else (ly if ly is not None else 0.0)
+        if lx is not None:
+            raw = math.hypot(x - lx, y - ly) / dt_s * 3.6
+            if raw > SPEED_MAX_KMH:        # saut GPS → garde la vitesse précédente
+                raw = sm
+            sm = SPEED_EMA * raw + (1 - SPEED_EMA) * sm
+        px[i], py[i], speed[i] = x, y, sm
+        lx, ly = x, y
+
+    xs = [v for v in px]; ys = [v for v in py]
+    bounds = {"min_x": min(xs), "max_x": max(xs), "min_y": min(ys), "max_y": max(ys)}
+    diag = math.hypot(bounds["max_x"] - bounds["min_x"], bounds["max_y"] - bounds["min_y"])
+    thr = diag * 0.05 if diag > 0 else 0.0
+
+    # ── Passe 2 : porte = frame la plus rapide, détection des franchissements ──
+    lap_bounds = [0]
+    if thr > 0:
+        gi = max(range(n), key=lambda i: speed[i])
+        gx, gy = px[gi], py[gi]
+        armed = True
+        for i in range(n):
+            d = math.hypot(px[i] - gx, py[i] - gy)
+            if d > thr * 1.6:
+                armed = True
+            elif armed and d < thr and (i - lap_bounds[-1] > 50):
+                lap_bounds.append(i); armed = False
+    lap_bounds.append(n)
+    # Filtre les tours trop courts (faux franchissements / out-lap)
+    seg = [lap_bounds[i + 1] - lap_bounds[i] for i in range(len(lap_bounds) - 1)]
+    med = sorted(seg)[len(seg) // 2] if seg else 0
+    starts = [lap_bounds[0]]
+    for i in range(1, len(lap_bounds) - 1):
+        if lap_bounds[i] - starts[-1] >= med * 0.6:
+            starts.append(lap_bounds[i])
+
+    # frame index -> (lap number, lap_start_index)
+    lap_of = [1] * n
+    lap_start_of = [0] * n
+    seg_frames = []            # nb de frames de chaque segment terminé (a un suivant)
+    for k in range(len(starts)):
+        a = starts[k]
+        b = starts[k + 1] if k + 1 < len(starts) else n
+        for i in range(a, b):
+            lap_of[i] = k + 1
+            lap_start_of[i] = a
+        if k + 1 < len(starts):
+            seg_frames.append(b - a)
+
+    # Distance cumulée dans le tour courant (basée sur la vitesse lissée)
+    cumdist = [0.0] * n
+    acc = 0.0
+    for i in range(n):
+        if i > 0 and lap_start_of[i] == lap_start_of[i - 1]:
+            acc += speed[i] * dt_s / 3.6
+        else:
+            acc = 0.0
+        cumdist[i] = acc
+
+    # Tour de référence = tour COMPLET le plus rapide (exclut l'out-lap = 1er
+    # segment partiel, le kart démarre en cours de piste).
+    ref_time = ref_dist = None
+    completed = []
+    if len(seg_frames) >= 2:
+        candidates = list(range(1, len(seg_frames)))       # exclut le segment 0
+        kref = min(candidates, key=lambda k: seg_frames[k])
+        ref_time = seg_frames[kref] * dt_s
+        ref_dist = cumdist[starts[kref + 1] - 1]
+        completed = [seg_frames[k] * dt_s for k in candidates]
+    elif len(seg_frames) == 1:
+        ref_time = seg_frames[0] * dt_s
+        ref_dist = cumdist[starts[1] - 1]
+        completed = [ref_time]
+    best_lap = round(min(completed), 3) if completed else None
+
+    # ── Passe 3 : frames — delta basé sur la progression en DISTANCE ──
+    # (delta = temps écoulé dans le tour − temps du tour de référence à la même
+    #  position sur la piste ; porté de LapManager.live_delta mais indexé distance)
+    frames = []
+    for i, r in enumerate(rows):
+        lap_time = (i - lap_start_of[i]) * dt_s
+        pp = min(cumdist[i] / ref_dist, 1.0) if (ref_dist and ref_dist > 0) else 0.0
+        delta = round(lap_time - ref_time * pp, 3) if (ref_time and lap_of[i] > 1) else None
+        sector = min(3, int(min(pp, 0.999) * 3) + 1)
+        frames.append(HudFrame(
+            t=round(i * dt_s, 3),
+            speed=round(speed[i], 1),
+            gx=round((r.imu_ay or 0.0) * g_scale, 3),
+            gy=round((r.imu_ax or 0.0) * g_scale, 3),
+            delta=delta,
+            lap=lap_of[i],
+            lap_time=round(lap_time, 3),
+            sector=sector,
+            x=round(px[i], 3),
+            y=round(py[i], 3),
+        ))
+
+    # ── Tracé unique lissé : moyenne des tours COMPLETS (exclut out-lap + tail) ──
+    full_segments = [(starts[k], starts[k + 1]) for k in range(1, len(starts) - 1)]
+    if full_segments:
+        loops = [_resample_loop([(px[i], py[i]) for i in range(a, b + 1)], TRACK_POINTS)
+                 for a, b in full_segments]
+        avg = [(sum(l[m][0] for l in loops) / len(loops),
+                sum(l[m][1] for l in loops) / len(loops)) for m in range(TRACK_POINTS)]
+        track = [[round(x, 2), round(y, 2)] for x, y in _smooth_closed(avg, 5)]
+    else:
+        loop = _resample_loop([(px[i], py[i]) for i in range(n)], TRACK_POINTS)
+        track = [[round(x, 2), round(y, 2)] for x, y in loop]
+
+    # Cadre serré sur le tracé propre (plutôt que sur les errances de l'out-lap)
+    if track:
+        txs = [p[0] for p in track]; tys = [p[1] for p in track]
+        bounds = {"min_x": min(txs), "max_x": max(txs), "min_y": min(tys), "max_y": max(tys)}
+
+    return frames, best_lap, bounds, track
 
 @router.get("/", response_model=list[Session])
 async def get_sessions(db: DbSession = Depends(get_db)):
@@ -107,6 +284,49 @@ async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db
                 ))
 
         return trajectory
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
+@router.get("/{session_id}/hud-frames", response_model=HudSession)
+async def get_session_hud_frames(
+    session_id: str,
+    db: DbSession = Depends(get_db),
+    dt_s: float = 0.1,
+    g_scale: float = 1.0,
+    limit: int = 20000,
+):
+    """Frames HUD prêtes à afficher pour le HUD téléphone (replay d'une session).
+
+    Le téléphone récupère ce tableau une fois puis le rejoue à `dt_s` (10 Hz par
+    défaut). Voir app/src/pages/HudPage.tsx. `g_scale` permet de convertir l'IMU
+    en g si les données brutes sont en m/s² (passer ~0.102).
+    """
+    try:
+        rows = db.query(sql_models.SensorData)\
+            .filter(sql_models.SensorData.session_id == session_id)\
+            .order_by(sql_models.SensorData.timestamp)\
+            .limit(limit)\
+            .all()
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="Session non trouvée")
+
+        session = db.query(sql_models.Session).filter(sql_models.Session.id == session_id).first()
+
+        frames, best_lap, bounds, track = _build_hud_frames(rows, dt_s, g_scale)
+
+        return HudSession(
+            session_id=session_id,
+            kart=session.kart if session else None,
+            circuit_id=str(session.circuit_id) if session and session.circuit_id else None,
+            dt_s=dt_s,
+            bounds=bounds,
+            best_lap=best_lap,
+            track=track,
+            frames=frames,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
