@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef, WheelEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
-import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer, Download, RefreshCw } from 'lucide-react';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
+import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, Users, Download, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../services/api';
+import { Canvas } from '@react-three/fiber';
+import { OrthographicCamera, MapControls, Line } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface CircuitBoundary {
   id: string;
@@ -73,15 +75,10 @@ const SimulationPage: React.FC = () => {
 
   const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
 
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
-  const chartRef = useRef<any>(null);
 
   // Refs to always have the latest values inside the animation loop (avoids stale closures)
   const circuitSectionsRef = useRef<CircuitSection[]>([]);
@@ -277,8 +274,6 @@ const SimulationPage: React.FC = () => {
         maxY: maxY + paddingY
       });
 
-      setZoomLevel(1);
-      setPanOffset({ x: 0, y: 0 });
     }
   }, [simulationData]);
 
@@ -360,49 +355,6 @@ const SimulationPage: React.FC = () => {
   }, [isRunning]); // Only re-run when isRunning changes — sections/data read via refs
 
 
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * zoomFactor)));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button === 0) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-
-      setPanOffset(prev => ({
-        x: prev.x - deltaX,
-        y: prev.y + deltaY
-      }));
-
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const resetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  const zoomIn = () => {
-    setZoomLevel(prev => Math.min(10, prev * 1.2));
-  };
-
-  const zoomOut = () => {
-    setZoomLevel(prev => Math.max(0.1, prev / 1.2));
-  };
 
   const toggleSimulation = () => {
     setIsRunning(!isRunning);
@@ -465,22 +417,6 @@ const SimulationPage: React.FC = () => {
     };
   };
 
-  const getCurrentBounds = () => {
-    const centerX = (graphBounds.minX + graphBounds.maxX) / 2;
-    const centerY = (graphBounds.minY + graphBounds.maxY) / 2;
-    const rangeX = (graphBounds.maxX - graphBounds.minX) / (2 * zoomLevel);
-    const rangeY = (graphBounds.maxY - graphBounds.minY) / (2 * zoomLevel);
-
-    const panScaleX = rangeX * 0.003;
-    const panScaleY = rangeY * 0.003;
-
-    return {
-      minX: centerX - rangeX + panOffset.x * panScaleX,
-      maxX: centerX + rangeX + panOffset.x * panScaleX,
-      minY: centerY - rangeY + panOffset.y * panScaleY,
-      maxY: centerY + rangeY + panOffset.y * panScaleY
-    };
-  };
 
   const prepareChartData = () => {
     if (!simulationData) return { leftBoundary: [], rightBoundary: [], trajectory: [], players: [], sections: [] };
@@ -490,7 +426,12 @@ const SimulationPage: React.FC = () => {
 
     const sectionsData = circuitSections.map(section => {
       const sectionTrajectory = simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
-      return { ...section, data: sectionTrajectory };
+      // Convertir rgba en hex pour Three.js
+      const hexColor = section.color.replace('rgba(', '').replace(')', '').split(',').slice(0, 3).map((c: string) => {
+        const val = parseInt(c.trim());
+        return val.toString(16).padStart(2, '0');
+      }).join('');
+      return { ...section, data: sectionTrajectory, hexColor: `#${hexColor}` };
     });
 
     const playerPositions = players.map(player => {
@@ -514,7 +455,6 @@ const SimulationPage: React.FC = () => {
   };
 
   const chartData = prepareChartData();
-  const bounds = getCurrentBounds();
 
   return (
     <main className="flex-1 md:ml-64 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
@@ -598,29 +538,6 @@ const SimulationPage: React.FC = () => {
                 <RefreshCw size={16} />
               </button>
 
-              <button
-                onClick={zoomIn}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Zoom avant"
-              >
-                <ZoomIn size={16} />
-              </button>
-
-              <button
-                onClick={zoomOut}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Zoom arrière"
-              >
-                <ZoomOut size={16} />
-              </button>
-
-              <button
-                onClick={resetView}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Réinitialiser la vue"
-              >
-                <Move size={16} />
-              </button>
             </div>
           </div>
 
@@ -763,7 +680,6 @@ const SimulationPage: React.FC = () => {
                       maxWidth: '100%',
                       maxHeight: '100%'
                     }}
-                    ref={chartRef}
                   >
                     <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Informations Circuit</h3>
                     <div className="space-y-2 text-xs">
@@ -862,96 +778,72 @@ const SimulationPage: React.FC = () => {
                 )}
               </div>
 
-              <div
-                className="flex-1 relative"
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
+              <div className="flex-1 relative">
                 {simulationData && (
-                  <div className="w-full h-full p-2 flex items-center justify-center">
-                    <div
-                      style={{
-                        width: 'min(100%, calc(100vh - 200px))',
-                        height: 'min(100%, calc(100vh - 200px))',
-                        maxWidth: '100%',
-                        maxHeight: '100%'
-                      }}
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 50, right: 20, bottom: 20, left: 20 }}>
-                      <XAxis
-                        type="number"
-                        dataKey="x"
-                        domain={[bounds.minX, bounds.maxX]}
-                        hide={true}
+                  <div className="w-full h-full" style={{ minHeight: '400px' }}>
+                    <Canvas style={{ background: '#1a1a1a' }}>
+                      <OrthographicCamera
+                        position={[0, 0, 100]}
+                        zoom={1}
+                        left={graphBounds.minX}
+                        right={graphBounds.maxX}
+                        top={graphBounds.maxY}
+                        bottom={graphBounds.minY}
+                        near={0.1}
+                        far={1000}
                       />
-                      <YAxis
-                        type="number"
-                        dataKey="y"
-                        domain={[bounds.minY, bounds.maxY]}
-                        hide={true}
+                      <MapControls
+                        enableRotate={false}
+                        enableZoom={true}
+                        enablePan={true}
+                        minZoom={0.1}
+                        maxZoom={10}
                       />
+                      <ambientLight intensity={1} />
+                      <directionalLight position={[10, 10, 5]} intensity={1} />
 
-                      {/* Left Boundary */}
-                      <Scatter
-                        name="Bordure Gauche"
-                        data={chartData.leftBoundary}
-                        fill="transparent"
-                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
-                        shape={false}
-                      />
+                      {/* Left Boundary - triée par point_order */}
+                      {chartData.leftBoundary.length > 0 && (
+                        <Line
+                          points={chartData.leftBoundary
+                            .sort((a: any, b: any) => a.point_order - b.point_order)
+                            .map((b: any) => new THREE.Vector3(b.x, b.y, 0))}
+                          color="#ef4444"
+                          lineWidth={5}
+                        />
+                      )}
 
-                      {/* Right Boundary */}
-                      <Scatter
-                        name="Bordure Droite"
-                        data={chartData.rightBoundary}
-                        fill="transparent"
-                        line={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                        shape={false}
-                      />
+                      {/* Right Boundary - triée par point_order */}
+                      {chartData.rightBoundary.length > 0 && (
+                        <Line
+                          points={chartData.rightBoundary
+                            .sort((a: any, b: any) => a.point_order - b.point_order)
+                            .map((b: any) => new THREE.Vector3(b.x, b.y, 0))}
+                          color="#3b82f6"
+                          lineWidth={5}
+                        />
+                      )}
 
                       {/* Circuit Sections */}
-                      {chartData.sections.map((section: any) => (
-                        <Scatter
+                      {chartData.sections.length > 0 && chartData.sections.map((section: any) => (
+                        <Line
                           key={section.id}
-                          name={section.name}
-                          data={section.data}
-                          fill={section.color}
-                          line={{
-                            stroke: section.isSlowed ? section.color.replace('0.3', '0.8') : section.color,
-                            strokeWidth: section.isSlowed ? 4 : 2
-                          }}
-                          shape={false}
+                          points={section.data.map((p: any) => new THREE.Vector3(p.x, p.y, 0))}
+                          color={section.hexColor}
+                          lineWidth={section.isSlowed ? 8 : 5}
+                          opacity={section.isSlowed ? 0.8 : 0.3}
+                          transparent={true}
                         />
                       ))}
 
                       {/* Players */}
-                      <Scatter
-                        name="Joueurs"
-                        data={chartData.players}
-                        fill="#8884d8"
-                        shape={(props: any) => {
-                          const { cx, cy, payload } = props;
-                          return (
-                            <g>
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={6}
-                                fill={payload.color}
-                                stroke="#fff"
-                                strokeWidth={1}
-                              />
-                            </g>
-                          );
-                        }}
-                      />
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                    </div>
+                      {chartData.players.map((player: any) => (
+                        <mesh key={player.name} position={[player.x, player.y, 1]}>
+                          <sphereGeometry args={[2, 16, 16]} />
+                          <meshBasicMaterial color={player.color} />
+                        </mesh>
+                      ))}
+                    </Canvas>
                   </div>
                 )}
               </div>
