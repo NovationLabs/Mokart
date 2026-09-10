@@ -72,6 +72,8 @@ const SimulationPage: React.FC = () => {
     { id: '3', name: 'Joueur 3', color: '#ef4444', position: 0, speed: 0.12, status: 'running', currentTrajectoryIndex: 0 },
     { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
   ]);
+  const [sessionSensorData, setSessionSensorData] = useState<TrajectoryPoint[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
 
   const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
   const [loadTrajectory, setLoadTrajectory] = useState<boolean>(true);
@@ -249,6 +251,7 @@ const SimulationPage: React.FC = () => {
           const trajectoryRes = await fetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
           if (trajectoryRes.ok) {
             trajectory = await trajectoryRes.json();
+            setSessionSensorData(trajectory); // Stocker les données sensor_data complètes
           } else {
             console.error('Error loading session trajectory');
           }
@@ -271,6 +274,21 @@ const SimulationPage: React.FC = () => {
       const detectedLaps = detectLaps(trajectory);
       setLaps(detectedLaps);
       setSelectedLap(-1); // Réinitialiser à "tous les tours"
+
+      // Si c'est une session, utiliser un seul pilote pour la reproduction exacte
+      if (selectedTrajectoryType === 'session') {
+        setPlayers([
+          { id: '1', name: 'Session Replay', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 }
+        ]);
+      } else {
+        // Trajectoire optimisée : 4 ghosts
+        setPlayers([
+          { id: '1', name: 'Joueur 1', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '2', name: 'Joueur 2', color: '#f59e0b', position: 0, speed: 0.08, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '3', name: 'Joueur 3', color: '#ef4444', position: 0, speed: 0.12, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
+        ]);
+      }
 
       setDataLoaded(true);
     } catch (error) {
@@ -350,7 +368,16 @@ const SimulationPage: React.FC = () => {
 
         setPlayers(prevPlayers =>
           prevPlayers.map(player => {
-            // Stopped players don't move at all
+            // Pour une session : reproduction exacte des données
+            if (selectedTrajectoryType === 'session' && sessionSensorData.length > 0) {
+              let newIndex = player.currentTrajectoryIndex + (deltaTime * 0.1); // Vitesse constante
+              if (newIndex >= sessionSensorData.length) {
+                newIndex = sessionSensorData.length - 1; // Arrêter à la fin
+              }
+              return { ...player, currentTrajectoryIndex: newIndex };
+            }
+
+            // Pour la trajectoire optimisée : logique de simulation
             if (player.status === 'stopped') {
               return player;
             }
@@ -381,10 +408,7 @@ const SimulationPage: React.FC = () => {
               newIndex = 0;
             }
 
-            return {
-              ...player,
-              currentTrajectoryIndex: newIndex
-            };
+            return { ...player, currentTrajectoryIndex: newIndex };
           })
         );
 
@@ -504,6 +528,19 @@ const SimulationPage: React.FC = () => {
   };
 
   const getPlayerPosition = (player: Player) => {
+    // Pour une session, utiliser les données sensor_data exactes
+    if (selectedTrajectoryType === 'session' && sessionSensorData.length > 0) {
+      const index = Math.floor(player.currentTrajectoryIndex);
+      if (index >= sessionSensorData.length) {
+        // Fin de la session, rester au dernier point
+        const lastPoint = sessionSensorData[sessionSensorData.length - 1];
+        return { x: lastPoint.x, y: lastPoint.y };
+      }
+      const point = sessionSensorData[index];
+      return { x: point.x, y: point.y };
+    }
+
+    // Pour la trajectoire optimisée, utiliser l'interpolation
     if (!simulationData || simulationData.optimal_trajectory.length === 0) {
       return { x: 0, y: 0 };
     }
