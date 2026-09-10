@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, WheelEvent } from 'react';
 import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
-import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer } from 'lucide-react';
+import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer, Download, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { API_BASE_URL } from '../services/api';
 
@@ -38,6 +38,13 @@ interface CircuitSection {
   isSlowed: boolean;
 }
 
+interface Circuit {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
 interface SimulationData {
   circuit: {
     id: string;
@@ -50,7 +57,12 @@ interface SimulationData {
 
 const SimulationPage: React.FC = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [predictionsLoaded, setPredictionsLoaded] = useState(false);
+  const [circuits, setCircuits] = useState<Circuit[]>([]);
+  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('');
+  const [loadingCircuits, setLoadingCircuits] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [players, setPlayers] = useState<Player[]>([
     { id: '1', name: 'Joueur 1', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 },
@@ -134,10 +146,106 @@ const SimulationPage: React.FC = () => {
     }
   }, [simulationData]);
 
-  // Load simulation data on mount
+  // Load circuits list on mount
   useEffect(() => {
-    fetchSimulationData();
+    const fetchCircuits = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/circuits`);
+        if (response.ok) {
+          const data = await response.json();
+          setCircuits(data);
+          if (data.length > 0) {
+            setSelectedCircuitId(data[0].id);
+          }
+        } else {
+          console.error('Error loading circuits');
+        }
+      } catch (error) {
+        console.error('Error loading circuits:', error);
+      } finally {
+        setLoadingCircuits(false);
+      }
+    };
+    fetchCircuits();
   }, []);
+
+  // Reset data when circuit changes
+  useEffect(() => {
+    if (dataLoaded) {
+      setDataLoaded(false);
+      setSimulationData(null);
+      setIsRunning(false);
+      setPlayers(prevPlayers =>
+        prevPlayers.map(player => ({
+          ...player,
+          currentTrajectoryIndex: 0
+        }))
+      );
+    }
+  }, [selectedCircuitId]);
+
+  // Load simulation data only when requested
+  const loadSimulationData = async () => {
+    if (!selectedCircuitId) return;
+
+    setLoading(true);
+    try {
+      const boundariesRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/boundaries`);
+
+      if (!boundariesRes.ok) {
+        console.error('Error loading boundaries');
+        return;
+      }
+
+      const boundaries = await boundariesRes.json();
+
+      let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+
+      if (trajectoryRes.status === 404) {
+        trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
+          method: 'POST'
+        });
+      }
+
+      if (trajectoryRes.ok) {
+        const trajectory = await trajectoryRes.json();
+        const circuit = circuits.find(c => c.id === selectedCircuitId);
+
+        setSimulationData({
+          circuit: {
+            id: selectedCircuitId,
+            name: circuit?.name || 'Unknown',
+            description: circuit?.description || ''
+          },
+          boundaries,
+          optimal_trajectory: trajectory
+        });
+        setDataLoaded(true);
+      } else {
+        console.error('Error loading simulation data');
+      }
+    } catch (error) {
+      console.error('Error loading simulation data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPredictions = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/circuits/week-circuit/predictions`);
+      if (response.ok) {
+        setPredictionsLoaded(true);
+      } else {
+        console.error('Error loading predictions');
+      }
+    } catch (error) {
+      console.error('Error loading predictions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate bounds when data loads
   useEffect(() => {
@@ -251,22 +359,6 @@ const SimulationPage: React.FC = () => {
     };
   }, [isRunning]); // Only re-run when isRunning changes — sections/data read via refs
 
-  const fetchSimulationData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/circuits/week-circuit/simulation-data`);
-      if (response.ok) {
-        const data = await response.json();
-        setSimulationData(data);
-      } else {
-        console.error('Error loading simulation data');
-      }
-    } catch (error) {
-      console.error('Error loading simulation data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -437,7 +529,7 @@ const SimulationPage: React.FC = () => {
                 Simulation en Direct
               </h1>
               <p className="text-[#94a3b8] text-xs mt-1 font-mono flex items-center gap-2">
-                CIRCUIT: <span className="text-white">{simulationData?.circuit?.name || 'Chargement...'}</span>
+                CIRCUIT: <span className="text-white">{dataLoaded ? simulationData?.circuit?.name : 'Non chargé'}</span>
               </p>
             </div>
 
@@ -462,12 +554,48 @@ const SimulationPage: React.FC = () => {
                 <Square size={16} />
               </button>
 
-              <button
-                onClick={fetchSimulationData}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
-                title="Actualiser"
+              <select
+                value={selectedCircuitId}
+                onChange={(e) => setSelectedCircuitId(e.target.value)}
+                className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
               >
-                <RotateCw size={16} />
+                {circuits.map((circuit) => (
+                  <option key={circuit.id} value={circuit.id}>
+                    {circuit.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={loadSimulationData}
+                disabled={!selectedCircuitId || dataLoaded || loading}
+                className={`p-2 border transition-colors rounded ${
+                  dataLoaded
+                    ? 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12]'
+                    : loading
+                    ? 'bg-[#16181d] border-[#262626] text-[#94a3b8]'
+                    : !selectedCircuitId
+                    ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                    : 'bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white hover:bg-[#262626]'
+                }`}
+                title="Charger le circuit"
+              >
+                {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
+              </button>
+
+              <button
+                onClick={loadPredictions}
+                disabled={!dataLoaded || predictionsLoaded || loading}
+                className={`p-2 border transition-colors rounded ${
+                  predictionsLoaded
+                    ? 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12]'
+                    : !dataLoaded || loading
+                    ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                    : 'bg-[#16181d] border-[#262626] text-[#94a3b8] hover:text-white hover:bg-[#262626]'
+                }`}
+                title="Charger les prédictions"
+              >
+                <RefreshCw size={16} />
               </button>
 
               <button
@@ -500,9 +628,59 @@ const SimulationPage: React.FC = () => {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
             {/* Controls Column */}
-            {loading && !simulationData ? (
+            {!dataLoaded ? (
               <div className="lg:col-span-1 overflow-y-auto pr-1">
-                <SkeletonSidePanel />
+                <div className="card">
+                  <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                    <Download size={12} />
+                    Chargement Différé
+                  </h3>
+                  <div className="space-y-3">
+                    {loadingCircuits ? (
+                      <div className="text-center text-[#94a3b8] text-sm py-4">
+                        Chargement des circuits...
+                      </div>
+                    ) : circuits.length === 0 ? (
+                      <div className="text-center text-[#94a3b8] text-sm py-4">
+                        Aucun circuit disponible
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-xs text-[#94a3b8]">Sélectionner un circuit</label>
+                          <select
+                            value={selectedCircuitId}
+                            onChange={(e) => setSelectedCircuitId(e.target.value)}
+                            className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                          >
+                            {circuits.map((circuit) => (
+                              <option key={circuit.id} value={circuit.id}>
+                                {circuit.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={loadSimulationData}
+                          disabled={!selectedCircuitId || loading}
+                          className={`w-full p-3 border transition-colors rounded flex items-center justify-center gap-2 font-medium ${
+                            loading
+                              ? 'bg-[#16181d] border-[#262626] text-[#94a3b8] cursor-not-allowed'
+                              : !selectedCircuitId
+                              ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                              : 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12] hover:bg-[#6ee7b7]'
+                          }`}
+                        >
+                          {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
+                          {loading ? 'Chargement...' : 'Charger le Circuit'}
+                        </button>
+                        <p className="text-xs text-[#94a3b8] text-center">
+                          Sélectionnez un circuit puis cliquez pour charger les données
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
             <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
@@ -652,7 +830,17 @@ const SimulationPage: React.FC = () => {
             )}
 
             {/* Circuit Visualization */}
-            {loading && !simulationData ? (
+            {!dataLoaded ? (
+              <div className="lg:col-span-3 card relative overflow-hidden flex flex-col items-center justify-center">
+                <div className="text-center space-y-4">
+                  <Download size={48} className="text-[#94a3b8] mx-auto" />
+                  <h3 className="text-white text-lg font-medium">Circuit Non Chargé</h3>
+                  <p className="text-[#94a3b8] text-sm max-w-md">
+                    Utilisez le bouton "Charger le Circuit" dans le panneau de contrôle pour charger les données et démarrer la simulation.
+                  </p>
+                </div>
+              </div>
+            ) : loading ? (
               <SkeletonChart className="lg:col-span-3 min-h-[300px]" />
             ) : (
             <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">

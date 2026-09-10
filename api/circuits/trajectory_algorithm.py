@@ -21,7 +21,7 @@ from models import sql_models
 class TrajectoryOptimizer:
     def __init__(self):
         self.smoothing_factor = 0.1
-        self.trajectory_points = 100
+        self.trajectory_points = 50
 
         # -----------------------------------------------------------------------
         # Paramètres dynamiques (désactivés - décommenter pour activer)
@@ -275,8 +275,17 @@ class TrajectoryOptimizer:
             return np.tile(pts[0], (n, 1))
 
         arc_norm = arc_lengths / total_length
-        cs_x = CubicSpline(arc_norm, pts[:, 0])
-        cs_y = CubicSpline(arc_norm, pts[:, 1])
+
+        # Filtrer les points dupliqués pour garantir une séquence strictement croissante
+        unique_indices = np.concatenate([[0], np.where(np.diff(arc_norm) > 1e-10)[0] + 1])
+        arc_norm_unique = arc_norm[unique_indices]
+        pts_unique = pts[unique_indices]
+
+        if len(arc_norm_unique) < 2:
+            return np.tile(pts[0], (n, 1))
+
+        cs_x = CubicSpline(arc_norm_unique, pts_unique[:, 0])
+        cs_y = CubicSpline(arc_norm_unique, pts_unique[:, 1])
         t_new = np.linspace(0, 1, n)
         return np.column_stack([cs_x(t_new), cs_y(t_new)])
 

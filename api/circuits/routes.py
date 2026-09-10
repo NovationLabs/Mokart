@@ -85,6 +85,12 @@ async def get_circuit_boundaries(circuit_id: str, db: DbSession = Depends(get_db
 async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(get_db)):
     """Calcule et sauvegarde la trajectoire optimale pour un circuit"""
     try:
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"Calcul de trajectoire pour circuit {circuit_id}")
+
         # Récupérer les bordures du circuit
         boundaries = db.query(sql_models.CircuitBoundary)\
             .filter(sql_models.CircuitBoundary.circuit_id == circuit_id)\
@@ -94,9 +100,13 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         if not boundaries:
             raise HTTPException(status_code=404, detail="Aucune bordure trouvée pour ce circuit")
 
+        logger.info(f"Nombre de bordures trouvées: {len(boundaries)}")
+
         # Séparer les bordures gauche et droite
         left_boundary = [b for b in boundaries if b.side == 'left']
         right_boundary = [b for b in boundaries if b.side == 'right']
+
+        logger.info(f"Bordures gauche: {len(left_boundary)}, droite: {len(right_boundary)}")
 
         if not left_boundary or not right_boundary:
             raise HTTPException(status_code=400, detail="Les bordures gauche et droite sont requises")
@@ -106,8 +116,11 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         from concurrent.futures import ThreadPoolExecutor
 
         def compute_trajectory():
+            logger.info("Début du calcul de trajectoire")
             optimizer = TrajectoryOptimizer()
-            return optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+            result = optimizer.calculate_optimal_trajectory(left_boundary, right_boundary)
+            logger.info(f"Calcul terminé, {len(result)} points générés")
+            return result
 
         # Exécuter le calcul dans un thread séparé pour ne pas bloquer
         loop = asyncio.get_event_loop()
@@ -118,6 +131,8 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         db.query(sql_models.OptimalTrajectory)\
             .filter(sql_models.OptimalTrajectory.circuit_id == circuit_id)\
             .delete()
+
+        logger.info("Sauvegarde de la trajectoire")
 
         # Sauvegarder la nouvelle trajectoire
         trajectory_list = []
@@ -142,11 +157,18 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
             trajectory_list.append(OptimalTrajectoryPointResponse(**trajectory_dict))
 
         db.commit()
+        logger.info(f"Trajectoire sauvegardée avec succès: {len(trajectory_list)} points")
         return trajectory_list
 
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur lors du calcul de trajectoire: {str(e)}")
+        logger.error(traceback.format_exc())
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
