@@ -207,6 +207,32 @@ async def get_sessions(db: DbSession = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
 
+@router.get("/user/{user_id}/circuit/{circuit_id}", response_model=list[Session])
+async def get_user_sessions_for_circuit(user_id: str, circuit_id: str, db: DbSession = Depends(get_db)):
+    """Récupérer les sessions d'un utilisateur pour un circuit donné"""
+    try:
+        sessions = db.query(sql_models.Session)\
+            .filter(sql_models.Session.user_id == uuid.UUID(user_id))\
+            .filter(sql_models.Session.circuit_id == uuid.UUID(circuit_id))\
+            .order_by(sql_models.Session.created_at.desc())\
+            .all()
+
+        # Convertir les objets SQLAlchemy en dictionnaires puis en modèles Pydantic
+        session_list = []
+        for session in sessions:
+            session_dict = {
+                "id": str(session.id),
+                "user_id": str(session.user_id) if session.user_id else None,
+                "kart": session.kart,
+                "circuit_id": str(session.circuit_id) if session.circuit_id else None,
+                "created_at": session.created_at.isoformat() if session.created_at else None
+            }
+            session_list.append(Session(**session_dict))
+
+        return session_list
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+
 @router.get("/{session_id}/stats")
 async def get_session_stats(session_id: str, db: DbSession = Depends(get_db), limit: int = 10000):
     """Récupérer les statistiques d'une session"""

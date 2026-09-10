@@ -75,6 +75,9 @@ const SimulationPage: React.FC = () => {
 
   const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
   const [loadTrajectory, setLoadTrajectory] = useState<boolean>(true);
+  const [userSessions, setUserSessions] = useState<any[]>([]);
+  const [selectedTrajectoryType, setSelectedTrajectoryType] = useState<'optimal' | 'session'>('optimal');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
   const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
@@ -182,7 +185,33 @@ const SimulationPage: React.FC = () => {
     }
   }, [selectedCircuitId]);
 
+  // Charger les sessions de l'utilisateur quand le circuit change
+  useEffect(() => {
+    if (selectedCircuitId) {
+      loadUserSessions(selectedCircuitId);
+    }
+  }, [selectedCircuitId]);
+
   // Load simulation data only when requested
+  const loadUserSessions = async (circuitId: string) => {
+    try {
+      const user = localStorage.getItem('mokart_user');
+      if (!user) return;
+
+      const parsed = JSON.parse(user);
+      const userId = parsed.id;
+      if (!userId) return;
+
+      const response = await fetch(`${API_BASE_URL}/sessions/user/${userId}/circuit/${circuitId}`);
+      if (response.ok) {
+        const sessions = await response.json();
+        setUserSessions(sessions);
+      }
+    } catch (error) {
+      console.error('Error loading user sessions:', error);
+    }
+  };
+
   const loadSimulationData = async () => {
     if (!selectedCircuitId) return;
 
@@ -200,18 +229,27 @@ const SimulationPage: React.FC = () => {
       let trajectory: TrajectoryPoint[] = [];
 
       if (loadTrajectory) {
-        let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+        if (selectedTrajectoryType === 'optimal') {
+          let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
 
-        if (trajectoryRes.status === 404) {
-          trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
-            method: 'POST'
-          });
-        }
+          if (trajectoryRes.status === 404) {
+            trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
+              method: 'POST'
+            });
+          }
 
-        if (trajectoryRes.ok) {
-          trajectory = await trajectoryRes.json();
-        } else {
-          console.error('Error loading trajectory');
+          if (trajectoryRes.ok) {
+            trajectory = await trajectoryRes.json();
+          } else {
+            console.error('Error loading trajectory');
+          }
+        } else if (selectedTrajectoryType === 'session' && selectedSessionId) {
+          const trajectoryRes = await fetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
+          if (trajectoryRes.ok) {
+            trajectory = await trajectoryRes.json();
+          } else {
+            console.error('Error loading session trajectory');
+          }
         }
       }
 
@@ -529,6 +567,33 @@ const SimulationPage: React.FC = () => {
                 {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
 
+              <select
+                value={selectedTrajectoryType === 'session' ? selectedSessionId : 'optimal'}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === 'optimal') {
+                    setSelectedTrajectoryType('optimal');
+                    setSelectedSessionId('');
+                  } else {
+                    setSelectedTrajectoryType('session');
+                    setSelectedSessionId(value);
+                  }
+                }}
+                disabled={!selectedCircuitId || dataLoaded || loading}
+                className="p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+              >
+                <option value="optimal">Trajectoire optimisée</option>
+                {userSessions.length > 0 && (
+                  <optgroup label="Mes sessions">
+                    {userSessions.map((session) => (
+                      <option key={session.id} value={session.id}>
+                        {session.kart} - {new Date(session.created_at).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+
               <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
                 <input
                   type="checkbox"
@@ -592,6 +657,35 @@ const SimulationPage: React.FC = () => {
                                 {circuit.name}
                               </option>
                             ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs text-[#94a3b8]">Type de trajectoire</label>
+                          <select
+                            value={selectedTrajectoryType === 'session' ? selectedSessionId : 'optimal'}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === 'optimal') {
+                                setSelectedTrajectoryType('optimal');
+                                setSelectedSessionId('');
+                              } else {
+                                setSelectedTrajectoryType('session');
+                                setSelectedSessionId(value);
+                              }
+                            }}
+                            disabled={!selectedCircuitId || loading}
+                            className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                          >
+                            <option value="optimal">Trajectoire optimisée</option>
+                            {userSessions.length > 0 && (
+                              <optgroup label="Mes sessions">
+                                {userSessions.map((session) => (
+                                  <option key={session.id} value={session.id}>
+                                    {session.kart} - {new Date(session.created_at).toLocaleDateString()}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
                           </select>
                         </div>
                         <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
