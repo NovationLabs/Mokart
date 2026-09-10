@@ -78,6 +78,8 @@ const SimulationPage: React.FC = () => {
   const [userSessions, setUserSessions] = useState<any[]>([]);
   const [selectedTrajectoryType, setSelectedTrajectoryType] = useState<'optimal' | 'session'>('optimal');
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [laps, setLaps] = useState<TrajectoryPoint[][]>([]);
+  const [selectedLap, setSelectedLap] = useState<number>(-1); // -1 = tous les tours
 
   const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
@@ -264,6 +266,12 @@ const SimulationPage: React.FC = () => {
         boundaries,
         optimal_trajectory: trajectory
       });
+
+      // Détecter les tours
+      const detectedLaps = detectLaps(trajectory);
+      setLaps(detectedLaps);
+      setSelectedLap(-1); // Réinitialiser à "tous les tours"
+
       setDataLoaded(true);
     } catch (error) {
       console.error('Error loading simulation data:', error);
@@ -443,6 +451,58 @@ const SimulationPage: React.FC = () => {
     );
   };
 
+  const detectLaps = (trajectory: TrajectoryPoint[]): TrajectoryPoint[][] => {
+    if (trajectory.length < 10) return [trajectory];
+
+    // Trouver le point le plus rapide comme ligne de départ/arrivée
+    const speeds = trajectory.map((p, i) => {
+      if (i === 0) return 0;
+      const dx = p.x - trajectory[i - 1].x;
+      const dy = p.y - trajectory[i - 1].y;
+      return Math.sqrt(dx * dx + dy * dy);
+    });
+
+    const maxSpeedIndex = speeds.indexOf(Math.max(...speeds));
+    const finishLine = trajectory[maxSpeedIndex];
+
+    // Détecter les tours en trouvant quand on croise la ligne de départ
+    const lapThreshold = 5; // distance minimale pour considérer un tour
+    const laps: TrajectoryPoint[][] = [];
+    let currentLap: TrajectoryPoint[] = [];
+    let lastCrossIndex = -1;
+    let minDistanceToFinish = Infinity;
+
+    for (let i = 0; i < trajectory.length; i++) {
+      const point = trajectory[i];
+      const distToFinish = Math.sqrt(
+        Math.pow(point.x - finishLine.x, 2) +
+        Math.pow(point.y - finishLine.y, 2)
+      );
+
+      minDistanceToFinish = Math.min(minDistanceToFinish, distToFinish);
+
+      // Si on s'éloigne de la ligne de départ après s'en être approché
+      if (minDistanceToFinish < lapThreshold && distToFinish > lapThreshold * 2) {
+        if (currentLap.length > 10) {
+          laps.push(currentLap);
+          currentLap = [point];
+          lastCrossIndex = i;
+          minDistanceToFinish = Infinity;
+          continue;
+        }
+      }
+
+      currentLap.push(point);
+    }
+
+    // Ajouter le dernier tour
+    if (currentLap.length > 10) {
+      laps.push(currentLap);
+    }
+
+    return laps.length > 0 ? laps : [trajectory];
+  };
+
   const getPlayerPosition = (player: Player) => {
     if (!simulationData || simulationData.optimal_trajectory.length === 0) {
       return { x: 0, y: 0 };
@@ -468,9 +528,16 @@ const SimulationPage: React.FC = () => {
     const leftBoundary = simulationData.boundaries.filter(b => b.side === 'left');
     const rightBoundary = simulationData.boundaries.filter(b => b.side === 'right');
 
+    // Utiliser le tour sélectionné ou toute la trajectoire
+    const trajectoryToUse = selectedLap >= 0 && laps[selectedLap]
+      ? laps[selectedLap]
+      : simulationData.optimal_trajectory;
+
+    // Pour les sections, utiliser toute la trajectoire du tour si un tour est sélectionné
     const sectionsData = circuitSections.map(section => {
-      const sectionTrajectory = simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
-      // Convertir rgba en hex pour Three.js
+      const sectionTrajectory = selectedLap >= 0
+        ? trajectoryToUse
+        : simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
       const hexColor = section.color.replace('rgba(', '').replace(')', '').split(',').slice(0, 3).map((c: string) => {
         const val = parseInt(c.trim());
         return val.toString(16).padStart(2, '0');
@@ -492,7 +559,7 @@ const SimulationPage: React.FC = () => {
     return {
       leftBoundary,
       rightBoundary,
-      trajectory: simulationData.optimal_trajectory,
+      trajectory: trajectoryToUse,
       players: playerPositions,
       sections: sectionsData
     };
@@ -605,6 +672,21 @@ const SimulationPage: React.FC = () => {
                 <span>Trajectoire</span>
               </label>
 
+              {dataLoaded && laps.length > 1 && (
+                <select
+                  value={selectedLap}
+                  onChange={(e) => setSelectedLap(parseInt(e.target.value))}
+                  className="p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                >
+                  <option value={-1}>Tous les tours</option>
+                  {laps.map((_, index) => (
+                    <option key={index} value={index}>
+                      Tour {index + 1}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <button
                 onClick={loadPredictions}
                 disabled={!dataLoaded || predictionsLoaded || loading}
@@ -698,6 +780,23 @@ const SimulationPage: React.FC = () => {
                           />
                           <span>Charger la trajectoire optimisée</span>
                         </label>
+                        {dataLoaded && laps.length > 1 && (
+                          <div className="space-y-2">
+                            <label className="text-xs text-[#94a3b8]">Tour à afficher</label>
+                            <select
+                              value={selectedLap}
+                              onChange={(e) => setSelectedLap(parseInt(e.target.value))}
+                              className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                            >
+                              <option value={-1}>Tous les tours</option>
+                              {laps.map((_, index) => (
+                                <option key={index} value={index}>
+                                  Tour {index + 1}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                         <button
                           onClick={loadSimulationData}
                           disabled={!selectedCircuitId || loading}
