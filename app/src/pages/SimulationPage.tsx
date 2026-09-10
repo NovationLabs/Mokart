@@ -74,6 +74,7 @@ const SimulationPage: React.FC = () => {
   ]);
 
   const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
+  const [loadTrajectory, setLoadTrajectory] = useState<boolean>(true);
 
   const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
@@ -196,31 +197,36 @@ const SimulationPage: React.FC = () => {
 
       const boundaries = await boundariesRes.json();
 
-      let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+      let trajectory: TrajectoryPoint[] = [];
 
-      if (trajectoryRes.status === 404) {
-        trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
-          method: 'POST'
-        });
+      if (loadTrajectory) {
+        let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+
+        if (trajectoryRes.status === 404) {
+          trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
+            method: 'POST'
+          });
+        }
+
+        if (trajectoryRes.ok) {
+          trajectory = await trajectoryRes.json();
+        } else {
+          console.error('Error loading trajectory');
+        }
       }
 
-      if (trajectoryRes.ok) {
-        const trajectory = await trajectoryRes.json();
-        const circuit = circuits.find(c => c.id === selectedCircuitId);
+      const circuit = circuits.find(c => c.id === selectedCircuitId);
 
-        setSimulationData({
-          circuit: {
-            id: selectedCircuitId,
-            name: circuit?.name || 'Unknown',
-            description: circuit?.description || ''
-          },
-          boundaries,
-          optimal_trajectory: trajectory
-        });
-        setDataLoaded(true);
-      } else {
-        console.error('Error loading simulation data');
-      }
+      setSimulationData({
+        circuit: {
+          id: selectedCircuitId,
+          name: circuit?.name || 'Unknown',
+          description: circuit?.description || ''
+        },
+        boundaries,
+        optimal_trajectory: trajectory
+      });
+      setDataLoaded(true);
     } catch (error) {
       console.error('Error loading simulation data:', error);
     } finally {
@@ -523,6 +529,17 @@ const SimulationPage: React.FC = () => {
                 {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
 
+              <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={loadTrajectory}
+                  onChange={(e) => setLoadTrajectory(e.target.checked)}
+                  disabled={dataLoaded || loading}
+                  className="w-4 h-4 rounded border-[#262626] bg-[#16181d] text-[#7bf8ac] focus:ring-[#7bf8ac] focus:ring-offset-0"
+                />
+                <span>Trajectoire</span>
+              </label>
+
               <button
                 onClick={loadPredictions}
                 disabled={!dataLoaded || predictionsLoaded || loading}
@@ -577,6 +594,16 @@ const SimulationPage: React.FC = () => {
                             ))}
                           </select>
                         </div>
+                        <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={loadTrajectory}
+                            onChange={(e) => setLoadTrajectory(e.target.checked)}
+                            disabled={loading}
+                            className="w-4 h-4 rounded border-[#262626] bg-[#16181d] text-[#7bf8ac] focus:ring-[#7bf8ac] focus:ring-offset-0"
+                          />
+                          <span>Charger la trajectoire optimisée</span>
+                        </label>
                         <button
                           onClick={loadSimulationData}
                           disabled={!selectedCircuitId || loading}
