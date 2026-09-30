@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session as DbSession
 from config.database import get_db
 from models import sql_models
 from pydantic import BaseModel
-import uuid
 from .trajectory_algorithm import TrajectoryOptimizer
 
 router = APIRouter(prefix="/circuits", tags=["circuits"])

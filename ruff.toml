@@ -1,0 +1,14 @@
+target-version = "py311"
+extend-exclude = ["**/node_modules", "**/.venv"]
+
+[lint]
+# Pyflakes (F) + erreurs de syntaxe/imports (E4, E7, E9) : règles qui attrapent de vrais bugs.
+select = ["E4", "E7", "E9", "F"]
+# Style toléré pour l'instant — à retirer au fur et à mesure du nettoyage.
+ignore = [
+    "E402", # import pas en haut du fichier
+    "E701", # plusieurs instructions sur une ligne (:)
+    "E702", # plusieurs instructions sur une ligne (;)
+    "E722", # except nu
+    "E741", # nom de variable ambigu (l, O, I)
+]

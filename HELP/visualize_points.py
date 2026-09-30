@@ -2,7 +2,6 @@
 
 import pygame
 import requests
-import math
 
 # Initialisation Pygame
 pygame.init()

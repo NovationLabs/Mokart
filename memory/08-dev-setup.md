@@ -97,9 +97,16 @@ curl "localhost:8081/sessions/<id>/hud-frames" | head
 
 ## CI (`.github/workflows/`)
 
-- `build_dev.yml` : `docker compose build`.
-- `build_prod.yml` : `docker compose -f docker-compose.prod.yml up --build -d` + `ps` (smoke test).
-- Les deux sont gardés par un job `check-commits` : s'exécutent **sur chaque pull request**, mais sur **push vers `main` seulement si `commit_count % 5 == 0`** (donc ~1 build sur 5). **Aucun déploiement automatique** — la prod est déployée manuellement sur le VPS.
+Tous les workflows tournent sur chaque pull request vers `main` et chaque push sur `main`.
+
+- `build_dev.yml` : `cp .env.example .env` puis `docker compose build`.
+- `build_prod.yml` : `docker compose -f docker-compose.prod.yml up --build -d`, puis attente de `/health` = `connected` (60 s max) et vérification que les fronts répondent sur 8080/8000. Logs affichés en cas d'échec.
+- `lint.yml` :
+  - `lint-python` : `ruff check` sur tout le repo (config `ruff.toml` : pyflakes + erreurs E4/E7/E9, règles de style ignorées pour l'instant).
+  - `frontend` (matrice `app` / `web`) : `npm install` → `tsc --noEmit` → `npm run build` avec `CI=false` (sinon CRA échoue sur les ~70 warnings ESLint de `app`, à nettoyer).
+  - En local : `uvx ruff check .` et `cd app && npx tsc --noEmit`.
+
+**Aucun déploiement automatique** : la prod est déployée manuellement sur le VPS.
 
 ## Environnement machine (Tom)
 

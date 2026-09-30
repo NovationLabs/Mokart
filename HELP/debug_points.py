@@ -1,7 +1,6 @@
 import tkinter as tk
 import math
 import csv
-import os
 from datetime import datetime
 
 OFFSET = 5

@@ -277,7 +277,7 @@ class NtripClient:
         if "200" not in first_line and "ICY 200" not in first_line:
             raise ConnectionError(f"NTRIP rejected: {first_line}")
 
-        print(f"[ntrip] Connected — streaming RTCM3 corrections")
+        print("[ntrip] Connected — streaming RTCM3 corrections")
         self.connected = True
 
         # Send initial approximate GGA so caster knows our location
@@ -327,7 +327,7 @@ def config_loop(port: str, baud: int, hz: int):
             print("[gnss] Configuration saved to antenna memory")
             print("[gnss] You can now run the script in normal mode")
         else:
-            print(f"[gnss] ✗ Failed to set rate")
+            print("[gnss] ✗ Failed to set rate")
 
         ser.close()
     except Exception as e:
@@ -351,7 +351,6 @@ def read_loop(port: str, baud: int, use_ntrip: bool, debug: bool = False):
 
     print("[gnss] Reading NMEA sentences — Ctrl+C to stop\n")
     buf = b""
-    last_fix = {}
 
     try:
         while True:
@@ -391,7 +390,6 @@ def read_loop(port: str, baud: int, use_ntrip: bool, debug: bool = False):
                             )
                             if ntrip:
                                 ntrip.update_position(gga["lat"], gga["lon"])
-                            last_fix = gga
                         else:
                             # No fix yet — show waiting status
                             ntrip_ok = ntrip and ntrip.connected
