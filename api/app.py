@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from config.database import get_db, engine, Base
+from config.database import get_db
 from auth.routes import router as auth_router
 from sessions.routes import router as sessions_router
 from circuits.routes import router as circuits_router

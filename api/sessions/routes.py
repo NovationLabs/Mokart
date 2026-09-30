@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session as DbSession
-from sqlalchemy import func
 from config.database import get_db
 from models.session import Session, SensorData, TrajectoryPoint, HudFrame, HudSession
 from models import sql_models

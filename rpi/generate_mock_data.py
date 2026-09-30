@@ -136,7 +136,6 @@ def generate_mock_imu_data(
 
     ax = 0.0
     ay = 0.0
-    az = G
 
     gz = 0.0
 

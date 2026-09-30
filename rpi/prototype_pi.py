@@ -3,7 +3,6 @@ import time
 import math
 import numpy as np
 import psutil
-import socket
 import threading
 import subprocess
 import signal

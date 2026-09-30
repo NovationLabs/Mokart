@@ -4,10 +4,7 @@ from config.database import get_db
 from models import sql_models
 from models.auth import LoginRequest, RegisterRequest, AuthResponse
 import hashlib
-import uuid
 import datetime
-import random
-import string
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

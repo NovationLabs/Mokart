@@ -3,12 +3,9 @@ from sqlalchemy.orm import Session as DbSession
 from config.database import get_db
 from models import sql_models
 from models.dashboard import DashboardData, KartStatus, ElectricalModule, CircuitInfo, UserStats, SystemStatus
-from models.auth import LoginRequest, RegisterRequest, AuthResponse
-import hashlib
 import uuid
 import datetime
 import random
-import json
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 

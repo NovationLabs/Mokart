@@ -83,7 +83,7 @@ ON CONFLICT DO NOTHING;
     with open('/home/funiclem/Documents/Mokart/api/init.sql', 'w') as f:
         f.write(new_content)
 
-    print(f"\nCircuit intégré avec succès !")
+    print("\nCircuit intégré avec succès !")
     print(f"ID du circuit: {circuit_id}")
     print("Fichier init.sql mis à jour")
 
