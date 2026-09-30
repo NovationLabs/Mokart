@@ -1,0 +1,51 @@
+name: Lint & Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Annule le run précédent si on repousse sur la même branche/PR
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-python:
+    name: Lint Python (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.9"
+          args: check --output-format=github
+
+  frontend:
+    name: Front ${{ matrix.project }} (typecheck + build)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [app, web]
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Build
+        # CI=true (défaut sur GitHub) fait échouer CRA sur les warnings ESLint.
+        # À repasser à true une fois les warnings nettoyés.
+        env:
+          CI: "false"
+        run: npm run build
