@@ -2,45 +2,46 @@ name: Docker Build Prod
 
 on:
   push:
-    branches: [ "main"]
+    branches: [ main ]
   pull_request:
-    branches: [ "main"]
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
 
-    - name: Create .env
-      run: cp .env.example .env
+      - name: Create .env
+        run: cp .env.example .env
 
-    - name: Build and Run Docker Compose Prod
-      run: docker compose -f docker-compose.prod.yml up --build -d
+      - name: Build and Run Docker Compose Prod
+        run: docker compose -f docker-compose.prod.yml up --build -d
 
-    - name: Check Container Status
-      run: docker compose -f docker-compose.prod.yml ps
+      - name: Check Container Status
+        run: docker compose -f docker-compose.prod.yml ps
 
-    - name: Wait for API health
-      run: |
-        for i in $(seq 1 30); do
-          if curl -fsS http://localhost:8081/health | grep -q '"connected"'; then
-            echo "API healthy"; exit 0
-          fi
-          sleep 2
-        done
-        echo "API not healthy after 60s"; exit 1
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8081/health | grep -q '"connected"'; then
+              echo "API healthy"; exit 0
+            fi
+            sleep 2
+          done
+          echo "API not healthy after 60s"; exit 1
 
-    - name: Check fronts respond
-      run: |
-        curl -fsS -o /dev/null http://localhost:8080/
-        curl -fsS -o /dev/null http://localhost:8000/
+      - name: Check fronts respond
+        run: |
+          curl -fsS -o /dev/null http://localhost:8080/
+          curl -fsS -o /dev/null http://localhost:8000/
 
-    - name: Logs on failure
-      if: failure()
-      run: docker compose -f docker-compose.prod.yml logs --tail=100
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --tail=100
 
-    - name: Tear down
-      if: always()
-      run: docker compose -f docker-compose.prod.yml down -v
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
