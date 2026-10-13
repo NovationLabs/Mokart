@@ -19,7 +19,7 @@
   },
   "overrides": {
     "react-scripts": {
-      "typescript": "$typescript"
+      "typescript": "^5.9.3"
     }
   },
   "scripts": {
