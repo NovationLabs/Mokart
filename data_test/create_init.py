@@ -61,7 +61,7 @@ def generate_sql():
             
             for i in range(0, len(values), 100): # Batch de 100
                 chunk = values[i:i+100]
-                sql = f"INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES\n"
+                sql = "INSERT INTO circuit_boundaries (id, circuit_id, side, point_order, x, y) VALUES\n"
                 sql += ",\n".join(chunk) + "\nON CONFLICT DO NOTHING;\n"
                 sql_lines.append(sql)
 
