@@ -67,7 +67,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./api/init.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./api/circuits.sql:/docker-entrypoint-initdb.d/02-circuits.sql
     restart: unless-stopped
 
   ai-backend:

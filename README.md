@@ -5,11 +5,13 @@
 ## Architecture
 
 ```
-website/
+Mokart/
 ├── web/        # Public landing page (React + Tailwind)
 ├── app/        # Driver dashboard / web app (React + Tailwind)
 ├── api/        # Backend (Python · FastAPI)
-└── nginx/      # Reverse proxy
+├── db/         # PostgreSQL image with initial schema
+├── ai-backend/ # Agent API
+└── ai-front/   # Agent UI
 ```
 
 ## Quick Start
@@ -38,10 +40,10 @@ website/
 **Docker Compose direct**
 ```bash
 # Development
-docker-compose up --build
+docker compose up --build
 
 # Production
-docker-compose -f docker-compose.prod.yml up --build -d
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
 ---
@@ -50,10 +52,17 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 | Env | Service | URL |
 |-----|---------|-----|
-| Dev | Web + App | http://localhost:8080 |
+| Dev | Web | http://localhost:8080 |
+| Dev | App | http://localhost:8000 |
 | Dev | API | http://localhost:8081 |
-| Prod | Web + App | http://localhost:9980 |
-| Prod | API | http://localhost:9981 |
+| Dev | Agent API | http://localhost:8002 |
+| Dev | Agent UI | http://localhost:8003 |
+| Local prod | Web | http://localhost:8080 |
+| Local prod | App | http://localhost:8000 |
+| Local prod | API | http://localhost:8081 |
+
+Railway déploie `dev` depuis la branche `dev` et `production` depuis la branche `production`.
+Les changements partent d'une branche `feature/nom`, fusionnée dans `dev`, puis promue dans `production` après vérification. Voir [la configuration Railway](docs/railway.md).
 
 ---
 

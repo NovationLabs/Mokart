@@ -1,0 +1,8 @@
+.git
+.env
+**/.env
+**/node_modules
+**/.venv
+**/build
+**/dist
+**/__pycache__
