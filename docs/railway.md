@@ -18,6 +18,8 @@ recevoir de domaine public. Railway isole le réseau privé de chaque environnem
 
 Variables à configurer séparément dans chaque environnement :
 
+- `PORT` sur chaque service HTTP : `80` pour `web` et `app`, `5000` pour `api`,
+  `8000` pour `ai-backend`, `4000` pour `ai-frontend`.
 - `db` : `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, et
   `PGDATA=/var/lib/postgresql/data/pgdata` pour que PostgreSQL initialise un sous-dossier du volume.
 - `api` : `DATABASE_URL`, construit avec les références Railway vers les variables de `db`.
