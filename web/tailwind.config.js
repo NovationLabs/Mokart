@@ -6,22 +6,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Neutral racing-dark canvas with a restrained lime accent.
         mokart: {
-          dark: '#0a0a0a',
-          darker: '#050505',
-          surface: '#121212',
-          primary: '#A3E635', // Lime Green
-          secondary: '#22D3EE', // Ice Cyan
-          metallic: '#9ca3af',
-        }
+          bg: '#0b0d0c',
+          bg2: '#101310',
+          surface: '#141715',
+          surface2: '#1b1f1b',
+          line: '#30362f',
+          moss: '#5d685a',
+          primary: '#a3e635',
+          glow: '#c8f36d',
+          // legacy aliases kept so older pages keep compiling
+          dark: '#0b0d0c',
+          darker: '#0b0d0c',
+          metallic: '#a3a9a0',
+        },
       },
       fontFamily: {
-        display: ['Montserrat', 'sans-serif'],
-        mono: ['Fira Code', 'monospace'],
+        display: ['Iliad', 'system-ui', 'sans-serif'],
+        mono: ['"Fira Code"', 'ui-monospace', 'monospace'],
       },
-      backgroundImage: {
-        'carbon-mesh': "repeating-linear-gradient(45deg, #111 25%, transparent 25%, transparent 75%, #111 75%, #111), repeating-linear-gradient(45deg, #111 25%, #0a0a0a 25%, #0a0a0a 75%, #111 75%, #111)",
-      }
     },
   },
   plugins: [],

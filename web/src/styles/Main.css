@@ -2,55 +2,742 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════
+   MOKART — neutral dark surfaces with a restrained lime signal
+   Radius lock: buttons = pill · panels/media = 1rem (rounded-2xl) · chips = pill
+   Motion: native CSS + rAF only (no Motion/GSAP dependency)
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    --mk-bg: #0b0d0c;
+    --mk-bg2: #101310;
+    --mk-surface: #141715;
+    --mk-surface2: #1b1f1b;
+    --mk-line: #30362f;
+    --mk-moss: #5d685a;
+    --mk-accent: #a3e635;
+    --mk-glow: #c8f36d;
+    --mk-fg: #ffffff;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+/* Horizontal-overflow guard that does NOT create a scroll container —
+   `overflow-x: hidden` would silently break position: sticky (the pinned
+   exploded view). `clip` clips without capturing scroll. */
+.overflow-x-clip-safe {
+    overflow-x: clip;
+}
+
 .font-display {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Iliad', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.02em;
+    text-wrap: balance;
 }
 
-.font-mono-data {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-    font-variant-numeric: tabular-nums;
+p {
+    text-wrap: pretty;
 }
 
-/* Subtle gradient background for depth without chaos */
-.bg-deep-space {
-    background: radial-gradient(circle at top center, #1a1a1a 0%, #050505 100%);
+/* ── Focus ring ── */
+:focus-visible {
+    outline: 2px solid rgba(163, 230, 53, 0.8);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
-/* Glassmorphism - Clean & Subtle */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.btn-primary:focus-visible,
+.btn-ghost:focus-visible {
+    outline-offset: 3px;
 }
 
-.glass-header {
-    background: rgba(5, 5, 5, 0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* ─────────────────────────────────────────────
+   SURFACES
+   ───────────────────────────────────────────── */
+
+.nav-blur {
+    background: rgba(11, 13, 12, 0.92);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
-/* Lime Accent Gradient for Text */
-.text-lime-gradient {
-    background: linear-gradient(to right, #A3E635, #bef264);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* Top-of-page scroll progress meter (sits on the nav baseline) */
+.nav-progress {
+    transform-origin: left center;
+    background: linear-gradient(90deg, var(--mk-moss), var(--mk-accent) 60%, var(--mk-glow));
+    box-shadow: 0 0 12px rgba(163, 230, 53, 0.55);
 }
 
-/* Button Styles - Clean Rectangles with Slight rounding */
-.btn-primary {
-    @apply bg-[#A3E635] text-black font-semibold px-6 py-3 rounded-lg hover:bg-[#84cc16] transition-colors duration-200 flex items-center gap-2;
+.hairline-card {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    transition: border-color 0.35s ease, background-color 0.35s ease,
+        transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s ease;
 }
 
-.btn-secondary {
-    @apply bg-white/10 text-white font-medium px-6 py-3 rounded-lg border border-white/10 hover:bg-white/20 transition-colors duration-200;
+.hairline-card:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.045);
 }
 
-/* Grid Pattern Overlay - Extremely faint */
-.bg-grid-minimal {
-    background-size: 40px 40px;
+.card-accent-green:hover {
+    border-color: rgba(163, 230, 53, 0.34);
+    box-shadow: 0 18px 50px -18px rgba(163, 230, 53, 0.28);
+}
+
+/* Spotlight ring that tracks the cursor (driven by --mx/--my from useSpotlight) */
+.spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 0%),
+        rgba(163, 230, 53, 0.6), transparent 65%);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+}
+
+.spotlight:hover::before {
+    opacity: 1;
+}
+
+/* ── Film grain: fixed, subtle tooth over the flat surface ── */
+.grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 150px 150px;
+}
+
+/* ─────────────────────────────────────────────
+   AMBIENCE & BACKGROUNDS
+   ───────────────────────────────────────────── */
+
+.bg-hero-glow {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(163, 230, 53, 0.10), transparent 70%),
+        radial-gradient(circle at top center, #141715 0%, #0b0d0c 62%);
+}
+
+.bg-grid-faint {
+    background-size: 46px 46px;
     background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(to right, rgba(163, 230, 53, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(163, 230, 53, 0.05) 1px, transparent 1px);
+}
+
+.section-ambient {
+    background:
+        radial-gradient(ellipse 45% 55% at 8% 0%, rgba(163, 230, 53, 0.05), transparent 64%),
+        radial-gradient(ellipse 45% 60% at 94% 100%, rgba(163, 230, 53, 0.045), transparent 64%);
+}
+
+/* Perspective floor grid scrolling toward the viewer */
+.iso-grid {
+    position: absolute;
+    left: -20%;
+    right: -20%;
+    bottom: -5%;
+    height: 78%;
+    background-image:
+        linear-gradient(rgba(163, 230, 53, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(163, 230, 53, 0.06) 1px, transparent 1px);
+    background-size: 52px 52px;
+    transform: perspective(520px) rotateX(58deg);
+    transform-origin: center bottom;
+    mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, transparent 92%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 18%, transparent 92%);
+    animation: mk-grid-pan 22s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes mk-grid-pan {
+    from { background-position: 0 0; }
+    to { background-position: 0 52px; }
+}
+
+/* Section dividers: gradient hairlines */
+.divider-fade::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.14) 25%, rgba(163, 230, 53, 0.14) 75%, transparent);
+}
+
+.divider-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.4) 50%, transparent);
+}
+
+/* ─────────────────────────────────────────────
+   BUTTONS  (radius lock: pill)
+   ───────────────────────────────────────────── */
+
+.btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-[#a3e635] text-[#0b0d0c] font-bold px-7 py-3.5 rounded-full text-sm;
+    font-family: 'Iliad', sans-serif;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* sheen sweep across the primary CTA */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-18deg);
+    transition: left 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary:hover {
+    box-shadow: 0 0 30px rgba(163, 230, 53, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-primary:hover::after {
+    left: 130%;
+}
+
+.btn-primary:active {
+    transform: translateY(0) scale(0.97);
+}
+
+/* Ghost CTA with a "liquid fill": a pill of accent rises from the baseline
+   on hover (translate/scale only — no width/height animation). */
+.btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 border border-mokart-primary/25 text-white font-normal px-7 py-3.5 rounded-full text-sm;
+    font-family: 'Iliad', sans-serif;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    transition: color 0.35s ease, border-color 0.35s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ghost::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    top: 100%;
+    width: 140%;
+    aspect-ratio: 1 / 1;
+    border-radius: 9999px;
+    background: var(--mk-accent);
+    transform: translate(-50%, 0) scale(0);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-ghost:hover {
+    border-color: var(--mk-accent);
+    color: var(--mk-bg);
+}
+
+.btn-ghost:hover::before {
+    transform: translate(-50%, -50%) scale(2);
+}
+
+/* Instant press feedback — every clickable answers the finger */
+.btn-ghost:active,
+.nav-cta:active,
+.tilt:active {
+    transform: scale(0.97);
+}
+
+/* Magnetic wrapper: the hook writes translate via style; CSS eases the return */
+.magnetic {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+}
+
+/* ─────────────────────────────────────────────
+   SCROLL REVEAL
+   ───────────────────────────────────────────── */
+
+.reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* ─────────────────────────────────────────────
+   RACING-LINE / TELEMETRY ANIMATIONS
+   (SVG paths must declare pathLength="100")
+   ───────────────────────────────────────────── */
+
+.track-comet {
+    stroke-dasharray: 12 88;
+    animation: mk-comet 8s linear infinite;
+}
+
+.track-comet-slow {
+    stroke-dasharray: 6 94;
+    animation: mk-comet 12s linear infinite;
+}
+
+@keyframes mk-comet {
+    from { stroke-dashoffset: 100; }
+    to { stroke-dashoffset: 0; }
+}
+
+.spark-draw {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: mk-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+}
+
+@keyframes mk-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+.spark-wait {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+}
+
+/* Live indicator pulse */
+.live-dot {
+    position: relative;
+}
+
+.live-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--mk-accent);
+    animation: mk-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes mk-ping {
+    75%, 100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────
+   PAGE / HERO ENTRANCE
+   ───────────────────────────────────────────── */
+
+.page-enter {
+    animation: mk-page-in 0.5s ease-out both;
+}
+
+@keyframes mk-page-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.boot {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+    animation: mk-boot 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.boot-2 { animation-delay: 0.18s; }
+.boot-3 { animation-delay: 0.32s; }
+.boot-4 { animation-delay: 0.46s; }
+.boot-5 { animation-delay: 0.60s; }
+
+@keyframes mk-boot {
+    to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* ─────────────────────────────────────────────
+   KINETIC HEADLINE — rotating word flips through a vertical reel
+   ───────────────────────────────────────────── */
+
+.kw {
+    display: inline-grid;
+    vertical-align: bottom;
+    overflow: hidden;
+    position: relative;
+}
+
+.kw-item {
+    grid-area: 1 / 1;
+    color: var(--mk-accent);
+    opacity: 0;
+    transform: translateY(100%) rotateX(-40deg);
+    animation: mk-kw 9s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes mk-kw {
+    0%, 8%   { opacity: 0; transform: translateY(110%) rotateX(-40deg); }
+    14%, 25% { opacity: 1; transform: translateY(0) rotateX(0); }
+    31%, 100%{ opacity: 0; transform: translateY(-110%) rotateX(40deg); }
+}
+
+/* Gradient text that sweeps a brighter band across itself */
+.text-sweep {
+    background: linear-gradient(100deg, var(--mk-accent) 0%, var(--mk-glow) 30%, var(--mk-accent) 60%);
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: mk-sweep 6s linear infinite;
+}
+
+@keyframes mk-sweep {
+    to { background-position: -220% 0; }
+}
+
+/* ─────────────────────────────────────────────
+   KINETIC MARQUEE  (one per page)
+   ───────────────────────────────────────────── */
+
+.marquee {
+    display: flex;
+    overflow: hidden;
+    user-select: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+.marquee-track {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2.5rem;
+    padding-right: 2.5rem;
+    min-width: max-content;
+    animation: mk-marquee 32s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+@keyframes mk-marquee {
+    to { transform: translateX(-50%); }
+}
+
+/* ─────────────────────────────────────────────
+   TILT CARD (driven by useTilt → --rx/--ry)
+   ───────────────────────────────────────────── */
+
+.tilt {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+/* ── Nav link underline draws left-to-right ── */
+.nav-link {
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    height: 1.5px;
+    width: 100%;
+    background: var(--mk-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link:hover::after {
+    transform: scaleX(1);
+}
+
+/* ── Wordmark draw-in ── */
+.logo-draw rect,
+.logo-draw path {
+    stroke-dasharray: 100 100;
+    stroke-dashoffset: 100;
+    animation: mk-draw-in 1s ease-out 0.1s forwards;
+}
+
+@keyframes mk-draw-in {
+    to { stroke-dashoffset: 0; }
+}
+
+.logo-mark {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+a:hover > .logo-mark {
+    transform: rotate(-8deg);
+}
+
+/* Eyebrow rule grows when its Reveal fires */
+.reveal .eyebrow-line {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.reveal.is-visible .eyebrow-line {
+    transform: scaleX(1);
+}
+
+/* Delta readout tick */
+.tick-in {
+    display: inline-block;
+    animation: mk-tick 0.35s ease-out;
+}
+
+@keyframes mk-tick {
+    from { opacity: 0.2; transform: translateY(7px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Best-sector breathing glow */
+.breathe {
+    animation: mk-breathe 3s ease-in-out infinite;
+}
+
+@keyframes mk-breathe {
+    0%, 100% { box-shadow: 0 0 0 rgba(163, 230, 53, 0); }
+    50% { box-shadow: 0 0 18px rgba(163, 230, 53, 0.22); }
+}
+
+/* Slow ambient float for hero ornaments */
+.float-slow {
+    animation: mk-float 7s ease-in-out infinite;
+}
+
+@keyframes mk-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* ─────────────────────────────────────────────
+   KINETIC STATEMENT — oversized headline built word by word from scroll.
+   `--p` (0..1) is written by useSectionProgress('cross'); each word carries
+   its own reveal window via --wi (index) and --wn (word count).
+   ───────────────────────────────────────────── */
+
+.kinetic-line {
+    --p: 0;
+}
+
+.kinetic-word {
+    display: inline-block;
+    opacity: clamp(0.14, calc(var(--p) * (var(--wn) + 2) - var(--wi)), 1);
+    will-change: opacity;
+}
+
+/* ─────────────────────────────────────────────
+   THE UNIT — exploded-view scrollytelling.
+   A 300vh wrapper pins a full-viewport stage; useSectionProgress('pin')
+   writes `--p` on .unit-stage. Layers collapse by `--off` at --p:0 and
+   settle at their drawn (exploded) position at --p:1. Annotations open in
+   sequence through per-item thresholds (--nt). Transform/opacity only.
+   ───────────────────────────────────────────── */
+
+.unit-wrap {
+    height: 300vh;
+}
+
+.unit-sticky {
+    position: sticky;
+    top: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.unit-stage {
+    --p: 0;
+}
+
+/* Progress rail beside the notes */
+.unit-rail {
+    transform: scaleY(var(--p));
+    transform-origin: top;
+    will-change: transform;
+}
+
+/* ─────────────────────────────────────────────
+   BLUEPRINT CALLOUTS — hairlines that trace from the product photo to
+   spec labels once the hosting Reveal fires. Stagger via --d / --d2.
+   ───────────────────────────────────────────── */
+
+.callout-line {
+    height: 1px;
+    background: rgba(163, 230, 53, 0.45);
+    transform: scaleX(0);
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+}
+
+.reveal.is-visible .callout-line {
+    transform: scaleX(1);
+}
+
+.callout-label {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.6s ease var(--d2, 0.5s), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) var(--d2, 0.5s);
+}
+
+.reveal.is-visible .callout-label {
+    opacity: 1;
+    transform: none;
+}
+
+/* ─────────────────────────────────────────────
+   PIPELINE MICRO-SCHEMAS + BENTO MINI-STORIES
+   ───────────────────────────────────────────── */
+
+/* Session upload: a bar fills, holds, resets (scaleX only) */
+.upload-fill {
+    transform-origin: left;
+    animation: mk-upload 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes mk-upload {
+    0% { transform: scaleX(0); opacity: 1; }
+    62%, 86% { transform: scaleX(1); opacity: 1; }
+    100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* Sensor-load equalizer bars (scaleY only) */
+.eq-bar {
+    transform-origin: bottom;
+    animation: mk-eq 1.5s ease-in-out infinite;
+}
+
+@keyframes mk-eq {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+}
+
+/* Two-value vertical reel (mini chronometer inside a bento cell) */
+.reel {
+    display: inline-grid;
+    overflow: hidden;
+    vertical-align: bottom;
+}
+
+.reel-item {
+    grid-area: 1 / 1;
+    opacity: 0;
+    transform: translateY(110%);
+    animation: mk-reel 4.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes mk-reel {
+    0%, 5% { opacity: 0; transform: translateY(110%); }
+    11%, 44% { opacity: 1; transform: none; }
+    50%, 100% { opacity: 0; transform: translateY(-110%); }
+}
+
+/* ─────────────────────────────────────────────
+   COMPARE TABLE — each row traces its hairline as the table reveals.
+   Stagger per row via --d (inline).
+   ───────────────────────────────────────────── */
+
+.cmp-row td {
+    position: relative;
+}
+
+.cmp-row td::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(163, 230, 53, 0.09);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
+    pointer-events: none;
+}
+
+.reveal.is-visible .cmp-row td::after {
+    transform: scaleX(1);
+}
+
+/* KPI cells answer the cursor before the digits re-tick */
+.kpi-cell {
+    transition: background-color 0.3s ease;
+}
+
+.kpi-cell:hover {
+    background: rgba(163, 230, 53, 0.03);
+}
+
+/* ─────────────────────────────────────────────
+   MOTION SAFETY
+   ───────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .track-comet, .track-comet-slow, .spark-draw, .live-dot::after,
+    .iso-grid, .marquee-track, .kw-item, .text-sweep, .float-slow,
+    .breathe, .tick-in, .upload-fill, .eq-bar, .reel-item { animation: none; }
+    .spark-draw, .spark-wait { stroke-dashoffset: 0; }
+    .kw-item, .reel-item { opacity: 1; transform: none; }
+    .kw-item:not(:first-child), .reel-item:not(:first-child) { display: none; }
+    .text-sweep { -webkit-text-fill-color: var(--mk-accent); color: var(--mk-accent); }
+    .boot, .page-enter { animation: none; opacity: 1; transform: none; filter: none; }
+    .logo-draw rect, .logo-draw path { animation: none; stroke-dashoffset: 0; }
+    .reveal .eyebrow-line { transform: none; transition: none; }
+    .nav-link::after { transition: none; }
+    .hairline-card, .hairline-card:hover, .tilt, .magnetic { transform: none; transition: none; }
+    .spotlight::before, .btn-primary::after { transition: none; }
+    .btn-ghost::before { transition: none; }
+    .kinetic-line { --p: 1; }
+    .callout-line, .callout-label { transition: none; transform: none; opacity: 1; }
+    .cmp-row td::after { transition: none; transform: scaleX(1); }
+    .unit-layer, .unit-note, .unit-rail { will-change: auto; }
+    .kpi-cell { transition: none; }
+}
+
+/* The pinned exploded view collapses to its finished state whenever the
+   scroll driver is off (mobile and reduced motion — mirrors the JS guards
+   in useSectionProgress). */
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+    .unit-wrap { height: auto; }
+    .unit-sticky { position: static; min-height: 0; }
+    .unit-stage { --p: 1; }
+    .kinetic-line { --p: 1; }
+}
+
+@media (max-width: 640px) {
+    .track-comet, .track-comet-slow { animation-duration: 14s; }
+}
+
+@media (max-width: 768px) {
+    .iso-grid { animation: none; height: 55%; }
+    .section-ambient { background: none; }
+    .tilt { transform: none; }
 }

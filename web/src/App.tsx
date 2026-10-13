@@ -11,20 +11,28 @@ const App: React.FC = () => {
   // Simple routing based on URL path
   const path = window.location.pathname;
 
-  switch (path) {
-    case '/about':
-      return <About />;
-    case '/soon':
-      return <Soon />;
-    case '/privacy-policy':
-      return <PrivacyPolicy />;
-    case '/terms-of-service':
-      return <TermsOfService />;
-    case '/style-guide':
-      return <StyleGuide />;
-    default:
-      return <Home />;
-  }
+  const page = (() => {
+    switch (path) {
+      case '/about':
+        return <About />;
+      case '/soon':
+        return <Soon />;
+      case '/privacy-policy':
+        return <PrivacyPolicy />;
+      case '/terms-of-service':
+        return <TermsOfService />;
+      case '/style-guide':
+        return <StyleGuide />;
+      default:
+        return <Home />;
+    }
+  })();
+
+  return (
+    <>
+      {page}
+    </>
+  );
 };
 
 export default App;
