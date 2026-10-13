@@ -6,21 +6,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Dark-green canvas system. `bg` is the dominant surface, `accent`
-        // is the single locked signal-green used across the whole page.
+        // Neutral racing-dark canvas with a restrained lime accent.
         mokart: {
-          bg: '#04130c',        // dominant canvas — deep racing green
-          bg2: '#061a10',       // alternating section tone
-          surface: '#0a2315',   // panels
-          surface2: '#0c2a19',  // elevated panels
-          line: '#16412b',      // hairline green
-          moss: '#1f7a4d',      // mid green for fills
-          primary: '#7bf8ac',   // accent / signal green (brand)
-          glow: '#adffce',      // bright highlight
+          bg: '#0b0d0c',
+          bg2: '#101310',
+          surface: '#141715',
+          surface2: '#1b1f1b',
+          line: '#30362f',
+          moss: '#5d685a',
+          primary: '#a3e635',
+          glow: '#c8f36d',
           // legacy aliases kept so older pages keep compiling
-          dark: '#04130c',
-          darker: '#04130c',
-          metallic: '#8fb4a1',
+          dark: '#0b0d0c',
+          darker: '#0b0d0c',
+          metallic: '#a3a9a0',
         },
       },
       fontFamily: {

@@ -3,22 +3,20 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════
-   MOKART — dark-green design system
-   Dominant canvas #04130c (deep racing green) · text #ffffff
-   Single locked accent: signal-green #7bf8ac
+   MOKART — neutral dark surfaces with a restrained lime signal
    Radius lock: buttons = pill · panels/media = 1rem (rounded-2xl) · chips = pill
    Motion: native CSS + rAF only (no Motion/GSAP dependency)
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-    --mk-bg: #04130c;
-    --mk-bg2: #061a10;
-    --mk-surface: #0a2315;
-    --mk-surface2: #0c2a19;
-    --mk-line: #16412b;
-    --mk-moss: #1f7a4d;
-    --mk-accent: #7bf8ac;
-    --mk-glow: #adffce;
+    --mk-bg: #0b0d0c;
+    --mk-bg2: #101310;
+    --mk-surface: #141715;
+    --mk-surface2: #1b1f1b;
+    --mk-line: #30362f;
+    --mk-moss: #5d685a;
+    --mk-accent: #a3e635;
+    --mk-glow: #c8f36d;
     --mk-fg: #ffffff;
 }
 
@@ -45,7 +43,7 @@ p {
 
 /* ── Focus ring ── */
 :focus-visible {
-    outline: 2px solid rgba(123, 248, 172, 0.8);
+    outline: 2px solid rgba(163, 230, 53, 0.8);
     outline-offset: 2px;
     border-radius: 4px;
 }
@@ -60,7 +58,7 @@ p {
    ───────────────────────────────────────────── */
 
 .nav-blur {
-    background: rgba(4, 19, 12, 0.72);
+    background: rgba(11, 13, 12, 0.92);
     backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
@@ -69,25 +67,24 @@ p {
 .nav-progress {
     transform-origin: left center;
     background: linear-gradient(90deg, var(--mk-moss), var(--mk-accent) 60%, var(--mk-glow));
-    box-shadow: 0 0 12px rgba(123, 248, 172, 0.55);
+    box-shadow: 0 0 12px rgba(163, 230, 53, 0.55);
 }
 
 .hairline-card {
-    background: rgba(123, 248, 172, 0.018);
-    border: 1px solid rgba(123, 248, 172, 0.10);
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.10);
     transition: border-color 0.35s ease, background-color 0.35s ease,
         transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s ease;
 }
 
 .hairline-card:hover {
-    border-color: rgba(123, 248, 172, 0.22);
-    background: rgba(123, 248, 172, 0.04);
-    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.045);
 }
 
 .card-accent-green:hover {
-    border-color: rgba(123, 248, 172, 0.34);
-    box-shadow: 0 18px 50px -18px rgba(123, 248, 172, 0.28);
+    border-color: rgba(163, 230, 53, 0.34);
+    box-shadow: 0 18px 50px -18px rgba(163, 230, 53, 0.28);
 }
 
 /* Spotlight ring that tracks the cursor (driven by --mx/--my from useSpotlight) */
@@ -98,7 +95,7 @@ p {
     border-radius: inherit;
     padding: 1px;
     background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 0%),
-        rgba(123, 248, 172, 0.6), transparent 65%);
+        rgba(163, 230, 53, 0.6), transparent 65%);
     -webkit-mask:
         linear-gradient(#fff 0 0) content-box,
         linear-gradient(#fff 0 0);
@@ -130,21 +127,21 @@ p {
 
 .bg-hero-glow {
     background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(123, 248, 172, 0.10), transparent 70%),
-        radial-gradient(circle at top center, #0a2315 0%, #04130c 62%);
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(163, 230, 53, 0.10), transparent 70%),
+        radial-gradient(circle at top center, #141715 0%, #0b0d0c 62%);
 }
 
 .bg-grid-faint {
     background-size: 46px 46px;
     background-image:
-        linear-gradient(to right, rgba(123, 248, 172, 0.05) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(123, 248, 172, 0.05) 1px, transparent 1px);
+        linear-gradient(to right, rgba(163, 230, 53, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(163, 230, 53, 0.05) 1px, transparent 1px);
 }
 
 .section-ambient {
     background:
-        radial-gradient(ellipse 45% 55% at 8% 0%, rgba(123, 248, 172, 0.05), transparent 64%),
-        radial-gradient(ellipse 45% 60% at 94% 100%, rgba(123, 248, 172, 0.045), transparent 64%);
+        radial-gradient(ellipse 45% 55% at 8% 0%, rgba(163, 230, 53, 0.05), transparent 64%),
+        radial-gradient(ellipse 45% 60% at 94% 100%, rgba(163, 230, 53, 0.045), transparent 64%);
 }
 
 /* Perspective floor grid scrolling toward the viewer */
@@ -155,8 +152,8 @@ p {
     bottom: -5%;
     height: 78%;
     background-image:
-        linear-gradient(rgba(123, 248, 172, 0.10) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(123, 248, 172, 0.06) 1px, transparent 1px);
+        linear-gradient(rgba(163, 230, 53, 0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(163, 230, 53, 0.06) 1px, transparent 1px);
     background-size: 52px 52px;
     transform: perspective(520px) rotateX(58deg);
     transform-origin: center bottom;
@@ -179,7 +176,7 @@ p {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.14) 25%, rgba(123, 248, 172, 0.14) 75%, transparent);
+    background: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.14) 25%, rgba(163, 230, 53, 0.14) 75%, transparent);
 }
 
 .divider-glow::before {
@@ -189,7 +186,7 @@ p {
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(to right, transparent, rgba(123, 248, 172, 0.4) 50%, transparent);
+    background: linear-gradient(to right, transparent, rgba(163, 230, 53, 0.4) 50%, transparent);
 }
 
 /* ─────────────────────────────────────────────
@@ -197,7 +194,7 @@ p {
    ───────────────────────────────────────────── */
 
 .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-[#7bf8ac] text-[#04130c] font-bold px-7 py-3.5 rounded-full text-sm;
+    @apply inline-flex items-center justify-center gap-2 bg-[#a3e635] text-[#0b0d0c] font-bold px-7 py-3.5 rounded-full text-sm;
     font-family: 'Iliad', sans-serif;
     position: relative;
     overflow: hidden;
@@ -218,7 +215,7 @@ p {
 }
 
 .btn-primary:hover {
-    box-shadow: 0 0 30px rgba(123, 248, 172, 0.45);
+    box-shadow: 0 0 30px rgba(163, 230, 53, 0.45);
     transform: translateY(-1px);
 }
 
@@ -526,8 +523,8 @@ a:hover > .logo-mark {
 }
 
 @keyframes mk-breathe {
-    0%, 100% { box-shadow: 0 0 0 rgba(123, 248, 172, 0); }
-    50% { box-shadow: 0 0 18px rgba(123, 248, 172, 0.22); }
+    0%, 100% { box-shadow: 0 0 0 rgba(163, 230, 53, 0); }
+    50% { box-shadow: 0 0 18px rgba(163, 230, 53, 0.22); }
 }
 
 /* Slow ambient float for hero ornaments */
@@ -580,27 +577,6 @@ a:hover > .logo-mark {
     --p: 0;
 }
 
-.unit-layer {
-    transform: translateY(calc((1 - min(calc(var(--p) * 1.3), 1)) * var(--off, 0px)));
-    will-change: transform;
-}
-
-/* Spine + per-layer callout hairlines fade with the explosion */
-.unit-spine {
-    opacity: calc(min(calc(var(--p) * 1.3), 1) * 0.5);
-}
-
-.unit-callout {
-    opacity: clamp(0, calc((var(--p) - var(--nt, 0)) * 8), 0.65);
-}
-
-/* Sequenced datasheet annotations (right column) */
-.unit-note {
-    opacity: clamp(0, calc((var(--p) - var(--nt, 0)) * 6), 1);
-    transform: translateY(calc((1 - clamp(0, calc((var(--p) - var(--nt, 0)) * 6), 1)) * 10px));
-    will-change: transform, opacity;
-}
-
 /* Progress rail beside the notes */
 .unit-rail {
     transform: scaleY(var(--p));
@@ -615,7 +591,7 @@ a:hover > .logo-mark {
 
 .callout-line {
     height: 1px;
-    background: rgba(123, 248, 172, 0.45);
+    background: rgba(163, 230, 53, 0.45);
     transform: scaleX(0);
     transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
 }
@@ -698,7 +674,7 @@ a:hover > .logo-mark {
     left: 0;
     right: 0;
     height: 1px;
-    background: rgba(123, 248, 172, 0.09);
+    background: rgba(163, 230, 53, 0.09);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s);
@@ -715,7 +691,7 @@ a:hover > .logo-mark {
 }
 
 .kpi-cell:hover {
-    background: rgba(123, 248, 172, 0.03);
+    background: rgba(163, 230, 53, 0.03);
 }
 
 /* ─────────────────────────────────────────────

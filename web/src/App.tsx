@@ -31,8 +31,6 @@ const App: React.FC = () => {
   return (
     <>
       {page}
-      {/* Fixed film-grain tooth over the flat dark surface — site-wide */}
-      <div className="grain" aria-hidden="true" />
     </>
   );
 };

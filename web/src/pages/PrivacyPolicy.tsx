@@ -9,7 +9,7 @@ const LegalCard: React.FC<{
     title: string;
     children: React.ReactNode;
 }> = ({ icon: Icon, title, children }) => (
-    <div className="hairline-card rounded-lg p-8">
+    <div className="hairline-card rounded-xl p-8">
         <div className="flex items-center gap-4 mb-6">
             <Icon size={20} strokeWidth={1.5} className="text-mokart-primary" />
             <h2 className="font-display text-xl font-bold text-white">{title}</h2>
