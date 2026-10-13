@@ -174,22 +174,20 @@ class TrajectoryOptimizer:
         Formule : kappa = 4*Aire / (a*b*c) sur 3 points consécutifs.
         Bouclage circulaire pour les circuits fermés.
         """
-        n = len(traj)
-        curvatures = np.zeros(n)
-        for i in range(n):
-            p1 = traj[(i - 1) % n]
-            p2 = traj[i]
-            p3 = traj[(i + 1) % n]
-            a = np.linalg.norm(p2 - p1)
-            b = np.linalg.norm(p3 - p2)
-            c = np.linalg.norm(p3 - p1)
-            area = 0.5 * abs(
-                (p2[0] - p1[0]) * (p3[1] - p1[1]) -
-                (p3[0] - p1[0]) * (p2[1] - p1[1])
-            )
-            denom = a * b * c
-            curvatures[i] = (4.0 * area / denom) if denom > 1e-10 else 0.0
-        return curvatures
+        # Vectorisé : cette fonction est appelée ~n fois par itération de L-BFGS-B
+        # (gradient par différences finies), une boucle Python coûtait 20-30 s par circuit.
+        p1 = np.roll(traj, 1, axis=0)
+        p2 = traj
+        p3 = np.roll(traj, -1, axis=0)
+        a = np.linalg.norm(p2 - p1, axis=1)
+        b = np.linalg.norm(p3 - p2, axis=1)
+        c = np.linalg.norm(p3 - p1, axis=1)
+        area = 0.5 * np.abs(
+            (p2[:, 0] - p1[:, 0]) * (p3[:, 1] - p1[:, 1]) -
+            (p3[:, 0] - p1[:, 0]) * (p2[:, 1] - p1[:, 1])
+        )
+        denom = a * b * c
+        return np.divide(4.0 * area, denom, out=np.zeros(len(traj)), where=denom > 1e-10)
 
     # =========================================================================
     # LISSAGE ALPHA (clé de la contrainte de boundary)

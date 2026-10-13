@@ -3,7 +3,7 @@ import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
 import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, Users, Download, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../services/api';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrthographicCamera, MapControls, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -57,9 +57,47 @@ interface SimulationData {
   optimal_trajectory: TrajectoryPoint[];
 }
 
+interface GraphBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+// Cadre la caméra orthographique sur le circuit chargé (centre + zoom adaptés au canvas)
+const CameraFit: React.FC<{ bounds: GraphBounds }> = ({ bounds }) => {
+  const camera = useThree((state) => state.camera);
+  const size = useThree((state) => state.size);
+  const controls = useThree((state) => state.controls) as any;
+
+  useEffect(() => {
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    if (!(width > 0) || !(height > 0)) return;
+
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    const fitZoom = Math.min(size.width / width, size.height / height);
+
+    camera.position.set(centerX, centerY, 100);
+    camera.zoom = fitZoom;
+    camera.updateProjectionMatrix();
+
+    if (controls) {
+      controls.minZoom = fitZoom * 0.2;
+      controls.maxZoom = fitZoom * 30;
+      controls.target.set(centerX, centerY, 0);
+      controls.update();
+    }
+  }, [bounds, size, camera, controls]);
+
+  return null;
+};
+
 const SimulationPage: React.FC = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string>('');
   const [dataLoaded, setDataLoaded] = useState(false);
   const [predictionsLoaded, setPredictionsLoaded] = useState(false);
   const [circuits, setCircuits] = useState<Circuit[]>([]);
@@ -83,10 +121,12 @@ const SimulationPage: React.FC = () => {
   const [laps, setLaps] = useState<TrajectoryPoint[][]>([]);
   const [selectedLap, setSelectedLap] = useState<number>(-1); // -1 = tous les tours
 
-  const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
+  const [graphBounds, setGraphBounds] = useState<GraphBounds>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
+  // Incrémenté à chaque changement de sélection : une réponse arrivée après est ignorée
+  const loadRequestRef = useRef<number>(0);
 
   // Refs to always have the latest values inside the animation loop (avoids stale closures)
   const circuitSectionsRef = useRef<CircuitSection[]>([]);
@@ -155,7 +195,7 @@ const SimulationPage: React.FC = () => {
   useEffect(() => {
     const fetchCircuits = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/circuits`);
+        const response = await fetch(`${API_BASE_URL}/circuits/`);
         if (response.ok) {
           const data = await response.json();
           setCircuits(data);
@@ -174,69 +214,91 @@ const SimulationPage: React.FC = () => {
     fetchCircuits();
   }, []);
 
-  // Reset data when circuit changes
+  // Reset data when the circuit or the trajectory selection changes
   useEffect(() => {
-    if (dataLoaded) {
-      setDataLoaded(false);
-      setSimulationData(null);
-      setIsRunning(false);
-      setPlayers(prevPlayers =>
-        prevPlayers.map(player => ({
-          ...player,
-          currentTrajectoryIndex: 0
-        }))
-      );
-    }
-  }, [selectedCircuitId]);
+    loadRequestRef.current += 1;
+    setLoading(false);
+    setLoadError('');
+    setDataLoaded(false);
+    setSimulationData(null);
+    setCircuitSections([]);
+    setIsRunning(false);
+    setPlayers(prevPlayers =>
+      prevPlayers.map(player => ({
+        ...player,
+        currentTrajectoryIndex: 0
+      }))
+    );
+  }, [selectedCircuitId, selectedTrajectoryType, selectedSessionId, loadTrajectory]);
 
-  // Charger les sessions de l'utilisateur quand le circuit change
+  // Charger les sessions de l'utilisateur quand le circuit change.
+  // Une session appartient à un circuit : la sélection précédente n'est plus valable.
   useEffect(() => {
+    let cancelled = false;
+
+    setSelectedTrajectoryType('optimal');
+    setSelectedSessionId('');
+    setUserSessions([]);
+
     if (selectedCircuitId) {
-      loadUserSessions(selectedCircuitId);
+      fetchUserSessions(selectedCircuitId).then(sessions => {
+        if (!cancelled) setUserSessions(sessions);
+      });
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedCircuitId]);
 
-  // Load simulation data only when requested
-  const loadUserSessions = async (circuitId: string) => {
+  const fetchUserSessions = async (circuitId: string): Promise<any[]> => {
     try {
       const user = localStorage.getItem('mokart_user');
-      if (!user) return;
+      if (!user) return [];
 
       const parsed = JSON.parse(user);
       const userId = parsed.id;
-      if (!userId) return;
+      if (!userId) return [];
 
       const response = await fetch(`${API_BASE_URL}/sessions/user/${userId}/circuit/${circuitId}`);
       if (response.ok) {
-        const sessions = await response.json();
-        setUserSessions(sessions);
+        return await response.json();
       }
     } catch (error) {
       console.error('Error loading user sessions:', error);
     }
+    return [];
   };
 
+  // Load simulation data only when requested
   const loadSimulationData = async () => {
     if (!selectedCircuitId) return;
 
+    const requestId = ++loadRequestRef.current;
+    const isStale = () => loadRequestRef.current !== requestId;
+
     setLoading(true);
+    setLoadError('');
     try {
       const boundariesRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/boundaries`);
+      if (isStale()) return;
 
       if (!boundariesRes.ok) {
         console.error('Error loading boundaries');
+        setLoadError(`Impossible de charger les bordures du circuit (erreur ${boundariesRes.status}).`);
         return;
       }
 
       const boundaries = await boundariesRes.json();
 
       let trajectory: TrajectoryPoint[] = [];
+      let trajectoryError = '';
 
       if (loadTrajectory) {
         if (selectedTrajectoryType === 'optimal') {
           let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
 
-          if (trajectoryRes.status === 404) {
+          if (trajectoryRes.status === 404 && !isStale()) {
             trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
               method: 'POST'
             });
@@ -246,17 +308,20 @@ const SimulationPage: React.FC = () => {
             trajectory = await trajectoryRes.json();
           } else {
             console.error('Error loading trajectory');
+            trajectoryError = `Trajectoire optimisée indisponible (erreur ${trajectoryRes.status}).`;
           }
         } else if (selectedTrajectoryType === 'session' && selectedSessionId) {
           const trajectoryRes = await fetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
           if (trajectoryRes.ok) {
             trajectory = await trajectoryRes.json();
-            setSessionSensorData(trajectory); // Stocker les données sensor_data complètes
           } else {
             console.error('Error loading session trajectory');
+            trajectoryError = `Trajectoire de la session indisponible (erreur ${trajectoryRes.status}).`;
           }
         }
       }
+
+      if (isStale()) return;
 
       const circuit = circuits.find(c => c.id === selectedCircuitId);
 
@@ -269,18 +334,24 @@ const SimulationPage: React.FC = () => {
         boundaries,
         optimal_trajectory: trajectory
       });
-
-      // Détecter les tours
-      const detectedLaps = detectLaps(trajectory);
-      setLaps(detectedLaps);
-      setSelectedLap(-1); // Réinitialiser à "tous les tours"
+      setLoadError(trajectoryError);
 
       // Si c'est une session, utiliser un seul pilote pour la reproduction exacte
       if (selectedTrajectoryType === 'session') {
+        setSessionSensorData(trajectory); // Stocker les données sensor_data complètes
+
+        // Détecter les tours
+        setLaps(detectLaps(trajectory));
+
         setPlayers([
           { id: '1', name: 'Session Replay', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 }
         ]);
       } else {
+        setSessionSensorData([]);
+
+        // La trajectoire optimisée est une boucle unique : pas de découpage en tours
+        setLaps([trajectory]);
+
         // Trajectoire optimisée : 4 ghosts
         setPlayers([
           { id: '1', name: 'Joueur 1', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 },
@@ -289,12 +360,14 @@ const SimulationPage: React.FC = () => {
           { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
         ]);
       }
+      setSelectedLap(-1); // Réinitialiser à "tous les tours"
 
       setDataLoaded(true);
     } catch (error) {
       console.error('Error loading simulation data:', error);
+      if (!isStale()) setLoadError("Impossible de joindre l'API pour charger le circuit.");
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
   };
 
@@ -683,7 +756,7 @@ const SimulationPage: React.FC = () => {
                     setSelectedSessionId(value);
                   }
                 }}
-                disabled={!selectedCircuitId || dataLoaded || loading}
+                disabled={!selectedCircuitId || loading}
                 className="p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
               >
                 <option value="optimal">Trajectoire optimisée</option>
@@ -703,7 +776,7 @@ const SimulationPage: React.FC = () => {
                   type="checkbox"
                   checked={loadTrajectory}
                   onChange={(e) => setLoadTrajectory(e.target.checked)}
-                  disabled={dataLoaded || loading}
+                  disabled={loading}
                   className="w-4 h-4 rounded border-[#262626] bg-[#16181d] text-[#7bf8ac] focus:ring-[#7bf8ac] focus:ring-offset-0"
                 />
                 <span>Trajectoire</span>
@@ -1011,6 +1084,9 @@ const SimulationPage: React.FC = () => {
                   <p className="text-[#94a3b8] text-sm max-w-md">
                     Utilisez le bouton "Charger le Circuit" dans le panneau de contrôle pour charger les données et démarrer la simulation.
                   </p>
+                  {loadError && (
+                    <p className="text-[#ef4444] text-sm max-w-md">{loadError}</p>
+                  )}
                 </div>
               </div>
             ) : loading ? (
@@ -1027,6 +1103,11 @@ const SimulationPage: React.FC = () => {
                     Chargement
                   </div>
                 )}
+                {loadError && (
+                  <div className="px-3 py-1.5 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#ef4444] border border-[#262626] rounded">
+                    {loadError}
+                  </div>
+                )}
                 {isRunning && (
                   <div className="px-3 py-1.5 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#7bf8ac] border border-[#262626] rounded flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] animate-pulse"></span>
@@ -1040,27 +1121,24 @@ const SimulationPage: React.FC = () => {
                   <div className="w-full h-full" style={{ minHeight: '400px' }}>
                     <Canvas style={{ background: '#1a1a1a' }}>
                       <OrthographicCamera
+                        makeDefault
                         position={[0, 0, 100]}
-                        zoom={1}
-                        left={graphBounds.minX}
-                        right={graphBounds.maxX}
-                        top={graphBounds.maxY}
-                        bottom={graphBounds.minY}
                         near={0.1}
                         far={1000}
                       />
                       <MapControls
+                        makeDefault
                         enableRotate={false}
                         enableZoom={true}
                         enablePan={true}
-                        minZoom={0.1}
-                        maxZoom={10}
+                        screenSpacePanning={true}
                       />
+                      <CameraFit bounds={graphBounds} />
                       <ambientLight intensity={1} />
                       <directionalLight position={[10, 10, 5]} intensity={1} />
 
                       {/* Left Boundary - triée par point_order */}
-                      {chartData.leftBoundary.length > 0 && (
+                      {chartData.leftBoundary.length > 1 && (
                         <Line
                           points={chartData.leftBoundary
                             .sort((a: any, b: any) => a.point_order - b.point_order)
@@ -1071,7 +1149,7 @@ const SimulationPage: React.FC = () => {
                       )}
 
                       {/* Right Boundary - triée par point_order */}
-                      {chartData.rightBoundary.length > 0 && (
+                      {chartData.rightBoundary.length > 1 && (
                         <Line
                           points={chartData.rightBoundary
                             .sort((a: any, b: any) => a.point_order - b.point_order)
@@ -1082,7 +1160,7 @@ const SimulationPage: React.FC = () => {
                       )}
 
                       {/* Circuit Sections */}
-                      {chartData.sections.length > 0 && chartData.sections.map((section: any) => (
+                      {chartData.sections.filter((section: any) => section.data.length > 1).map((section: any) => (
                         <Line
                           key={section.id}
                           points={section.data.map((p: any) => new THREE.Vector3(p.x, p.y, 0))}
