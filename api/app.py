@@ -16,27 +16,7 @@ import asyncio
 
 app = FastAPI()
 
-# Configuration du timeout global
-@app.middleware("http")
-async def add_timeout_middleware(request, call_next):
-    try:
-        # Timeout de 30 secondes pour les requêtes
-        return await asyncio.wait_for(call_next(request), timeout=30.0)
-    except asyncio.TimeoutError:
-        return JSONResponse(
-            status_code=408,
-            content={"detail": "Request timeout - l'opération a pris trop de temps"}
-        )
-
-# Inclure les routes D'ABORD
-app.include_router(auth_router)
-app.include_router(sessions_router)
-app.include_router(circuits_router)
-app.include_router(users_router)
-app.include_router(admin_router)
-app.include_router(dashboard_router)
-
-# Configuration CORS APRÈS les routes
+# Configuration CORS AVANT les routes
 app.add_middleware(
     CORSMiddleware,
     # Autorise tout pour éviter les problèmes en dev (téléphone, IP locale, etc)
@@ -45,6 +25,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Configuration du timeout global
+@app.middleware("http")
+async def add_timeout_middleware(request, call_next):
+    try:
+        # Timeout de 120 secondes pour les requêtes (augmenté pour le calcul de trajectoire)
+        return await asyncio.wait_for(call_next(request), timeout=120.0)
+    except asyncio.TimeoutError:
+        return JSONResponse(
+            status_code=408,
+            content={"detail": "Request timeout - l'opération a pris trop de temps"}
+        )
+
+# Inclure les routes
+app.include_router(auth_router)
+app.include_router(sessions_router)
+app.include_router(circuits_router)
+app.include_router(users_router)
+app.include_router(admin_router)
+app.include_router(dashboard_router)
 
 @app.get("/")
 async def main():

@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef, WheelEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
-import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, ZoomIn, ZoomOut, Move, Users, Gauge, Timer } from 'lucide-react';
-import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Line, LineChart, ComposedChart } from 'recharts';
+import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, Users, Download, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '../services/api';
+import { Canvas, useThree } from '@react-three/fiber';
+import { OrthographicCamera, MapControls, Line } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface CircuitBoundary {
   id: string;
@@ -38,6 +40,13 @@ interface CircuitSection {
   isSlowed: boolean;
 }
 
+interface Circuit {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+}
+
 interface SimulationData {
   circuit: {
     id: string;
@@ -48,9 +57,52 @@ interface SimulationData {
   optimal_trajectory: TrajectoryPoint[];
 }
 
+interface GraphBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
+// Cadre la caméra orthographique sur le circuit chargé (centre + zoom adaptés au canvas)
+const CameraFit: React.FC<{ bounds: GraphBounds }> = ({ bounds }) => {
+  const camera = useThree((state) => state.camera);
+  const size = useThree((state) => state.size);
+  const controls = useThree((state) => state.controls) as any;
+
+  useEffect(() => {
+    const width = bounds.maxX - bounds.minX;
+    const height = bounds.maxY - bounds.minY;
+    if (!(width > 0) || !(height > 0)) return;
+
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+    const fitZoom = Math.min(size.width / width, size.height / height);
+
+    camera.position.set(centerX, centerY, 100);
+    camera.zoom = fitZoom;
+    camera.updateProjectionMatrix();
+
+    if (controls) {
+      controls.minZoom = fitZoom * 0.2;
+      controls.maxZoom = fitZoom * 30;
+      controls.target.set(centerX, centerY, 0);
+      controls.update();
+    }
+  }, [bounds, size, camera, controls]);
+
+  return null;
+};
+
 const SimulationPage: React.FC = () => {
   const [simulationData, setSimulationData] = useState<SimulationData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string>('');
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [predictionsLoaded, setPredictionsLoaded] = useState(false);
+  const [circuits, setCircuits] = useState<Circuit[]>([]);
+  const [selectedCircuitId, setSelectedCircuitId] = useState<string>('');
+  const [loadingCircuits, setLoadingCircuits] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [players, setPlayers] = useState<Player[]>([
     { id: '1', name: 'Joueur 1', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 },
@@ -58,18 +110,23 @@ const SimulationPage: React.FC = () => {
     { id: '3', name: 'Joueur 3', color: '#ef4444', position: 0, speed: 0.12, status: 'running', currentTrajectoryIndex: 0 },
     { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
   ]);
+  const [sessionSensorData, setSessionSensorData] = useState<TrajectoryPoint[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
 
   const [circuitSections, setCircuitSections] = useState<CircuitSection[]>([]);
+  const [loadTrajectory, setLoadTrajectory] = useState<boolean>(true);
+  const [userSessions, setUserSessions] = useState<any[]>([]);
+  const [selectedTrajectoryType, setSelectedTrajectoryType] = useState<'optimal' | 'session'>('optimal');
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [laps, setLaps] = useState<TrajectoryPoint[][]>([]);
+  const [selectedLap, setSelectedLap] = useState<number>(-1); // -1 = tous les tours
 
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [graphBounds, setGraphBounds] = useState<{ minX: number; maxX: number; minY: number; maxY: number }>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
+  const [graphBounds, setGraphBounds] = useState<GraphBounds>({ minX: -20, maxX: 20, minY: -20, maxY: 20 });
 
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
-  const chartRef = useRef<any>(null);
+  // Incrémenté à chaque changement de sélection : une réponse arrivée après est ignorée
+  const loadRequestRef = useRef<number>(0);
 
   // Refs to always have the latest values inside the animation loop (avoids stale closures)
   const circuitSectionsRef = useRef<CircuitSection[]>([]);
@@ -134,10 +191,201 @@ const SimulationPage: React.FC = () => {
     }
   }, [simulationData]);
 
-  // Load simulation data on mount
+  // Load circuits list on mount
   useEffect(() => {
-    fetchSimulationData();
+    const fetchCircuits = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/circuits/`);
+        if (response.ok) {
+          const data = await response.json();
+          setCircuits(data);
+          if (data.length > 0) {
+            setSelectedCircuitId(data[0].id);
+          }
+        } else {
+          console.error('Error loading circuits');
+        }
+      } catch (error) {
+        console.error('Error loading circuits:', error);
+      } finally {
+        setLoadingCircuits(false);
+      }
+    };
+    fetchCircuits();
   }, []);
+
+  // Reset data when the circuit or the trajectory selection changes
+  useEffect(() => {
+    loadRequestRef.current += 1;
+    setLoading(false);
+    setLoadError('');
+    setDataLoaded(false);
+    setSimulationData(null);
+    setCircuitSections([]);
+    setIsRunning(false);
+    setPlayers(prevPlayers =>
+      prevPlayers.map(player => ({
+        ...player,
+        currentTrajectoryIndex: 0
+      }))
+    );
+  }, [selectedCircuitId, selectedTrajectoryType, selectedSessionId, loadTrajectory]);
+
+  // Charger les sessions de l'utilisateur quand le circuit change.
+  // Une session appartient à un circuit : la sélection précédente n'est plus valable.
+  useEffect(() => {
+    let cancelled = false;
+
+    setSelectedTrajectoryType('optimal');
+    setSelectedSessionId('');
+    setUserSessions([]);
+
+    if (selectedCircuitId) {
+      fetchUserSessions(selectedCircuitId).then(sessions => {
+        if (!cancelled) setUserSessions(sessions);
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCircuitId]);
+
+  const fetchUserSessions = async (circuitId: string): Promise<any[]> => {
+    try {
+      const user = localStorage.getItem('mokart_user');
+      if (!user) return [];
+
+      const parsed = JSON.parse(user);
+      const userId = parsed.id;
+      if (!userId) return [];
+
+      const response = await fetch(`${API_BASE_URL}/sessions/user/${userId}/circuit/${circuitId}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Error loading user sessions:', error);
+    }
+    return [];
+  };
+
+  // Load simulation data only when requested
+  const loadSimulationData = async () => {
+    if (!selectedCircuitId) return;
+
+    const requestId = ++loadRequestRef.current;
+    const isStale = () => loadRequestRef.current !== requestId;
+
+    setLoading(true);
+    setLoadError('');
+    try {
+      const boundariesRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/boundaries`);
+      if (isStale()) return;
+
+      if (!boundariesRes.ok) {
+        console.error('Error loading boundaries');
+        setLoadError(`Impossible de charger les bordures du circuit (erreur ${boundariesRes.status}).`);
+        return;
+      }
+
+      const boundaries = await boundariesRes.json();
+
+      let trajectory: TrajectoryPoint[] = [];
+      let trajectoryError = '';
+
+      if (loadTrajectory) {
+        if (selectedTrajectoryType === 'optimal') {
+          let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+
+          if (trajectoryRes.status === 404 && !isStale()) {
+            trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
+              method: 'POST'
+            });
+          }
+
+          if (trajectoryRes.ok) {
+            trajectory = await trajectoryRes.json();
+          } else {
+            console.error('Error loading trajectory');
+            trajectoryError = `Trajectoire optimisée indisponible (erreur ${trajectoryRes.status}).`;
+          }
+        } else if (selectedTrajectoryType === 'session' && selectedSessionId) {
+          const trajectoryRes = await fetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
+          if (trajectoryRes.ok) {
+            trajectory = await trajectoryRes.json();
+          } else {
+            console.error('Error loading session trajectory');
+            trajectoryError = `Trajectoire de la session indisponible (erreur ${trajectoryRes.status}).`;
+          }
+        }
+      }
+
+      if (isStale()) return;
+
+      const circuit = circuits.find(c => c.id === selectedCircuitId);
+
+      setSimulationData({
+        circuit: {
+          id: selectedCircuitId,
+          name: circuit?.name || 'Unknown',
+          description: circuit?.description || ''
+        },
+        boundaries,
+        optimal_trajectory: trajectory
+      });
+      setLoadError(trajectoryError);
+
+      // Si c'est une session, utiliser un seul pilote pour la reproduction exacte
+      if (selectedTrajectoryType === 'session') {
+        setSessionSensorData(trajectory); // Stocker les données sensor_data complètes
+
+        // Détecter les tours
+        setLaps(detectLaps(trajectory));
+
+        setPlayers([
+          { id: '1', name: 'Session Replay', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 }
+        ]);
+      } else {
+        setSessionSensorData([]);
+
+        // La trajectoire optimisée est une boucle unique : pas de découpage en tours
+        setLaps([trajectory]);
+
+        // Trajectoire optimisée : 4 ghosts
+        setPlayers([
+          { id: '1', name: 'Joueur 1', color: '#7bf8ac', position: 0, speed: 0.1, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '2', name: 'Joueur 2', color: '#f59e0b', position: 0, speed: 0.08, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '3', name: 'Joueur 3', color: '#ef4444', position: 0, speed: 0.12, status: 'running', currentTrajectoryIndex: 0 },
+          { id: '4', name: 'Joueur 4', color: '#3b82f6', position: 0, speed: 0.09, status: 'running', currentTrajectoryIndex: 0 }
+        ]);
+      }
+      setSelectedLap(-1); // Réinitialiser à "tous les tours"
+
+      setDataLoaded(true);
+    } catch (error) {
+      console.error('Error loading simulation data:', error);
+      if (!isStale()) setLoadError("Impossible de joindre l'API pour charger le circuit.");
+    } finally {
+      if (!isStale()) setLoading(false);
+    }
+  };
+
+  const loadPredictions = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/circuits/week-circuit/predictions`);
+      if (response.ok) {
+        setPredictionsLoaded(true);
+      } else {
+        console.error('Error loading predictions');
+      }
+    } catch (error) {
+      console.error('Error loading predictions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate bounds when data loads
   useEffect(() => {
@@ -169,8 +417,6 @@ const SimulationPage: React.FC = () => {
         maxY: maxY + paddingY
       });
 
-      setZoomLevel(1);
-      setPanOffset({ x: 0, y: 0 });
     }
   }, [simulationData]);
 
@@ -195,7 +441,16 @@ const SimulationPage: React.FC = () => {
 
         setPlayers(prevPlayers =>
           prevPlayers.map(player => {
-            // Stopped players don't move at all
+            // Pour une session : reproduction exacte des données
+            if (selectedTrajectoryType === 'session' && sessionSensorData.length > 0) {
+              let newIndex = player.currentTrajectoryIndex + (deltaTime * 0.1); // Vitesse constante
+              if (newIndex >= sessionSensorData.length) {
+                newIndex = sessionSensorData.length - 1; // Arrêter à la fin
+              }
+              return { ...player, currentTrajectoryIndex: newIndex };
+            }
+
+            // Pour la trajectoire optimisée : logique de simulation
             if (player.status === 'stopped') {
               return player;
             }
@@ -226,10 +481,7 @@ const SimulationPage: React.FC = () => {
               newIndex = 0;
             }
 
-            return {
-              ...player,
-              currentTrajectoryIndex: newIndex
-            };
+            return { ...player, currentTrajectoryIndex: newIndex };
           })
         );
 
@@ -251,66 +503,7 @@ const SimulationPage: React.FC = () => {
     };
   }, [isRunning]); // Only re-run when isRunning changes — sections/data read via refs
 
-  const fetchSimulationData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/circuits/week-circuit/simulation-data`);
-      if (response.ok) {
-        const data = await response.json();
-        setSimulationData(data);
-      } else {
-        console.error('Error loading simulation data');
-      }
-    } catch (error) {
-      console.error('Error loading simulation data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleWheel = (e: WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoomLevel(prev => Math.max(0.1, Math.min(10, prev * zoomFactor)));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button === 0) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-
-      setPanOffset(prev => ({
-        x: prev.x - deltaX,
-        y: prev.y + deltaY
-      }));
-
-      setDragStart({ x: e.clientX, y: e.clientY });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const resetView = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
-  const zoomIn = () => {
-    setZoomLevel(prev => Math.min(10, prev * 1.2));
-  };
-
-  const zoomOut = () => {
-    setZoomLevel(prev => Math.max(0.1, prev / 1.2));
-  };
 
   const toggleSimulation = () => {
     setIsRunning(!isRunning);
@@ -355,7 +548,72 @@ const SimulationPage: React.FC = () => {
     );
   };
 
+  const detectLaps = (trajectory: TrajectoryPoint[]): TrajectoryPoint[][] => {
+    if (trajectory.length < 10) return [trajectory];
+
+    // Trouver le point le plus rapide comme ligne de départ/arrivée
+    const speeds = trajectory.map((p, i) => {
+      if (i === 0) return 0;
+      const dx = p.x - trajectory[i - 1].x;
+      const dy = p.y - trajectory[i - 1].y;
+      return Math.sqrt(dx * dx + dy * dy);
+    });
+
+    const maxSpeedIndex = speeds.indexOf(Math.max(...speeds));
+    const finishLine = trajectory[maxSpeedIndex];
+
+    // Détecter les tours en trouvant quand on croise la ligne de départ
+    const lapThreshold = 5; // distance minimale pour considérer un tour
+    const laps: TrajectoryPoint[][] = [];
+    let currentLap: TrajectoryPoint[] = [];
+    let lastCrossIndex = -1;
+    let minDistanceToFinish = Infinity;
+
+    for (let i = 0; i < trajectory.length; i++) {
+      const point = trajectory[i];
+      const distToFinish = Math.sqrt(
+        Math.pow(point.x - finishLine.x, 2) +
+        Math.pow(point.y - finishLine.y, 2)
+      );
+
+      minDistanceToFinish = Math.min(minDistanceToFinish, distToFinish);
+
+      // Si on s'éloigne de la ligne de départ après s'en être approché
+      if (minDistanceToFinish < lapThreshold && distToFinish > lapThreshold * 2) {
+        if (currentLap.length > 10) {
+          laps.push(currentLap);
+          currentLap = [point];
+          lastCrossIndex = i;
+          minDistanceToFinish = Infinity;
+          continue;
+        }
+      }
+
+      currentLap.push(point);
+    }
+
+    // Ajouter le dernier tour
+    if (currentLap.length > 10) {
+      laps.push(currentLap);
+    }
+
+    return laps.length > 0 ? laps : [trajectory];
+  };
+
   const getPlayerPosition = (player: Player) => {
+    // Pour une session, utiliser les données sensor_data exactes
+    if (selectedTrajectoryType === 'session' && sessionSensorData.length > 0) {
+      const index = Math.floor(player.currentTrajectoryIndex);
+      if (index >= sessionSensorData.length) {
+        // Fin de la session, rester au dernier point
+        const lastPoint = sessionSensorData[sessionSensorData.length - 1];
+        return { x: lastPoint.x, y: lastPoint.y };
+      }
+      const point = sessionSensorData[index];
+      return { x: point.x, y: point.y };
+    }
+
+    // Pour la trajectoire optimisée, utiliser l'interpolation
     if (!simulationData || simulationData.optimal_trajectory.length === 0) {
       return { x: 0, y: 0 };
     }
@@ -373,22 +631,6 @@ const SimulationPage: React.FC = () => {
     };
   };
 
-  const getCurrentBounds = () => {
-    const centerX = (graphBounds.minX + graphBounds.maxX) / 2;
-    const centerY = (graphBounds.minY + graphBounds.maxY) / 2;
-    const rangeX = (graphBounds.maxX - graphBounds.minX) / (2 * zoomLevel);
-    const rangeY = (graphBounds.maxY - graphBounds.minY) / (2 * zoomLevel);
-
-    const panScaleX = rangeX * 0.003;
-    const panScaleY = rangeY * 0.003;
-
-    return {
-      minX: centerX - rangeX + panOffset.x * panScaleX,
-      maxX: centerX + rangeX + panOffset.x * panScaleX,
-      minY: centerY - rangeY + panOffset.y * panScaleY,
-      maxY: centerY + rangeY + panOffset.y * panScaleY
-    };
-  };
 
   const prepareChartData = () => {
     if (!simulationData) return { leftBoundary: [], rightBoundary: [], trajectory: [], players: [], sections: [] };
@@ -396,9 +638,21 @@ const SimulationPage: React.FC = () => {
     const leftBoundary = simulationData.boundaries.filter(b => b.side === 'left');
     const rightBoundary = simulationData.boundaries.filter(b => b.side === 'right');
 
+    // Utiliser le tour sélectionné ou toute la trajectoire
+    const trajectoryToUse = selectedLap >= 0 && laps[selectedLap]
+      ? laps[selectedLap]
+      : simulationData.optimal_trajectory;
+
+    // Pour les sections, utiliser toute la trajectoire du tour si un tour est sélectionné
     const sectionsData = circuitSections.map(section => {
-      const sectionTrajectory = simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
-      return { ...section, data: sectionTrajectory };
+      const sectionTrajectory = selectedLap >= 0
+        ? trajectoryToUse
+        : simulationData.optimal_trajectory.slice(section.startIndex, section.endIndex + 1);
+      const hexColor = section.color.replace('rgba(', '').replace(')', '').split(',').slice(0, 3).map((c: string) => {
+        const val = parseInt(c.trim());
+        return val.toString(16).padStart(2, '0');
+      }).join('');
+      return { ...section, data: sectionTrajectory, hexColor: `#${hexColor}` };
     });
 
     const playerPositions = players.map(player => {
@@ -415,14 +669,13 @@ const SimulationPage: React.FC = () => {
     return {
       leftBoundary,
       rightBoundary,
-      trajectory: simulationData.optimal_trajectory,
+      trajectory: trajectoryToUse,
       players: playerPositions,
       sections: sectionsData
     };
   };
 
   const chartData = prepareChartData();
-  const bounds = getCurrentBounds();
 
   return (
     <main className="flex-1 md:ml-64 ml-0 relative z-10 h-screen flex flex-col overflow-hidden">
@@ -437,7 +690,7 @@ const SimulationPage: React.FC = () => {
                 Simulation en Direct
               </h1>
               <p className="text-[#94a3b8] text-xs mt-1 font-mono flex items-center gap-2">
-                CIRCUIT: <span className="text-white">{simulationData?.circuit?.name || 'Chargement...'}</span>
+                CIRCUIT: <span className="text-white">{dataLoaded ? simulationData?.circuit?.name : 'Non chargé'}</span>
               </p>
             </div>
 
@@ -462,37 +715,103 @@ const SimulationPage: React.FC = () => {
                 <Square size={16} />
               </button>
 
-              <button
-                onClick={fetchSimulationData}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors"
-                title="Actualiser"
+              <select
+                value={selectedCircuitId}
+                onChange={(e) => setSelectedCircuitId(e.target.value)}
+                className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
               >
-                <RotateCw size={16} />
-              </button>
+                {circuits.map((circuit) => (
+                  <option key={circuit.id} value={circuit.id}>
+                    {circuit.name}
+                  </option>
+                ))}
+              </select>
 
               <button
-                onClick={zoomIn}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Zoom avant"
+                onClick={loadSimulationData}
+                disabled={!selectedCircuitId || dataLoaded || loading}
+                className={`p-2 border transition-colors rounded ${
+                  dataLoaded
+                    ? 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12]'
+                    : loading
+                    ? 'bg-[#16181d] border-[#262626] text-[#94a3b8]'
+                    : !selectedCircuitId
+                    ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                    : 'bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white hover:bg-[#262626]'
+                }`}
+                title="Charger le circuit"
               >
-                <ZoomIn size={16} />
+                {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
               </button>
 
-              <button
-                onClick={zoomOut}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Zoom arrière"
+              <select
+                value={selectedTrajectoryType === 'session' ? selectedSessionId : 'optimal'}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === 'optimal') {
+                    setSelectedTrajectoryType('optimal');
+                    setSelectedSessionId('');
+                  } else {
+                    setSelectedTrajectoryType('session');
+                    setSelectedSessionId(value);
+                  }
+                }}
+                disabled={!selectedCircuitId || loading}
+                className="p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
               >
-                <ZoomOut size={16} />
-              </button>
+                <option value="optimal">Trajectoire optimisée</option>
+                {userSessions.length > 0 && (
+                  <optgroup label="Mes sessions">
+                    {userSessions.map((session) => (
+                      <option key={session.id} value={session.id}>
+                        {session.kart} - {new Date(session.created_at).toLocaleDateString()}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+
+              <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={loadTrajectory}
+                  onChange={(e) => setLoadTrajectory(e.target.checked)}
+                  disabled={loading}
+                  className="w-4 h-4 rounded border-[#262626] bg-[#16181d] text-[#7bf8ac] focus:ring-[#7bf8ac] focus:ring-offset-0"
+                />
+                <span>Trajectoire</span>
+              </label>
+
+              {dataLoaded && laps.length > 1 && (
+                <select
+                  value={selectedLap}
+                  onChange={(e) => setSelectedLap(parseInt(e.target.value))}
+                  className="p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                >
+                  <option value={-1}>Tous les tours</option>
+                  {laps.map((_, index) => (
+                    <option key={index} value={index}>
+                      Tour {index + 1}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <button
-                onClick={resetView}
-                className="p-2 bg-[#16181d] border border-[#262626] text-[#94a3b8] hover:text-white rounded hover:bg-[#262626] transition-colors hidden sm:block"
-                title="Réinitialiser la vue"
+                onClick={loadPredictions}
+                disabled={!dataLoaded || predictionsLoaded || loading}
+                className={`p-2 border transition-colors rounded ${
+                  predictionsLoaded
+                    ? 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12]'
+                    : !dataLoaded || loading
+                    ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                    : 'bg-[#16181d] border-[#262626] text-[#94a3b8] hover:text-white hover:bg-[#262626]'
+                }`}
+                title="Charger les prédictions"
               >
-                <Move size={16} />
+                <RefreshCw size={16} />
               </button>
+
             </div>
           </div>
 
@@ -500,9 +819,115 @@ const SimulationPage: React.FC = () => {
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
 
             {/* Controls Column */}
-            {loading && !simulationData ? (
+            {!dataLoaded ? (
               <div className="lg:col-span-1 overflow-y-auto pr-1">
-                <SkeletonSidePanel />
+                <div className="card">
+                  <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3 flex items-center gap-2">
+                    <Download size={12} />
+                    Chargement Différé
+                  </h3>
+                  <div className="space-y-3">
+                    {loadingCircuits ? (
+                      <div className="text-center text-[#94a3b8] text-sm py-4">
+                        Chargement des circuits...
+                      </div>
+                    ) : circuits.length === 0 ? (
+                      <div className="text-center text-[#94a3b8] text-sm py-4">
+                        Aucun circuit disponible
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-xs text-[#94a3b8]">Sélectionner un circuit</label>
+                          <select
+                            value={selectedCircuitId}
+                            onChange={(e) => setSelectedCircuitId(e.target.value)}
+                            className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                          >
+                            {circuits.map((circuit) => (
+                              <option key={circuit.id} value={circuit.id}>
+                                {circuit.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs text-[#94a3b8]">Type de trajectoire</label>
+                          <select
+                            value={selectedTrajectoryType === 'session' ? selectedSessionId : 'optimal'}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === 'optimal') {
+                                setSelectedTrajectoryType('optimal');
+                                setSelectedSessionId('');
+                              } else {
+                                setSelectedTrajectoryType('session');
+                                setSelectedSessionId(value);
+                              }
+                            }}
+                            disabled={!selectedCircuitId || loading}
+                            className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                          >
+                            <option value="optimal">Trajectoire optimisée</option>
+                            {userSessions.length > 0 && (
+                              <optgroup label="Mes sessions">
+                                {userSessions.map((session) => (
+                                  <option key={session.id} value={session.id}>
+                                    {session.kart} - {new Date(session.created_at).toLocaleDateString()}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-[#94a3b8] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={loadTrajectory}
+                            onChange={(e) => setLoadTrajectory(e.target.checked)}
+                            disabled={loading}
+                            className="w-4 h-4 rounded border-[#262626] bg-[#16181d] text-[#7bf8ac] focus:ring-[#7bf8ac] focus:ring-offset-0"
+                          />
+                          <span>Charger la trajectoire optimisée</span>
+                        </label>
+                        {dataLoaded && laps.length > 1 && (
+                          <div className="space-y-2">
+                            <label className="text-xs text-[#94a3b8]">Tour à afficher</label>
+                            <select
+                              value={selectedLap}
+                              onChange={(e) => setSelectedLap(parseInt(e.target.value))}
+                              className="w-full p-2 bg-[#16181d] border border-[#262626] text-white rounded text-sm focus:outline-none focus:border-[#7bf8ac]"
+                            >
+                              <option value={-1}>Tous les tours</option>
+                              {laps.map((_, index) => (
+                                <option key={index} value={index}>
+                                  Tour {index + 1}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                        <button
+                          onClick={loadSimulationData}
+                          disabled={!selectedCircuitId || loading}
+                          className={`w-full p-3 border transition-colors rounded flex items-center justify-center gap-2 font-medium ${
+                            loading
+                              ? 'bg-[#16181d] border-[#262626] text-[#94a3b8] cursor-not-allowed'
+                              : !selectedCircuitId
+                              ? 'bg-[#16181d] border-[#262626] text-[#525252] cursor-not-allowed'
+                              : 'bg-[#7bf8ac] border-[#7bf8ac] text-[#0d0f12] hover:bg-[#6ee7b7]'
+                          }`}
+                        >
+                          {loading ? <RefreshCw size={16} className="animate-spin" /> : <Download size={16} />}
+                          {loading ? 'Chargement...' : 'Charger le Circuit'}
+                        </button>
+                        <p className="text-xs text-[#94a3b8] text-center">
+                          Sélectionnez un circuit puis cliquez pour charger les données
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
             <div className="lg:col-span-1 flex flex-col gap-3 overflow-y-auto pr-1">
@@ -585,7 +1010,6 @@ const SimulationPage: React.FC = () => {
                       maxWidth: '100%',
                       maxHeight: '100%'
                     }}
-                    ref={chartRef}
                   >
                     <h3 className="text-[#94a3b8] text-[10px] uppercase tracking-wider font-medium mb-3">Informations Circuit</h3>
                     <div className="space-y-2 text-xs">
@@ -652,7 +1076,20 @@ const SimulationPage: React.FC = () => {
             )}
 
             {/* Circuit Visualization */}
-            {loading && !simulationData ? (
+            {!dataLoaded ? (
+              <div className="lg:col-span-3 card relative overflow-hidden flex flex-col items-center justify-center">
+                <div className="text-center space-y-4">
+                  <Download size={48} className="text-[#94a3b8] mx-auto" />
+                  <h3 className="text-white text-lg font-medium">Circuit Non Chargé</h3>
+                  <p className="text-[#94a3b8] text-sm max-w-md">
+                    Utilisez le bouton "Charger le Circuit" dans le panneau de contrôle pour charger les données et démarrer la simulation.
+                  </p>
+                  {loadError && (
+                    <p className="text-[#ef4444] text-sm max-w-md">{loadError}</p>
+                  )}
+                </div>
+              </div>
+            ) : loading ? (
               <SkeletonChart className="lg:col-span-3 min-h-[300px]" />
             ) : (
             <div className="lg:col-span-3 card relative overflow-hidden flex flex-col">
@@ -666,6 +1103,11 @@ const SimulationPage: React.FC = () => {
                     Chargement
                   </div>
                 )}
+                {loadError && (
+                  <div className="px-3 py-1.5 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#ef4444] border border-[#262626] rounded">
+                    {loadError}
+                  </div>
+                )}
                 {isRunning && (
                   <div className="px-3 py-1.5 bg-[#0d0f12]/80 backdrop-blur text-[10px] text-[#7bf8ac] border border-[#262626] rounded flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#7bf8ac] animate-pulse"></span>
@@ -674,96 +1116,69 @@ const SimulationPage: React.FC = () => {
                 )}
               </div>
 
-              <div
-                className="flex-1 relative"
-                onWheel={handleWheel}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              >
+              <div className="flex-1 relative">
                 {simulationData && (
-                  <div className="w-full h-full p-2 flex items-center justify-center">
-                    <div
-                      style={{
-                        width: 'min(100%, calc(100vh - 200px))',
-                        height: 'min(100%, calc(100vh - 200px))',
-                        maxWidth: '100%',
-                        maxHeight: '100%'
-                      }}
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 50, right: 20, bottom: 20, left: 20 }}>
-                      <XAxis
-                        type="number"
-                        dataKey="x"
-                        domain={[bounds.minX, bounds.maxX]}
-                        hide={true}
+                  <div className="w-full h-full" style={{ minHeight: '400px' }}>
+                    <Canvas style={{ background: '#1a1a1a' }}>
+                      <OrthographicCamera
+                        makeDefault
+                        position={[0, 0, 100]}
+                        near={0.1}
+                        far={1000}
                       />
-                      <YAxis
-                        type="number"
-                        dataKey="y"
-                        domain={[bounds.minY, bounds.maxY]}
-                        hide={true}
+                      <MapControls
+                        makeDefault
+                        enableRotate={false}
+                        enableZoom={true}
+                        enablePan={true}
+                        screenSpacePanning={true}
                       />
+                      <CameraFit bounds={graphBounds} />
+                      <ambientLight intensity={1} />
+                      <directionalLight position={[10, 10, 5]} intensity={1} />
 
-                      {/* Left Boundary */}
-                      <Scatter
-                        name="Bordure Gauche"
-                        data={chartData.leftBoundary}
-                        fill="transparent"
-                        line={{ stroke: '#ef4444', strokeWidth: 2 }}
-                        shape={false}
-                      />
+                      {/* Left Boundary - triée par point_order */}
+                      {chartData.leftBoundary.length > 1 && (
+                        <Line
+                          points={chartData.leftBoundary
+                            .sort((a: any, b: any) => a.point_order - b.point_order)
+                            .map((b: any) => new THREE.Vector3(b.x, b.y, 0))}
+                          color="#ef4444"
+                          lineWidth={5}
+                        />
+                      )}
 
-                      {/* Right Boundary */}
-                      <Scatter
-                        name="Bordure Droite"
-                        data={chartData.rightBoundary}
-                        fill="transparent"
-                        line={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                        shape={false}
-                      />
+                      {/* Right Boundary - triée par point_order */}
+                      {chartData.rightBoundary.length > 1 && (
+                        <Line
+                          points={chartData.rightBoundary
+                            .sort((a: any, b: any) => a.point_order - b.point_order)
+                            .map((b: any) => new THREE.Vector3(b.x, b.y, 0))}
+                          color="#3b82f6"
+                          lineWidth={5}
+                        />
+                      )}
 
                       {/* Circuit Sections */}
-                      {chartData.sections.map((section: any) => (
-                        <Scatter
+                      {chartData.sections.filter((section: any) => section.data.length > 1).map((section: any) => (
+                        <Line
                           key={section.id}
-                          name={section.name}
-                          data={section.data}
-                          fill={section.color}
-                          line={{
-                            stroke: section.isSlowed ? section.color.replace('0.3', '0.8') : section.color,
-                            strokeWidth: section.isSlowed ? 4 : 2
-                          }}
-                          shape={false}
+                          points={section.data.map((p: any) => new THREE.Vector3(p.x, p.y, 0))}
+                          color={section.hexColor}
+                          lineWidth={section.isSlowed ? 8 : 5}
+                          opacity={section.isSlowed ? 0.8 : 0.3}
+                          transparent={true}
                         />
                       ))}
 
                       {/* Players */}
-                      <Scatter
-                        name="Joueurs"
-                        data={chartData.players}
-                        fill="#8884d8"
-                        shape={(props: any) => {
-                          const { cx, cy, payload } = props;
-                          return (
-                            <g>
-                              <circle
-                                cx={cx}
-                                cy={cy}
-                                r={6}
-                                fill={payload.color}
-                                stroke="#fff"
-                                strokeWidth={1}
-                              />
-                            </g>
-                          );
-                        }}
-                      />
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                    </div>
+                      {chartData.players.map((player: any) => (
+                        <mesh key={player.name} position={[player.x, player.y, 1]}>
+                          <sphereGeometry args={[2, 16, 16]} />
+                          <meshBasicMaterial color={player.color} />
+                        </mesh>
+                      ))}
+                    </Canvas>
                   </div>
                 )}
               </div>
