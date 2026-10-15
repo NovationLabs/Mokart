@@ -2,19 +2,27 @@
 
 Le projet Railway `Mokart` a deux environnements persistants : `dev` et `production`.
 Chaque service suit la branche Git de même nom que son environnement. Les branches de travail
-suivent la convention `feature/nom` et sont fusionnées dans `dev` avant promotion dans `production`.
+suivent les conventions `feature/nom` et `fix/nom`, puis sont fusionnées dans `dev`
+avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 
 | Service | Source | Port | Accès |
 | --- | --- | --- | --- |
 | web | `/web`, `Dockerfile.prod` | 80 | public |
 | app | `/app`, `Dockerfile.railway` | 80 | public |
-| api | `/api`, `Dockerfile.railway` | 5000 | privé, via le proxy `/api` de `app` |
+| api | `/api`, `Dockerfile.railway` | 5000 | public, et via le proxy `/api` de `app` |
 | db | `/`, `db/Dockerfile` | 5432 | privé, volume `/var/lib/postgresql/data` |
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
 
-`app` transmet `/api/` à `api.railway.internal:5000`. Les services privés ne doivent pas
-recevoir de domaine public. Railway isole le réseau privé de chaque environnement.
+`app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
+chaque environnement. `db` et `ai-backend` restent sans domaine public.
+
+| Service | Production | Dev |
+| --- | --- | --- |
+| web | `mokart.fr`, `www.mokart.fr` | `dev.mokart.fr` |
+| app | `app.mokart.fr` | `app-dev.mokart.fr` |
+| api | `api.mokart.fr` | `api-dev.mokart.fr` |
+| ai-frontend | `ai.mokart.fr` | `ai-dev.mokart.fr` |
 
 Variables à configurer séparément dans chaque environnement :
 

@@ -4,6 +4,7 @@ import '../styles/Refined.css';
 import Nav from '../components/Nav';
 import Footer from '../components/Footer';
 import { ArrowUpRight, Activity, MapPin, Timer, Wifi } from 'lucide-react';
+import { dashboardUrl } from '../dashboardUrl';
 
 const capabilities = [
     { icon: Timer, title: 'Lap and sector timing', text: 'See the time behind each lap and where it changed.' },
@@ -22,7 +23,7 @@ const Home: React.FC = () => (
                     <p className="mk-hero-lead">Mokart brings lap timing, trajectory and movement into one place. A unit on the steering wheel captures the run; the dashboard helps you understand it afterwards.</p>
                     <div className="mk-actions">
                         <a className="mk-button mk-button-primary" href="#system">Explore the system <ArrowUpRight size={17} /></a>
-                        <a className="mk-button mk-button-secondary" href="https://app.novationlabs.fr">Open the dashboard <ArrowUpRight size={17} /></a>
+                        <a className="mk-button mk-button-secondary" href={dashboardUrl}>Open the dashboard <ArrowUpRight size={17} /></a>
                     </div>
                 </div>
                 <div className="mk-shell mk-hero-image-wrap">
@@ -92,7 +93,7 @@ const Home: React.FC = () => (
                     <div className="mk-dashboard-copy">
                         <h3>One session.<br />A better next run.</h3>
                         <p>Look back at timing and trajectory together. The example view shows how Mokart is designed to turn a run into something you can learn from.</p>
-                        <a href="https://app.novationlabs.fr" className="mk-inline-link">Go to the dashboard <ArrowUpRight size={16} /></a>
+                        <a href={dashboardUrl} className="mk-inline-link">Go to the dashboard <ArrowUpRight size={16} /></a>
                     </div>
                 </div>
             </section>
