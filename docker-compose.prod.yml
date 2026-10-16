@@ -21,6 +21,8 @@ services:
       - ./api:/app
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEMO_MODE=${DEMO_MODE:-false}
     depends_on:
       - db
     restart: always
