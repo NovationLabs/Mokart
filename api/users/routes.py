@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime, date
 from typing import List, Optional, Dict
 from config.database import get_db
+from auth.dependencies import CurrentUser, get_current_user, require_admin, DB_ROLES
+from auth.passwords import hash_password, check_strength
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -80,6 +82,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     license_number: Optional[str] = None
     license_expiry: Optional[date] = None
+    password: Optional[str] = None
 
 class UserStats(BaseModel):
     total: int
@@ -88,15 +91,29 @@ class UserStats(BaseModel):
     by_role: Dict[str, int]
     new_users_this_month: int = 0
 
-@router.get("/profile", response_model=UserProfile)
-async def get_user_profile(user_id: str = "", db: Session = Depends(get_db)):
-    """Récupérer le profil utilisateur"""
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Utilisateur non authentifié"
-        )
+def _validate_role(role: Optional[str]) -> None:
+    if role is not None and role not in DB_ROLES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rôle inconnu")
 
+
+def _validate_password(password: str) -> None:
+    try:
+        check_strength(password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+def _forbid_demo(user: CurrentUser) -> None:
+    if user.demo:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Action impossible en mode démo")
+
+
+@router.get("/profile", response_model=UserProfile)
+async def get_user_profile(user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
+    return _load_profile(user.id, db)
+
+
+def _load_profile(user_id: str, db: Session) -> UserProfile:
     query = text("""
     SELECT id, username, email, first_name, last_name, phone, created_at
     FROM users
@@ -122,11 +139,13 @@ async def get_user_profile(user_id: str = "", db: Session = Depends(get_db)):
 
 @router.put("/profile", response_model=UserProfile)
 async def update_user_profile(
-    user_id: str,
     profile_update: UserProfileUpdate,
+    user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Mettre à jour le profil utilisateur"""
+    _forbid_demo(user)
+    user_id = user.id
     # Vérifier si l'utilisateur existe
     check_query = text("SELECT id FROM users WHERE id = :user_id")
     existing_user = db.execute(check_query, {"user_id": user_id}).fetchone()
@@ -169,20 +188,19 @@ async def update_user_profile(
     WHERE id = :user_id
     """.format(', '.join(update_fields)))
 
-    db.execute(update_query, params)
-    db.commit()
+    try:
+        db.execute(update_query, params)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mise à jour impossible")
 
-    # Récupérer le profil mis à jour
-    return await get_user_profile(user_id, db)
+    return _load_profile(user_id, db)
 
 @router.get("/notifications", response_model=List[Notification])
-async def get_user_notifications(user_id: str = "", unread_only: bool = False, db: Session = Depends(get_db)):
+async def get_user_notifications(unread_only: bool = False, user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
     """Récupérer les notifications utilisateur"""
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Utilisateur non authentifié"
-        )
+    user_id = user.id
 
     query = text("""
     SELECT id, title, message, type, read, created_at
@@ -216,15 +234,11 @@ async def get_user_notifications(user_id: str = "", unread_only: bool = False, d
 @router.put("/notifications/{notification_id}/read")
 async def mark_notification_read(
     notification_id: str,
-    user_id: str = "",
+    user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Marquer une notification comme lue"""
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Utilisateur non authentifié"
-        )
+    user_id = user.id
 
     # Vérifier que la notification appartient à l'utilisateur
     check_query = text("""
@@ -246,21 +260,17 @@ async def mark_notification_read(
     update_query = text("""
     UPDATE notifications
     SET read = TRUE, read_at = CURRENT_TIMESTAMP
-    WHERE id = :notification_id
+    WHERE id = :notification_id AND user_id = :user_id
     """)
-    db.execute(update_query, {"notification_id": notification_id})
+    db.execute(update_query, {"notification_id": notification_id, "user_id": user_id})
     db.commit()
 
     return {"message": "Notification marquée comme lue"}
 
 @router.put("/notifications/read-all")
-async def mark_all_notifications_read(user_id: str = "", db: Session = Depends(get_db)):
+async def mark_all_notifications_read(user: CurrentUser = Depends(get_current_user), db: Session = Depends(get_db)):
     """Marquer toutes les notifications comme lues"""
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Utilisateur non authentifié"
-        )
+    user_id = user.id
 
     update_query = text("""
     UPDATE notifications
@@ -274,7 +284,7 @@ async def mark_all_notifications_read(user_id: str = "", db: Session = Depends(g
     return {"message": f"{result.rowcount} notifications marquées comme lues"}
 
 # Admin routes for user management
-admin_router = APIRouter(prefix="/admin/users", tags=["admin-users"])
+admin_router = APIRouter(prefix="/admin/users", tags=["admin-users"], dependencies=[Depends(require_admin)])
 
 @admin_router.get("/", response_model=List[User])
 @admin_router.get("", response_model=List[User])
@@ -302,7 +312,7 @@ async def get_all_users(db: Session = Depends(get_db)):
         print(f"Erreur SQL: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur SQL: {str(e)}"
+            detail="Erreur interne"
         )
 
 @admin_router.get("/stats", response_model=UserStats)
@@ -349,7 +359,7 @@ async def get_user_by_id(user_id: str, db: Session = Depends(get_db)):
     query = text("""
     SELECT id, username, email, first_name, last_name, phone, kart,
            role, is_active, license_number, license_expiry,
-           created_at, updated_at, last_login
+           created_at, updated_at
     FROM users
     WHERE id = :user_id
     """)
@@ -370,6 +380,8 @@ async def get_user_by_id(user_id: str, db: Session = Depends(get_db)):
 @admin_router.post("", response_model=User)
 async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     """Créer un nouvel utilisateur (admin)"""
+    _validate_role(user_data.role)
+    _validate_password(user_data.password)
     # Vérifier si le username ou email existe déjà
     check_query = text("""
     SELECT id FROM users
@@ -386,8 +398,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Nom d'utilisateur ou email déjà utilisé"
         )
 
-    # Hash du mot de passe (simple pour l'instant)
-    password_hash = f"hash_{user_data.password}"  # TODO: utiliser bcrypt
+    password_hash = hash_password(user_data.password)
 
     # Insertion
     insert_query = text("""
@@ -405,7 +416,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     try:
         result = db.execute(insert_query, {
             "username": user_data.username,
-            "email": user_data.email,
+            "email": user_data.email.lower(),
             "password_hash": password_hash,
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
@@ -427,14 +438,16 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         print(f"Erreur lors de la création: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la création: {str(e)}"
+            detail="Erreur lors de la création"
         )
 
 @admin_router.put("/{user_id}", response_model=User)
 async def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends(get_db)):
     """Mettre à jour un utilisateur (admin)"""
+    _validate_role(user_data.role)
+    if user_data.password is not None:
+        _validate_password(user_data.password)
     try:
-        print(f"Tentative de mise à jour utilisateur {user_id} avec données: {user_data.dict(exclude_unset=True)}")
 
         # Vérifier si l'utilisateur existe
         check_query = text("SELECT id FROM users WHERE id = :user_id")
@@ -451,9 +464,14 @@ async def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends
         params = {"user_id": user_id}
 
         for field, value in user_data.dict(exclude_unset=True).items():
-            if value is not None:
-                update_fields.append(f"{field} = :{field}")
-                params[field] = value
+            if value is None:
+                continue
+            if field == "password":
+                update_fields.append("password_hash = :password_hash")
+                params["password_hash"] = hash_password(value)
+                continue
+            update_fields.append(f"{field} = :{field}")
+            params[field] = value
 
         if not update_fields:
             # Si aucun champ à mettre à jour, retourner l'utilisateur existant
@@ -487,16 +505,21 @@ async def update_user(user_id: str, user_data: UserUpdate, db: Session = Depends
         result_dict['id'] = str(result_dict['id'])
 
         return User(**result_dict)
+    except HTTPException:
+        raise
     except Exception as e:
+        db.rollback()
         print(f"Erreur SQL: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur SQL: {str(e)}"
+            detail="Erreur interne"
         )
 
 @admin_router.put("/{user_id}/toggle-status")
-async def toggle_user_status(user_id: str, db: Session = Depends(get_db)):
+async def toggle_user_status(user_id: str, db: Session = Depends(get_db), admin: CurrentUser = Depends(require_admin)):
     """Activer/désactiver un utilisateur (admin)"""
+    if user_id == admin.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de se désactiver soi-même")
     # Récupérer le statut actuel
     check_query = text("SELECT is_active FROM users WHERE id = :user_id")
     result = db.execute(check_query, {"user_id": user_id}).fetchone()
@@ -525,8 +548,10 @@ async def toggle_user_status(user_id: str, db: Session = Depends(get_db)):
     return {"message": f"Utilisateur {'activé' if new_status else 'désactivé'}"}
 
 @admin_router.delete("/{user_id}")
-async def delete_user(user_id: str, db: Session = Depends(get_db)):
+async def delete_user(user_id: str, db: Session = Depends(get_db), admin: CurrentUser = Depends(require_admin)):
     """Supprimer un utilisateur (admin)"""
+    if user_id == admin.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Impossible de se supprimer soi-même")
     # Vérifier si l'utilisateur existe
     check_query = text("SELECT id FROM users WHERE id = :user_id")
     existing = db.execute(check_query, {"user_id": user_id}).fetchone()
@@ -554,7 +579,8 @@ async def delete_user(user_id: str, db: Session = Depends(get_db)):
         return {"message": "Utilisateur supprimé"}
     except Exception as e:
         db.rollback()
+        print(f"Erreur lors de la suppression: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur lors de la suppression: {str(e)}"
+            detail="Erreur lors de la suppression"
         )

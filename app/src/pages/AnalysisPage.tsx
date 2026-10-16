@@ -4,6 +4,7 @@ import { SkeletonCard, SkeletonChart } from '../components/Skeleton';
 import { Activity, Clock, RotateCw, ChevronDown, Target, TrendingUp, Eye, EyeOff, ZoomIn, ZoomOut, Move, X, Navigation, Gauge, Timer } from 'lucide-react';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, Tooltip, ZAxis, Line, LineChart, ComposedChart } from 'recharts';
 import { OptimalTrajectoryPoint, TrajectoryComparison } from '../types';
+import { authFetch } from '../services/api';
 
 interface CircuitBoundary {
   id: string;
@@ -132,7 +133,7 @@ const AnalysisPage: React.FC = () => {
       // Get circuit_id from session
       const session = sessions.find((s: Session) => s.id === sessionId);
       if (session?.circuit_id) {
-        const response = await fetch(`${API_BASE_URL}/circuits/${session.circuit_id}/boundaries`);
+        const response = await authFetch(`${API_BASE_URL}/circuits/${session.circuit_id}/boundaries`);
         const data = await response.json();
         setCircuitBoundaries(data);
       }
@@ -192,7 +193,7 @@ const AnalysisPage: React.FC = () => {
   const fetchSessions = async () => {
     setSessionsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/sessions/`);
+      const response = await authFetch(`${API_BASE_URL}/sessions/`);
       const data = await response.json();
       setSessions(data);
       if (data.length > 0 && !selectedSession) {
@@ -208,11 +209,11 @@ const AnalysisPage: React.FC = () => {
   const fetchTrajectory = async (sessionId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/trajectory`);
+      const response = await authFetch(`${API_BASE_URL}/sessions/${sessionId}/trajectory`);
       const data = await response.json();
 
       // Fetch complete sensor data for detailed information
-      const sensorResponse = await fetch(`${API_BASE_URL}/sessions/${sessionId}/sensor-data`);
+      const sensorResponse = await authFetch(`${API_BASE_URL}/sessions/${sessionId}/sensor-data`);
       if (sensorResponse.ok) {
         const sensorData = await sensorResponse.json();
 
@@ -244,7 +245,7 @@ const AnalysisPage: React.FC = () => {
 
   const fetchStats = async (sessionId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/stats`);
+      const response = await authFetch(`${API_BASE_URL}/sessions/${sessionId}/stats`);
       const data = await response.json();
       setStats(data);
     } catch (error) {
@@ -254,7 +255,7 @@ const AnalysisPage: React.FC = () => {
 
   const fetchOptimalTrajectory = async (circuitId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/circuits/${circuitId}/optimal-trajectory`);
+      const response = await authFetch(`${API_BASE_URL}/circuits/${circuitId}/optimal-trajectory`);
       if (response.ok) {
         const data = await response.json();
         setOptimalTrajectory(data);
@@ -275,7 +276,7 @@ const AnalysisPage: React.FC = () => {
 
     setCalculatingTrajectory(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/circuits/${session.circuit_id}/optimal-trajectory`, {
+      const response = await authFetch(`${API_BASE_URL}/circuits/${session.circuit_id}/optimal-trajectory`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -293,7 +294,7 @@ const AnalysisPage: React.FC = () => {
 
   const fetchTrajectoryComparison = async (circuitId: string, sessionId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/circuits/${circuitId}/trajectory-comparison/${sessionId}`);
+      const response = await authFetch(`${API_BASE_URL}/circuits/${circuitId}/trajectory-comparison/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         setTrajectoryComparison(data);
