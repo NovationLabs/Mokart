@@ -13,7 +13,7 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | db | `/`, `db/Dockerfile` | 5432 | privé, volume `/var/lib/postgresql/data` |
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
-| nocodb | `/`, `nocodb/Dockerfile` | 8080 | protégé par Cloudflare Access |
+| nocodb | `/`, `nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
 
 `app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
 chaque environnement. `db` et `ai-backend` restent sans domaine public.
@@ -44,7 +44,7 @@ Variables à configurer séparément dans chaque environnement :
   `NC_APP_DB_HOST=db.railway.internal`,
   `NC_APP_DB_USER=${{db.POSTGRES_USER}}`,
   `NC_APP_DB_PASSWORD=${{db.POSTGRES_PASSWORD}}`,
-  `NC_APP_DB_NAME=${{db.POSTGRES_DB}}`.
+  `NC_APP_DB_NAME=${{db.POSTGRES_DB}}`, `CF_TUNNEL_TOKEN` (un tunnel différent par environnement).
 
 Le schéma et les données de démonstration de `api/init.sql` sont chargés uniquement à la
 création d'un volume PostgreSQL vide. Les déploiements suivants conservent les données ;
@@ -60,10 +60,12 @@ dans une base `nocodb` séparée, créée automatiquement sur le serveur `db` au
 le schéma de `mokart` n'est jamais modifié. Le compte `NC_ADMIN_EMAIL` est créé au premier
 démarrage, et chaque démarrage réserve les inscriptions aux invitations.
 
-À l'intégration de cette feature, créer une fois le service `nocodb` dans chacun des deux
-environnements Railway, avec le dépôt GitHub comme source, `nocodb/Dockerfile` comme Dockerfile
-et la branche `dev` ou `production` correspondante. Configurer ses variables ci-dessus avant
-le premier déploiement. Railway redéploiera ensuite le service aux prochains pushs sur sa branche.
+Le service `nocodb` suit la branche GitHub de son environnement et Railway le redéploie aux
+prochains pushs. Ne lui attribuer **aucun domaine public Railway** : le conteneur lance
+`cloudflared` avec `CF_TUNNEL_TOKEN`. Chaque environnement a son tunnel Cloudflare, dont le
+hostname public pointe vers `http://localhost:8080`. Les CNAME Cloudflare proxifiés pointent
+vers les tunnels, et Cloudflare Access n'autorise que les adresses de l'équipe. La configuration
+du tunnel vérifie aussi le JWT Access avant de transmettre une requête à NocoDB.
 
 Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
 PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
