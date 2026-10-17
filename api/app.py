@@ -29,8 +29,10 @@ DEFAULT_ORIGINS = (
 )
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",") if o.strip()]
 
+# Configuration CORS AVANT les routes
 app.add_middleware(
     CORSMiddleware,
+    # Autorise tout pour éviter les problèmes en dev (téléphone, IP locale, etc)
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

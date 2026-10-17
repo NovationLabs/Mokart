@@ -86,8 +86,10 @@ def generate_fake_karts_status() -> list[KartStatus]:
     return karts
 
 @router.get("/data", response_model=DashboardData)
+# Mode démo - si l'utilisateur n'existe pas en BDD
 async def get_dashboard_data(user: CurrentUser = Depends(get_current_user)):
     """Récupère les données du dashboard selon le rôle de l'utilisateur"""
+    # Si un rôle est fourni en paramètre, l'utiliser (pour les tests)
     user_role = user.role
 
     # Données communes

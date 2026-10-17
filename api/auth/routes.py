@@ -45,6 +45,7 @@ def generate_unique_username(email: str, db: DbSession) -> str:
     base_username = email.split('@')[0][:40] or "pilote"
     username = base_username
     counter = 1
+    # Vérifier si le username existe déjà
     while db.execute(text("SELECT 1 FROM users WHERE username = :u"), {"u": username}).first():
         username = f"{base_username}{counter}"
         counter += 1
@@ -59,6 +60,7 @@ async def login(payload: LoginRequest, request: Request, db: DbSession = Depends
     if login_by_email.blocked(email) or login_by_ip.blocked(ip):
         raise TOO_MANY
 
+    # Mode démo
     if email == DEMO_EMAIL:
         if not demo_enabled():
             raise HTTPException(status_code=403, detail="Mode démo indisponible")
@@ -77,11 +79,13 @@ async def login(payload: LoginRequest, request: Request, db: DbSession = Depends
             message="Connexion démo réussie",
         )
 
+    # Chercher l'utilisateur dans la DB locale
     row = db.execute(
         text(f"SELECT {USER_COLUMNS} FROM users WHERE lower(email) = :email"),
         {"email": email},
     ).fetchone()
 
+    # Vérifier le mot de passe
     if not row or not verify_password(payload.password, row.password_hash) or not _is_active(row.is_active):
         login_by_email.hit(email)
         login_by_ip.hit(ip)
@@ -111,6 +115,7 @@ async def register(payload: RegisterRequest, request: Request, db: DbSession = D
         raise TOO_MANY
     register_by_ip.hit(ip)
 
+    # Vérifier que les mots de passe correspondent
     if payload.password != payload.confirm_password:
         raise HTTPException(status_code=400, detail="Les mots de passe ne correspondent pas")
     try:
@@ -122,6 +127,7 @@ async def register(payload: RegisterRequest, request: Request, db: DbSession = D
     if email == DEMO_EMAIL or "@" not in email or len(email) > 254:
         raise HTTPException(status_code=400, detail="Email invalide")
 
+    # Vérifier si l'utilisateur existe déjà
     if db.execute(text("SELECT 1 FROM users WHERE lower(email) = :email"), {"email": email}).first():
         raise HTTPException(status_code=400, detail="Impossible de créer ce compte")
 

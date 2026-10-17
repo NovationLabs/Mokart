@@ -195,6 +195,7 @@ async def update_user_profile(
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mise à jour impossible")
 
+    # Récupérer le profil mis à jour
     return _load_profile(user_id, db)
 
 @router.get("/notifications", response_model=List[Notification])
@@ -398,6 +399,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Nom d'utilisateur ou email déjà utilisé"
         )
 
+    # Hash du mot de passe (simple pour l'instant)
     password_hash = hash_password(user_data.password)
 
     # Insertion
