@@ -1,15 +1,57 @@
 // Run after NocoDB becomes healthy. Railway redeploys run this again, so every
 // operation checks the existing metadata before it creates anything.
+const { Client } = require('/usr/src/app/node_modules/pg');
+
 const url = process.argv[2];
 const env = process.env;
 const baseTitle = 'Mokart';
 const sourceAlias = 'Mokart PostgreSQL';
 
 for (const name of [
-  'NC_ADMIN_EMAIL', 'NC_ADMIN_PASSWORD', 'NC_APP_DB_HOST',
-  'NC_APP_DB_USER', 'NC_APP_DB_PASSWORD', 'NC_APP_DB_NAME',
+  'NC_ADMIN_EMAIL', 'NC_ADMIN_PASSWORD', 'NC_APP_DB_HOST', 'NC_APP_DB_NAME',
+  'NC_APP_DB_USER', 'NC_APP_DB_PASSWORD', 'NC_APP_DB_ADMIN_USER', 'NC_APP_DB_ADMIN_PASSWORD',
 ]) {
   if (!env[name]) throw new Error(`Missing ${name}`);
+}
+
+if (env.NC_APP_DB_USER === env.NC_APP_DB_ADMIN_USER) {
+  throw new Error('NC_APP_DB_USER must be a dedicated read-only role');
+}
+
+const port = Number(env.NC_APP_DB_PORT || 5432);
+
+async function ensureReadOnlyRole() {
+  const client = new Client({
+    host: env.NC_APP_DB_HOST,
+    port,
+    user: env.NC_APP_DB_ADMIN_USER,
+    password: env.NC_APP_DB_ADMIN_PASSWORD,
+    database: env.NC_APP_DB_NAME,
+  });
+  await client.connect();
+  try {
+    const role = client.escapeIdentifier(env.NC_APP_DB_USER);
+    const owner = client.escapeIdentifier(env.NC_APP_DB_ADMIN_USER);
+    const database = client.escapeIdentifier(env.NC_APP_DB_NAME);
+    const password = client.escapeLiteral(env.NC_APP_DB_PASSWORD);
+    const existing = await client.query('SELECT 1 FROM pg_roles WHERE rolname = $1', [env.NC_APP_DB_USER]);
+    if (existing.rowCount === 0) {
+      await client.query(`CREATE ROLE ${role}`);
+      console.log('Mokart: read-only PostgreSQL role created');
+    }
+    for (const statement of [
+      `ALTER ROLE ${role} WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD ${password}`,
+      `ALTER ROLE ${role} SET default_transaction_read_only = on`,
+      `GRANT CONNECT ON DATABASE ${database} TO ${role}`,
+      `GRANT USAGE ON SCHEMA public TO ${role}`,
+      `GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${role}`,
+      `ALTER DEFAULT PRIVILEGES FOR ROLE ${owner} IN SCHEMA public GRANT SELECT ON TABLES TO ${role}`,
+    ]) {
+      await client.query(statement);
+    }
+  } finally {
+    await client.end();
+  }
 }
 
 async function request(path, token, method = 'GET', body) {
@@ -30,6 +72,8 @@ async function request(path, token, method = 'GET', body) {
 }
 
 async function run() {
+  await ensureReadOnlyRole();
+
   const login = await request('/api/v1/auth/user/signin', null, 'POST', {
     email: env.NC_ADMIN_EMAIL,
     password: env.NC_ADMIN_PASSWORD,
@@ -55,6 +99,18 @@ async function run() {
     console.log('Mokart: NocoDB base created');
   }
 
+  const config = {
+    client: 'pg',
+    connection: {
+      host: env.NC_APP_DB_HOST,
+      port,
+      user: env.NC_APP_DB_USER,
+      password: env.NC_APP_DB_PASSWORD,
+      database: env.NC_APP_DB_NAME,
+    },
+    searchPath: ['public'],
+  };
+
   const sourcesPath = `/api/v2/meta/bases/${base.id}/sources/`;
   const sources = await request(sourcesPath, token);
   // The list endpoint omits `external`, even for external PostgreSQL sources.
@@ -66,25 +122,26 @@ async function run() {
       external: true,
       is_schema_readonly: true,
       is_data_readonly: true,
-      config: {
-        client: 'pg',
-        connection: {
-          host: env.NC_APP_DB_HOST,
-          port: Number(env.NC_APP_DB_PORT || 5432),
-          user: env.NC_APP_DB_USER,
-          password: env.NC_APP_DB_PASSWORD,
-          database: env.NC_APP_DB_NAME,
-        },
-        searchPath: ['public'],
-      },
+      config,
     });
     console.log('Mokart: read-only PostgreSQL source created');
-  } else {
-    if (!source.is_schema_readonly || !source.is_data_readonly) {
-      throw new Error('Existing Mokart PostgreSQL source is not read-only');
-    }
-    console.log('Mokart: existing PostgreSQL source verified');
+    return;
   }
+
+  if (!source.is_schema_readonly || !source.is_data_readonly) {
+    throw new Error('Existing Mokart PostgreSQL source is not read-only');
+  }
+  const details = await request(`${sourcesPath}${source.id}`, token);
+  if (!details.fk_integration_id) throw new Error('Mokart PostgreSQL source has no integration');
+  const integrationPath = `/api/v2/meta/integrations/${details.fk_integration_id}`;
+  const integration = await request(`${integrationPath}?includeConfig=true`, token);
+  await request(integrationPath, token, 'PATCH', {
+    title: integration.title,
+    type: integration.type,
+    sub_type: integration.sub_type,
+    config: { ...integration.config, ...config },
+  });
+  console.log('Mokart: PostgreSQL source verified with the read-only role');
 }
 
 run().catch(error => {
