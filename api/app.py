@@ -10,21 +10,44 @@ from users.routes import router as users_router, admin_router
 from dashboard.routes import router as dashboard_router
 from sqlalchemy.orm import Session
 import asyncio
+import os
 
 # Create tables if not exists (although init.sql should handle it)
 # Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+DOCS_ENABLED = os.getenv("API_DOCS", "false").lower() in ("1", "true", "yes")
+
+app = FastAPI(
+    docs_url="/docs" if DOCS_ENABLED else None,
+    redoc_url="/redoc" if DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if DOCS_ENABLED else None,
+)
+
+DEFAULT_ORIGINS = (
+    "http://localhost:8000,http://localhost:8080,http://localhost:3000,"
+    "https://app.mokart.fr,https://app-dev.mokart.fr,https://app.novationlabs.fr"
+)
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS).split(",") if o.strip()]
 
 # Configuration CORS AVANT les routes
 app.add_middleware(
     CORSMiddleware,
     # Autorise tout pour éviter les problèmes en dev (téléphone, IP locale, etc)
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Cache-Control", "no-store")
+    return response
 
 # Configuration du timeout global
 @app.middleware("http")
