@@ -10,20 +10,11 @@ until curl -sf "$URL/api/v1/health" > /dev/null; do
   sleep 2
 done
 
-TOKEN=$(node -e '
-fetch(process.argv[1] + "/api/v1/auth/user/signin", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email: process.env.NC_ADMIN_EMAIL, password: process.env.NC_ADMIN_PASSWORD })
-}).then(r => r.json()).then(d => console.log(d.token || "")).catch(() => console.log(""))
-' "$URL")
-
-if [ -n "$TOKEN" ] && curl -sf -X POST "$URL/api/v1/app-settings" \
-  -H "Content-Type: application/json" -H "xc-auth: $TOKEN" \
-  -d '{"invite_only_signup":true,"restrict_workspace_creation":true}' > /dev/null; then
-  echo "Mokart: NocoDB signup restricted to invitations"
-else
-  echo "Mokart: unable to restrict NocoDB signup" >&2
+if ! node /usr/src/appEntry/bootstrap.js "$URL"; then
+  echo "Mokart: NocoDB bootstrap failed" >&2
+  kill "$NC_PID" 2> /dev/null || true
+  wait "$NC_PID" 2> /dev/null || true
+  exit 1
 fi
 
 wait "$NC_PID"

@@ -40,7 +40,11 @@ Variables à configurer séparément dans chaque environnement :
   `NC_AUTH_JWT_SECRET` (`openssl rand -base64 48`, une valeur par environnement), `NC_ADMIN_EMAIL`,
   `NC_ADMIN_PASSWORD` (8 caractères minimum avec majuscule, chiffre et caractère spécial),
   `NC_PUBLIC_URL` (`https://db.mokart.fr` ou `https://db-dev.mokart.fr`),
-  `NC_ALLOW_LOCAL_EXTERNAL_DBS=true`, `NC_DISABLE_TELE=true`.
+  `NC_ALLOW_LOCAL_EXTERNAL_DBS=true`, `NC_DISABLE_TELE=true`,
+  `NC_APP_DB_HOST=db.railway.internal`,
+  `NC_APP_DB_USER=${{db.POSTGRES_USER}}`,
+  `NC_APP_DB_PASSWORD=${{db.POSTGRES_PASSWORD}}`,
+  `NC_APP_DB_NAME=${{db.POSTGRES_DB}}`.
 
 Le schéma et les données de démonstration de `api/init.sql` sont chargés uniquement à la
 création d'un volume PostgreSQL vide. Les déploiements suivants conservent les données ;
@@ -56,10 +60,18 @@ dans une base `nocodb` séparée, créée automatiquement sur le serveur `db` au
 le schéma de `mokart` n'est jamais modifié. Le compte `NC_ADMIN_EMAIL` est créé au premier
 démarrage, et chaque démarrage réserve les inscriptions aux invitations.
 
-Pour afficher les tables Mokart, créer une base dans NocoDB avec une source PostgreSQL externe :
-hôte `db.railway.internal` sur Railway ou `db` en local, port `5432`, base, utilisateur et mot de
-passe du service `db`, schéma `public`.
+À l'intégration de cette feature, créer une fois le service `nocodb` dans chacun des deux
+environnements Railway, avec le dépôt GitHub comme source, `nocodb/Dockerfile` comme Dockerfile
+et la branche `dev` ou `production` correspondante. Configurer ses variables ci-dessus avant
+le premier déploiement. Railway redéploiera ensuite le service aux prochains pushs sur sa branche.
 
-L'interface donne un accès complet aux données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
+Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
+PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
+présence aux redéploiements sans créer de doublons. Les variables `NC_APP_DB_*` doivent être
+configurées dans **dev** et **production** avant le premier déploiement. Si l'initialisation
+échoue, le conteneur s'arrête avec une erreur et Railway le redémarre. La lecture seule de
+NocoDB n'est pas une restriction PostgreSQL : le compte utilisé conserve les droits de `db`.
+
+L'interface expose les données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
 doivent être placés derrière une application Cloudflare Access limitée aux membres de l'équipe.
 En local, elle est disponible sur `http://localhost:8090`.
