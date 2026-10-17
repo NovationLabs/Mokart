@@ -13,6 +13,7 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | db | `/`, `db/Dockerfile` | 5432 | privé, volume `/var/lib/postgresql/data` |
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
+| backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
 
 `app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
 chaque environnement. `db` et `ai-backend` restent sans domaine public.
@@ -40,3 +41,48 @@ une évolution du schéma après le premier démarrage exige une migration expli
 
 Pour promouvoir une version, fusionner `dev` dans `production`. Railway reconstruit alors
 les services concernés à partir de la branche `production`.
+
+## Sauvegardes PostgreSQL
+
+Le service `backup` lance `pg_dump` sur chaque base listée, vérifie le fichier avec
+`pg_restore --list`, l'envoie sur un stockage compatible S3 (Cloudflare R2), puis supprime
+les sauvegardes plus anciennes que `BACKUP_RETENTION_DAYS`. Il s'arrête à la fin, Railway
+le relance selon sa planification. Un échec de dump ou d'envoi termine le service en erreur.
+
+Réglages Railway du service `backup`, dans chaque environnement :
+
+- Settings, Cron Schedule : `0 2 * * *` (tous les jours à 2h UTC).
+- Settings, Restart Policy : `Never`.
+- Aucun domaine public.
+
+Variables :
+
+- `PGHOST=db.railway.internal`, `PGPORT=5432`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`,
+  construits avec les références Railway vers les variables de `db`.
+- `BACKUP_DATABASES` : bases à sauvegarder séparées par des espaces, par défaut `PGDATABASE`.
+  Mettre `mokart nocodb` (avec le nom réel de la base) quand NocoDB est déployé.
+- `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_BUCKET`.
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` : jeton API R2 limité au bucket, en
+  lecture et écriture.
+- `BACKUP_RETENTION_DAYS` : `30` par défaut, `0` pour tout conserver.
+
+Les fichiers sont rangés sous `<environnement>/<base>/<base>-<date UTC>.dump`.
+`RAILWAY_ENVIRONMENT_NAME` sépare `dev` et `production` dans le même bucket ;
+`BACKUP_PREFIX` permet de forcer un autre préfixe.
+
+Restaurer la dernière sauvegarde d'une base, depuis le shell du service `backup` :
+
+```sh
+mokart-restore mokart
+```
+
+Restaurer une sauvegarde précise :
+
+```sh
+mokart-restore mokart mokart-20261017T020000Z.dump
+```
+
+La restauration remplace les tables existantes de la base ciblée. En local, lancer
+`docker compose run --rm backup` pour une sauvegarde et
+`docker compose run --rm backup mokart-restore <base>` pour une restauration, avec les
+variables `S3_*` du fichier `.env`.
