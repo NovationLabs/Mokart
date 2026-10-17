@@ -1,0 +1,96 @@
+name: Security CD
+
+on:
+  push:
+    branches: [ dev, production ]
+  deployment_status:
+  schedule:
+    - cron: "43 6 * * *"
+  workflow_dispatch:
+    inputs:
+      environnement:
+        description: "Environnement à vérifier"
+        type: choice
+        options: [ production, dev ]
+        default: production
+
+permissions:
+  contents: read
+
+env:
+  PROD_API_URL: ${{ vars.PROD_API_URL || 'https://api.mokart.fr' }}
+  PROD_APP_URL: ${{ vars.PROD_APP_URL || 'https://app.mokart.fr' }}
+  PROD_WEB_URL: ${{ vars.PROD_WEB_URL || 'https://mokart.fr' }}
+  PROD_AI_URL: ${{ vars.PROD_AI_URL || 'https://ai.mokart.fr' }}
+  DEV_API_URL: ${{ vars.DEV_API_URL || 'https://api-dev.mokart.fr' }}
+  DEV_APP_URL: ${{ vars.DEV_APP_URL || 'https://app-dev.mokart.fr' }}
+  DEV_WEB_URL: ${{ vars.DEV_WEB_URL || 'https://dev.mokart.fr' }}
+  DEV_AI_URL: ${{ vars.DEV_AI_URL || 'https://ai-dev.mokart.fr' }}
+
+jobs:
+  porte:
+    name: Porte avant déploiement
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: security-cd-porte-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: security/cd/porte.sh
+
+  verification:
+    name: Vérification de l'environnement en ligne
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'deployment_status' && github.event.deployment_status.state == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: security-cd-verification
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Choisir l'environnement
+        id: cible
+        env:
+          SAISIE: ${{ inputs.environnement }}
+          DEPLOIEMENT: ${{ github.event.deployment.environment }}
+        run: |
+          nom="production"
+          if [ -n "$SAISIE" ]; then
+            nom="$SAISIE"
+          elif [ -n "$DEPLOIEMENT" ] && ! printf '%s' "$DEPLOIEMENT" | grep -qi production; then
+            nom="dev"
+          fi
+          echo "nom=$nom" >> "$GITHUB_OUTPUT"
+      - name: Vérifier
+        env:
+          ENVIRONNEMENT: ${{ steps.cible.outputs.nom }}
+        run: |
+          if [ "$ENVIRONNEMENT" = "production" ]; then
+            export API_URL="$PROD_API_URL" APP_URL="$PROD_APP_URL" WEB_URL="$PROD_WEB_URL" AI_URL="$PROD_AI_URL"
+          else
+            export API_URL="$DEV_API_URL" APP_URL="$DEV_APP_URL" WEB_URL="$DEV_WEB_URL" AI_URL="$DEV_AI_URL"
+          fi
+          security/cd/verifier.sh
+      - name: Ouvrir une issue en cas d'écart
+        if: failure() && github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ENVIRONNEMENT: ${{ steps.cible.outputs.nom }}
+          LIEN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titre="Sécurité : écart détecté sur $ENVIRONNEMENT"
+          if gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$titre in:title" --json number --jq '.[0].number' | grep -q .; then
+            exit 0
+          fi
+          gh issue create --repo "$GITHUB_REPOSITORY" --title "$titre" \
+            --body "La vérification de sécurité de $ENVIRONNEMENT a échoué. Le détail est dans le résumé du run : $LIEN"
