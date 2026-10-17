@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session as DbSession
@@ -101,6 +102,10 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
     """Calcule et sauvegarde la trajectoire optimale pour un circuit"""
     if user.demo:
         raise HTTPException(status_code=403, detail="Action impossible en mode démo")
+    try:
+        circuit_uuid = uuid.UUID(circuit_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Circuit non trouvé")
     if not user.is_staff:
         if trajectory_limiter.blocked(user.id):
             raise HTTPException(status_code=429, detail="Trop de calculs demandés, réessaie plus tard")
@@ -110,7 +115,7 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 
-        logger.info(f"Calcul de trajectoire pour circuit {circuit_id}")
+        logger.info("Calcul de trajectoire pour circuit %s", circuit_uuid)
 
         # Récupérer les bordures du circuit
         boundaries = db.query(sql_models.CircuitBoundary)\
