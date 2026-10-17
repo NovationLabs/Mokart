@@ -1,3 +1,5 @@
+// Run after NocoDB becomes healthy. Railway redeploys run this again, so every
+// operation checks the existing metadata before it creates anything.
 const { Client } = require('/usr/src/app/node_modules/pg');
 
 const url = process.argv[2];
@@ -63,6 +65,7 @@ async function request(path, token, method = 'GET', body) {
     signal: AbortSignal.timeout(15000),
   });
   if (!response.ok) {
+    // NocoDB error bodies can contain connection strings and credentials.
     throw new Error(`${method} ${path} returned HTTP ${response.status}`);
   }
   return response.json();
@@ -110,6 +113,7 @@ async function run() {
 
   const sourcesPath = `/api/v2/meta/bases/${base.id}/sources/`;
   const sources = await request(sourcesPath, token);
+  // The list endpoint omits `external`, even for external PostgreSQL sources.
   const source = sources.list?.find(item => item.alias === sourceAlias && item.type === 'pg');
   if (!source) {
     await request(sourcesPath, token, 'POST', {
