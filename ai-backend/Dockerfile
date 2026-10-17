@@ -13,6 +13,9 @@ COPY . .
 # Force uv to use the venv already built above
 ENV PATH="/app/.venv/bin:$PATH"
 
+RUN useradd --system --uid 10001 --no-create-home mokart
+USER mokart
+
 EXPOSE 8000
 
 CMD ["uvicorn", "agent_api:app", "--host", "0.0.0.0", "--port", "8000"]

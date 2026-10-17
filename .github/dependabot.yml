@@ -1,0 +1,41 @@
+version: 2
+
+updates:
+  - package-ecosystem: pip
+    directories: [ "/api", "/ai-front" ]
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      python-mineures:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: uv
+    directory: /ai-backend
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      agent-mineures:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: npm
+    directories: [ "/app", "/web" ]
+    target-branch: dev
+    schedule:
+      interval: weekly
+    groups:
+      front-mineures:
+        update-types: [ minor, patch ]
+
+  - package-ecosystem: docker
+    directories: [ "/api", "/app", "/web", "/ai-backend", "/ai-front", "/db" ]
+    target-branch: dev
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
