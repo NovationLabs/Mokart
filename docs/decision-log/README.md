@@ -44,7 +44,8 @@ decision-log/
 ├── DEC-002-backend-framework.md
 ├── DEC-003-project-architecture.md
 ├── DEC-004-deployment-strategy.md
-└── DEC-005-authentication-system.md
+├── DEC-005-authentication-system.md
+└── DEC-006-boitiers-kartings.md
 ```
 
 Chaque fichier correspond à une décision et possède un identifiant
@@ -61,6 +62,7 @@ Cette section répertorie l'ensemble des décisions documentées dans le projet.
 | DEC-003 | Définition de l'architecture logicielle | Architecture | Proposed | JJ/MM/AAAA |
 | DEC-004 | Stratégie de déploiement | Infrastructure | Proposed | JJ/MM/AAAA |
 | DEC-005 | Système d'authentification | Sécurité | Proposed | JJ/MM/AAAA |
+| DEC-006 | Architecture des boitiers pour les kartings | Architecture | Accepted | 12/11/2026 |
 
 **Statuts possibles :**
 
