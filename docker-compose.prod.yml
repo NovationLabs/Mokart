@@ -68,8 +68,10 @@ services:
       - NC_ALLOW_LOCAL_EXTERNAL_DBS=true
       - NC_DISABLE_TELE=true
       - NC_APP_DB_HOST=db
-      - NC_APP_DB_USER=${DB_USER}
-      - NC_APP_DB_PASSWORD=${DB_PASSWORD}
+      - NC_APP_DB_USER=nocodb_reader
+      - NC_APP_DB_PASSWORD=${NC_DB_READER_PASSWORD}
+      - NC_APP_DB_ADMIN_USER=${DB_USER}
+      - NC_APP_DB_ADMIN_PASSWORD=${DB_PASSWORD}
       - NC_APP_DB_NAME=${DB_NAME}
     depends_on:
       - db

@@ -42,8 +42,10 @@ Variables à configurer séparément dans chaque environnement :
   `NC_PUBLIC_URL` (`https://db.mokart.fr` ou `https://db-dev.mokart.fr`),
   `NC_ALLOW_LOCAL_EXTERNAL_DBS=true`, `NC_DISABLE_TELE=true`,
   `NC_APP_DB_HOST=db.railway.internal`,
-  `NC_APP_DB_USER=${{db.POSTGRES_USER}}`,
-  `NC_APP_DB_PASSWORD=${{db.POSTGRES_PASSWORD}}`,
+  `NC_APP_DB_USER=nocodb_reader`,
+  `NC_APP_DB_PASSWORD` (`openssl rand -hex 32`, une valeur par environnement),
+  `NC_APP_DB_ADMIN_USER=${{db.POSTGRES_USER}}`,
+  `NC_APP_DB_ADMIN_PASSWORD=${{db.POSTGRES_PASSWORD}}`,
   `NC_APP_DB_NAME=${{db.POSTGRES_DB}}`, `CF_TUNNEL_TOKEN` (un tunnel différent par environnement).
 
 Le schéma et les données de démonstration de `api/init.sql` sont chargés uniquement à la
@@ -67,12 +69,16 @@ hostname public pointe vers `http://localhost:8080`. Les CNAME Cloudflare proxif
 vers les tunnels, et Cloudflare Access n'autorise que les adresses de l'équipe. La configuration
 du tunnel vérifie aussi le JWT Access avant de transmettre une requête à NocoDB.
 
-Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
-PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
-présence aux redéploiements sans créer de doublons. Les variables `NC_APP_DB_*` doivent être
-configurées dans **dev** et **production** avant le premier déploiement. Si l'initialisation
-échoue, le conteneur s'arrête avec une erreur et Railway le redémarre. La lecture seule de
-NocoDB n'est pas une restriction PostgreSQL : le compte utilisé conserve les droits de `db`.
+Au démarrage, `nocodb/bootstrap.js` crée ou met à jour le rôle PostgreSQL `NC_APP_DB_USER` avec
+le compte `NC_APP_DB_ADMIN_USER` : connexion autorisée, `SELECT` sur les tables du schéma `public`,
+y compris les tables créées plus tard, et transactions en lecture seule par défaut. Il crée ensuite
+si nécessaire la base NocoDB `Mokart` et sa source PostgreSQL externe vers la base applicative,
+en lecture seule dans NocoDB, puis remet à jour les identifiants de la source à chaque démarrage
+sans créer de doublons. La source se connecte avec ce rôle : l'interface ne peut ni écrire ni
+modifier le schéma, même via une requête SQL. Le compte `NC_APP_DB_ADMIN_USER` ne sert qu'à gérer
+le rôle et n'est jamais donné à la source. Les variables `NC_APP_DB_*` doivent être configurées
+dans **dev** et **production** avant le premier déploiement. Si l'initialisation échoue, le
+conteneur s'arrête avec une erreur et Railway le redémarre.
 
 L'interface expose les données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
 doivent être placés derrière une application Cloudflare Access limitée aux membres de l'équipe.
