@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://mokart.fr"><img src="mokart-logo.png" alt="Mokart" width="360" /></a>
+  <a href="https://mokart.fr"><img src=".github/mokart-logo.png" alt="Mokart" width="360" /></a>
 </div>
 
 <div align="center">
