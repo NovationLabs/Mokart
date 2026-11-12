@@ -19,10 +19,6 @@ def hash_password(password: str) -> str:
     return f"{PREFIX}${SCRYPT_N}${SCRYPT_R}${SCRYPT_P}${_b64(salt)}${_b64(digest)}"
 
 
-def _is_legacy_sha256(stored: str) -> bool:
-    return len(stored) == 64 and all(c in "0123456789abcdef" for c in stored)
-
-
 def verify_password(password: str, stored: str) -> bool:
     if not stored:
         return False
@@ -40,8 +36,6 @@ def verify_password(password: str, stored: str) -> bool:
         except (ValueError, TypeError):
             return False
         return hmac.compare_digest(candidate, base64.b64decode(digest))
-    if _is_legacy_sha256(stored):
-        return hmac.compare_digest(hashlib.sha256(password.encode()).hexdigest(), stored)
     return False
 
 
