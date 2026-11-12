@@ -1,11 +1,24 @@
+import logging
+import uuid
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session as DbSession
 from config.database import get_db
 from models import sql_models
 from pydantic import BaseModel
+from auth.dependencies import CurrentUser, get_current_user
+from auth.rate_limit import SlidingWindowLimiter
+from sessions.routes import ensure_session_access
 from .trajectory_algorithm import TrajectoryOptimizer
 
-router = APIRouter(prefix="/circuits", tags=["circuits"])
+router = APIRouter(prefix="/circuits", tags=["circuits"], dependencies=[Depends(get_current_user)])
+security_logger = logging.getLogger("mokart.circuits")
+trajectory_limiter = SlidingWindowLimiter(max_hits=10, window_s=3600)
+
+
+def _internal_error(exc: Exception) -> HTTPException:
+    security_logger.exception("erreur interne circuits", exc_info=exc)
+    return HTTPException(status_code=500, detail="Erreur interne")
 
 class CircuitResponse(BaseModel):
     id: str
@@ -52,8 +65,10 @@ async def get_circuits(db: DbSession = Depends(get_db)):
             circuit_list.append(CircuitResponse(**circuit_dict))
 
         return circuit_list
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)
 
 @router.get("/{circuit_id}/boundaries", response_model=list[CircuitBoundaryResponse])
 async def get_circuit_boundaries(circuit_id: str, db: DbSession = Depends(get_db)):
@@ -77,18 +92,30 @@ async def get_circuit_boundaries(circuit_id: str, db: DbSession = Depends(get_db
             boundary_list.append(CircuitBoundaryResponse(**boundary_dict))
 
         return boundary_list
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)
 
 @router.post("/{circuit_id}/optimal-trajectory", response_model=list[OptimalTrajectoryPointResponse])
-async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(get_db)):
+async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Calcule et sauvegarde la trajectoire optimale pour un circuit"""
+    if user.demo:
+        raise HTTPException(status_code=403, detail="Action impossible en mode démo")
+    try:
+        circuit_uuid = uuid.UUID(circuit_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Circuit non trouvé")
+    if not user.is_staff:
+        if trajectory_limiter.blocked(user.id):
+            raise HTTPException(status_code=429, detail="Trop de calculs demandés, réessaie plus tard")
+        trajectory_limiter.hit(user.id)
     try:
         import logging
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 
-        logger.info(f"Calcul de trajectoire pour circuit {circuit_id}")
+        logger.info("Calcul de trajectoire pour circuit %s", circuit_uuid)
 
         # Récupérer les bordures du circuit
         boundaries = db.query(sql_models.CircuitBoundary)\
@@ -169,7 +196,7 @@ async def calculate_optimal_trajectory(circuit_id: str, db: DbSession = Depends(
         logger.error(f"Erreur lors du calcul de trajectoire: {str(e)}")
         logger.error(traceback.format_exc())
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Erreur interne")
 
 @router.get("/{circuit_id}/optimal-trajectory", response_model=list[OptimalTrajectoryPointResponse])
 async def get_optimal_trajectory(circuit_id: str, db: DbSession = Depends(get_db)):
@@ -200,11 +227,12 @@ async def get_optimal_trajectory(circuit_id: str, db: DbSession = Depends(get_db
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)
 
 @router.get("/{circuit_id}/trajectory-comparison/{session_id}", response_model=TrajectoryComparisonResponse)
-async def compare_trajectories(circuit_id: str, session_id: str, db: DbSession = Depends(get_db)):
+async def compare_trajectories(circuit_id: str, session_id: str, db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Compare la trajectoire réelle d'une session avec la trajectoire optimale"""
+    ensure_session_access(session_id, user, db)
     try:
         # Récupérer la trajectoire optimale
         optimal_trajectory = db.query(sql_models.OptimalTrajectory)\
@@ -248,7 +276,7 @@ async def compare_trajectories(circuit_id: str, session_id: str, db: DbSession =
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)
 
 @router.get("/week-circuit/simulation-data")
 async def get_week_circuit_simulation_data(db: DbSession = Depends(get_db)):
@@ -326,4 +354,4 @@ async def get_week_circuit_simulation_data(db: DbSession = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)

@@ -1,28 +1,10 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session as DbSession
-from config.database import get_db
-from models import sql_models
+from fastapi import APIRouter, Depends
+from auth.dependencies import CurrentUser, get_current_user
 from models.dashboard import DashboardData, KartStatus, ElectricalModule, CircuitInfo, UserStats, SystemStatus
-import uuid
 import datetime
 import random
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-
-def get_user_role(user_id: str, db: DbSession) -> str:
-    """Récupère le rôle de l'utilisateur depuis la base de données"""
-    try:
-        user = db.query(sql_models.User).filter(sql_models.User.id == uuid.UUID(user_id)).first()
-        if user:
-            return user.role or "pilot"
-
-        # Mode démo - si l'utilisateur n'existe pas en BDD
-        if user_id == "550e8400-e29b-41d4-a716-446655440001":
-            return "admin"
-
-        return "pilot"
-    except:
-        return "pilot"
 
 def generate_fake_electrical_data() -> list[ElectricalModule]:
     """Génère des données factices pour les modules électriques et UWB"""
@@ -104,17 +86,11 @@ def generate_fake_karts_status() -> list[KartStatus]:
     return karts
 
 @router.get("/data", response_model=DashboardData)
-async def get_dashboard_data(user_id: str = None, role: str = None, db: DbSession = Depends(get_db)):
+# Mode démo - si l'utilisateur n'existe pas en BDD
+async def get_dashboard_data(user: CurrentUser = Depends(get_current_user)):
     """Récupère les données du dashboard selon le rôle de l'utilisateur"""
-
-    if not user_id:
-        raise HTTPException(status_code=400, detail="user_id requis")
-
     # Si un rôle est fourni en paramètre, l'utiliser (pour les tests)
-    if role:
-        user_role = role
-    else:
-        user_role = get_user_role(user_id, db)
+    user_role = user.role
 
     # Données communes
     circuit_info = CircuitInfo(
@@ -240,3 +216,5 @@ async def get_dashboard_data(user_id: str = None, role: str = None, db: DbSessio
             karts_status=generate_fake_karts_status(),
             circuit_info=circuit_info
         )
+
+    return DashboardData(user_role=user_role, circuit_info=circuit_info)

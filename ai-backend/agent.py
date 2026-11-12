@@ -1,13 +1,11 @@
 import asyncio
 import sys
-import time
 from datetime import datetime
 from typing import AsyncIterator
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.prebuilt import create_react_agent
-from langgraph.checkpoint.memory import MemorySaver
 
 load_dotenv()
 
@@ -21,12 +19,15 @@ LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_MODEL = os.getenv("LLM_MODEL")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL")
 
-_CHECKPOINTER = MemorySaver()
+MAX_TURNS = 20
+MAX_MESSAGE_CHARS = 4000
+MAX_TOTAL_CHARS = 24000
 
 SYSTEM_PROMPT = """Tu es Mokart Agent, un assistant IA utile et conversationnel.
 - Réponds en français de façon claire et concise.
-- Tu as accès à la mémoire de la conversation, utilise-la pour contexte.
-- Sois direct et naturel."""
+- Tu as accès à l'historique de la conversation, utilise-le pour contexte.
+- Sois direct et naturel.
+- Ne demande jamais de données personnelles, de mot de passe ou de moyen de paiement."""
 
 
 # =============================================================================
@@ -60,14 +61,13 @@ def build_llm(streaming: bool = True) -> ChatOpenAI:
 
 
 async def build_agent():
-    """Construit l'agent conversationnel avec mémoire."""
+    """Construit l'agent conversationnel."""
     llm = build_llm(streaming=True)
 
     agent = create_react_agent(
         model=llm,
         tools=[],
         prompt=SYSTEM_PROMPT,
-        checkpointer=_CHECKPOINTER,
     )
 
     _debug("✅ Agent prêt")
@@ -79,15 +79,36 @@ async def build_agent():
 # =============================================================================
 
 
+def to_langchain_messages(history: list) -> list:
+    if not isinstance(history, list):
+        raise ValueError("messages doit être une liste")
+    cleaned = []
+    for item in history[-MAX_TURNS:]:
+        if not isinstance(item, dict):
+            continue
+        role = item.get("role")
+        content = item.get("content")
+        if role not in ("user", "assistant") or not isinstance(content, str) or not content.strip():
+            continue
+        if len(content) > MAX_MESSAGE_CHARS:
+            raise ValueError("message trop long")
+        cleaned.append(HumanMessage(content=content) if role == "user" else AIMessage(content=content))
+    if not cleaned or not isinstance(cleaned[-1], HumanMessage):
+        raise ValueError("le dernier message doit venir de l'utilisateur")
+    if sum(len(m.content) for m in cleaned) > MAX_TOTAL_CHARS:
+        raise ValueError("conversation trop longue")
+    return cleaned
+
+
 async def run_agent_stream(
-    agent, message: str, thread_id: str
+    agent, messages: list
 ) -> AsyncIterator[tuple[str, str]]:
     """
     Exécute une requête en streaming token par token.
     Yield des tuples (kind, text) où kind est "token" ou "status".
     """
-    config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 50}
-    inputs = {"messages": [HumanMessage(content=message)]}
+    config = {"recursion_limit": 50}
+    inputs = {"messages": messages}
 
     try:
         async for event in agent.astream_events(inputs, config=config, version="v2"):
@@ -105,7 +126,7 @@ async def run_agent_stream(
         _debug(f"❌ Stream erreur: {e}")
         import traceback
         traceback.print_exc()
-        yield ("token", f"\n\n❌ Erreur: {e}")
+        yield ("token", "\n\nL'agent a rencontré une erreur, réessaie dans un instant.")
 
 
 # =============================================================================
@@ -121,7 +142,7 @@ async def main():
 
     agent = await build_agent()
 
-    thread_id = f"cli_{int(time.time())}"
+    history = []
 
     while True:
         try:
@@ -133,8 +154,12 @@ async def main():
 
             _debug(f"Requête: {user_input}")
             print()
-            async for kind, text in run_agent_stream(agent, user_input, thread_id):
+            history.append({"role": "user", "content": user_input})
+            answer = ""
+            async for kind, text in run_agent_stream(agent, to_langchain_messages(history)):
                 print(text, end="", flush=True)
+                answer += text
+            history.append({"role": "assistant", "content": answer})
             print()
 
         except KeyboardInterrupt:

@@ -1,5 +1,5 @@
 import { DashboardData } from '../types/dashboard';
-import { API_BASE_URL } from './api';
+import { API_BASE_URL, authFetch } from './api';
 
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
@@ -8,12 +8,8 @@ export const dashboardService = {
       throw new Error('Utilisateur non connecté');
     }
 
-    const user = JSON.parse(userStr);
-    const userId = user.id;
-    const userRole = user.role || 'driver';
-
     try {
-      const response = await fetch(`${API_BASE_URL}/dashboard/data?user_id=${userId}&role=${userRole}`, {
+      const response = await authFetch(`${API_BASE_URL}/dashboard/data`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

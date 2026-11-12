@@ -1,9 +1,11 @@
-fastapi==0.129.0
+fastapi==0.141.0
+starlette==1.7.0
 uvicorn==0.41.0
-python-dotenv==1.2.1
+python-dotenv==1.2.4
 pydantic[email]==2.12.5
 sqlalchemy==2.0.23
 psycopg2-binary==2.9.9
+PyJWT==2.15.1
 numpy==1.24.3
 scipy==1.11.4
 pandas==2.0.3
