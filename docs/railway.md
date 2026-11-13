@@ -56,14 +56,16 @@ les services concernés à partir de la branche `production`.
 
 ## Sauvegardes PostgreSQL
 
-Le service `backup` lance `pg_dump` sur chaque base listée, vérifie le fichier avec
-`pg_restore --list`, l'envoie sur un stockage compatible S3 (Cloudflare R2), puis supprime
-les sauvegardes plus anciennes que `BACKUP_RETENTION_DAYS`. Il s'arrête à la fin, Railway
-le relance selon sa planification. Un échec de dump ou d'envoi termine le service en erreur.
+Le service `backup` lance `pg_dump` sur chaque base listée et vérifie le fichier avec
+`pg_restore --list`. Il compare l'empreinte du contenu SQL avec celle du dernier dump :
+si l'export SQL est identique, il ne téléverse pas de nouveau fichier. Sinon, il l'envoie
+vers Cloudflare R2. Il conserve les deux derniers dumps distincts par base et par
+environnement. Il s'arrête à la fin ; Railway le relance selon sa planification.
+Un échec de dump ou d'envoi termine le service en erreur.
 
 Réglages Railway du service `backup`, dans chaque environnement :
 
-- Settings, Cron Schedule : `0 2 * * *` (tous les jours à 2h UTC).
+- Settings, Cron Schedule : `0 2 * * 3,6` (mercredi et samedi à 2h UTC).
 - Settings, Restart Policy : `Never`.
 - Aucun domaine public.
 - Le processus s'arrête après chaque sauvegarde ; il ne réserve pas de RAM entre deux exécutions.
@@ -84,7 +86,15 @@ Variables :
   (le bucket de l'environnement).
 - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` : jeton API R2 limité au bucket, en
   lecture et écriture.
-- `BACKUP_RETENTION_DAYS` : `7` conseillé en dev, `30` en production ; `0` pour tout conserver.
+- `BACKUP_KEEP_COUNT=2` dans les deux environnements. L'ancienne variable
+  `BACKUP_RETENTION_DAYS` n'est plus utilisée.
+
+Les dumps personnalisés contiennent une date de création et ne sont donc pas comparés
+octet par octet. Le service calcule une empreinte SHA-256 de leur sortie SQL répétable
+et la stocke dans les métadonnées R2. Pour un ancien dump sans empreinte, il le
+télécharge et le compare. Si la base reste inchangée longtemps, le dernier dump est
+conservé même s'il a plus de quelques semaines. Un changement d'ordre des lignes dans
+un export peut produire une nouvelle empreinte même si les données logiques n'ont pas changé.
 
 Les fichiers sont rangés sous `<environnement>/<base>/<base>-<date UTC>.dump`.
 `RAILWAY_ENVIRONMENT_NAME` sépare aussi les sauvegardes par environnement dans les

@@ -27,3 +27,6 @@ jobs:
 
       - name: Build backup image
         run: docker compose --profile backup build backup
+
+      - name: Check repeatable PostgreSQL dump support
+        run: docker compose --profile backup run --rm --no-deps backup pg_restore --help | grep -q -- '--restrict-key'
