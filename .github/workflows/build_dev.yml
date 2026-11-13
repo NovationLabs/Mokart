@@ -24,3 +24,6 @@ jobs:
 
       - name: Build Docker images
         run: docker compose build
+
+      - name: Build backup image
+        run: docker compose --profile backup build backup
