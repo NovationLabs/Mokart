@@ -17,6 +17,9 @@ jobs:
       - name: Create .env
         run: cp .env.example .env
 
+      - name: Build backup image
+        run: docker build -f backup/Dockerfile -t mokart-backup:ci .
+
       - name: Build and Run Docker Compose Prod
         run: docker compose -f docker-compose.prod.yml up --build -d
 
