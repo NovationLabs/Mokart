@@ -1,6 +1,26 @@
+<div align="center">
+  <a href="https://mokart.fr"><img src=".github/mokart-logo.png" alt="Mokart" width="360" /></a>
+</div>
+
+<div align="center">
+
+![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+
+</div>
+
+<div align="center">
+
 [![Mokart Dev CI](https://github.com/novationlabs/mokart/actions/workflows/build_dev.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Prod CI](https://github.com/novationlabs/mokart/actions/workflows/build_prod.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Lint & Build](https://github.com/novationlabs/mokart/actions/workflows/lint.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/lint.yml)
+
+</div>
 
 ## Architecture
 
