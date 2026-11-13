@@ -12,7 +12,11 @@ trap 'rm -rf "$TMP"' EXIT
 NAME="${2:-}"
 if [ -z "$NAME" ]; then
   aws s3 ls "s3://$S3_BUCKET/$PREFIX/$DB/" --endpoint-url "$S3_ENDPOINT" > "$TMP/list"
-  NAME=$(awk -v db="$DB" '$4 ~ "^" db "-[0-9]{8}T[0-9]{6}Z\\.dump$" {print $4}' "$TMP/list" | sort | tail -n 1)
+  NAME=$(awk '{print $4}' "$TMP/list" | while IFS= read -r candidate; do
+    case "$candidate" in
+      "$DB"-????????T??????Z.dump) printf '%s\n' "$candidate" ;;
+    esac
+  done | sort | tail -n 1)
 fi
 [ -n "$NAME" ] || { echo "Mokart: no backup found for $DB in $PREFIX" >&2; exit 1; }
 
