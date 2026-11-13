@@ -20,6 +20,9 @@ jobs:
       - name: Build backup image
         run: docker build -f backup/Dockerfile -t mokart-backup:ci .
 
+      - name: Check repeatable PostgreSQL dump support
+        run: docker run --rm mokart-backup:ci pg_restore --help | grep -q -- '--restrict-key'
+
       - name: Build and Run Docker Compose Prod
         run: docker compose -f docker-compose.prod.yml up --build -d
 

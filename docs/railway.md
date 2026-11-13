@@ -11,6 +11,7 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | app | `/app`, `Dockerfile.railway` | 80 | public |
 | api | `/api`, `Dockerfile.railway` | 5000 | public, et via le proxy `/api` de `app` |
 | db | `/`, `db/Dockerfile` | 5432 | privé, volume `/var/lib/postgresql/data` |
+| backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
 | nocodb | `/`, `nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
@@ -52,6 +53,30 @@ une évolution du schéma après le premier démarrage exige une migration expli
 
 Pour promouvoir une version, fusionner `dev` dans `production`. Railway reconstruit alors
 les services concernés à partir de la branche `production`.
+
+## Sauvegardes PostgreSQL
+
+Le service `backup` est configuré en **dev** et en **production** sur Railway, avec un
+bucket Cloudflare R2 privé et une clé limitée à ce bucket pour chaque environnement.
+Il suit la branche Git de son environnement, sans domaine public et avec la politique
+de redémarrage `Never`.
+
+- Cron : `0 2 * * 3,6`, mercredi et samedi à 02:00 UTC.
+- `BACKUP_KEEP_COUNT=2` : les deux derniers dumps distincts par base et environnement.
+- Variables PostgreSQL : `PGHOST=db.railway.internal`, `PGPORT=5432`, `PGUSER`,
+  `PGPASSWORD`, `PGDATABASE` et `BACKUP_DATABASES`, avec références aux variables de `db`.
+- Variables R2 : `S3_ENDPOINT`, `S3_BUCKET`, `AWS_ACCESS_KEY_ID`,
+  `AWS_SECRET_ACCESS_KEY` et `BACKUP_PREFIX` (`dev` ou `production`).
+
+Chaque exécution vérifie le dump avec `pg_restore --list`, puis compare une empreinte
+SHA-256 de sa sortie SQL répétable au dernier dump R2. Un export identique n'est pas
+renvoyé. Les archives antérieures sans empreinte sont téléchargées pour comparaison.
+Le dernier dump reste conservé tant qu'il n'y a pas de changement. L'ancienne variable
+`BACKUP_RETENTION_DAYS` n'est plus utilisée. Le processus s'arrête après la sauvegarde
+et ne réserve pas de RAM entre les exécutions.
+
+Pour restaurer, lancer une tâche ponctuelle avec l'image et les variables du service,
+en exécutant `mokart-restore <base>` ; tester d'abord sur une base de test.
 
 ## NocoDB
 
