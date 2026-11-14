@@ -53,7 +53,7 @@ services:
   nocodb:
     build:
       context: .
-      dockerfile: nocodb/Dockerfile
+      dockerfile: .nocodb/Dockerfile
     container_name: mokart-nocodb-prod
     ports:
       - "127.0.0.1:8090:8080"

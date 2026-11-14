@@ -14,7 +14,7 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
 | backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
-| nocodb | `/`, `nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
+| nocodb | `/`, `.nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
 
 `app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
 chaque environnement. `db` et `ai-backend` restent sans domaine public.
@@ -139,7 +139,7 @@ hostname public pointe vers `http://localhost:8080`. Les CNAME Cloudflare proxif
 vers les tunnels, et Cloudflare Access n'autorise que les adresses de l'équipe. La configuration
 du tunnel vérifie aussi le JWT Access avant de transmettre une requête à NocoDB.
 
-Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
+Au démarrage, `.nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
 PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
 présence aux redéploiements sans créer de doublons. Les variables `NC_APP_DB_*` doivent être
 configurées dans **dev** et **production** avant le premier déploiement. Si l'initialisation
