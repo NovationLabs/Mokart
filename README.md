@@ -36,34 +36,17 @@ Mokart/
 
 ## Quick Start
 
-**Script de démarrage recommandé**
-```bash
-# Démarrage rapide (développement)
-./start.sh
-
-# Construction et démarrage
-./start.sh build
-
-# Reconstruction complète
-./start.sh rebuild
-
-# Mode production
-./start.sh prod
-
-# Arrêter les services
-./start.sh stop
-
-# Nettoyage complet
-./start.sh clean
-```
-
-**Docker Compose direct**
 ```bash
 # Development
+cp .env.example .env
 docker compose up --build
 
-# Production
+# Local production configuration
 docker compose -f docker-compose.prod.yml up --build -d
+
+# Stop
+docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 ---
