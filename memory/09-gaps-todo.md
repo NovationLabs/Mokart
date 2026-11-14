@@ -20,7 +20,7 @@
 ## Nettoyage du dépôt
 
 - `api/seed_users.sql` et `api/fix_user_columns.sql` citent l'ancien endpoint `/execute-sql` ; ces scripts ne sont pas chargés par Compose.
-- `web/src/components/home/`, des hooks et la vidéo prototype correspondent à l'ancienne vitrine. Vérifier les imports et les références avant retrait (issue #92).
+- Les composants et hooks inutilisés de l'ancienne vitrine, sa vidéo et les assets `trusted_by/` ont été retirés dans l'issue #92. `Reveal.tsx` et les deux photos du prototype restent utilisés.
 - `docs/Features_List.md` et `docs/Roles_and_permissions.md` décrivent en partie une cible produit, pas l'état complet du code. Comparer leurs propositions à l'API et à l'interface avant implémentation.
 
 Priorités suggérées : protéger l'accès aux frames HUD, valider les sauvegardes de production, brancher la télémétrie réelle, puis traiter les fichiers inutilisés dans une PR dédiée.

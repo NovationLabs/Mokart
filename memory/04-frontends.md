@@ -4,7 +4,7 @@
 
 React sert `mokart.fr` et `dev.mokart.fr`. `web/src/App.tsx` choisit la page selon le chemin : accueil, About, Soon, Privacy, Terms et Style Guide. L'accueil courant est dans `web/src/pages/Home.tsx` et utilise `Main.css` et `Refined.css`. Le lien vers le tableau de bord vient de `web/src/dashboardUrl.ts`.
 
-`web/src/components/home/`, plusieurs hooks d'animation, `Reveal`, `CountUp` et `Marquee` appartiennent à une ancienne version de la vitrine : aucun de ces composants n'est importé par les pages courantes. Leur retrait est traité séparément dans l'issue #92. Les fichiers de `web/public/prototype/` utilisés par l'accueil et About doivent être conservés.
+Les composants de l'ancienne version de l'accueil (`web/src/components/home/`, `CountUp`, `Marquee`) et leurs hooks ont été retirés dans l'issue #92. `Reveal.tsx` est conservé : la page About l'utilise. Les photos `web/public/prototype/mokart_prototype.jpg` et `.png` sont affichées par les pages actuelles ; l'ancienne vidéo `.mov` a été retirée.
 
 ## Tableau de bord `app/`
 
