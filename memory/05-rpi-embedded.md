@@ -1,6 +1,6 @@
 # 05 — Embarqué (RPi, capteurs, volant 3D)
 
-Le boîtier embarqué. **Aucun script `rpi/` n'est dockerisé** ni branché à l'API FastAPI : ce sont des scripts autonomes (capteurs, écran TFT, outillage). L'alimentation de la plateforme se fait par **ingestion manuelle** (voir [07](07-circuit-reconstruction.md) et [08](08-dev-setup.md)).
+État vérifié le 14 novembre 2026. **Aucun script `rpi/` n'est dockerisé** ni branché à l'API FastAPI : ce sont des scripts autonomes (capteurs, écran TFT, outillage). L'alimentation de la plateforme se fait encore par **ingestion manuelle** (voir [07](07-circuit-reconstruction.md) et [08](08-dev-setup.md)).
 
 ## Matériel
 
@@ -50,7 +50,7 @@ Chaîne pour dessiner/éditer des circuits manuellement (indépendante de `build
 - `point_editor.py` : édition fine du CSV.
 - `integrate_circuit.py` : CSV → `INSERT` dans `api/init.sql`.
 - `visualize_points.py` : vérification via l'API.
-- `circuit_week.csv`, `circuit_weekend.csv` : jeux de points. `keybinds.md` : raccourcis. `test dashboard pilote/` : maquettes HTML.
+- `circuit_week.csv`, `circuit_weekend.csv` et `circuit_20260304_114744.csv` : jeux de points. `keybinds.md` : raccourcis. `test dashboard pilote/` : maquettes HTML.
 
 ## Contrôle de flux (résumé)
 
