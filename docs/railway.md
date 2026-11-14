@@ -14,7 +14,7 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
 | backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
-| nocodb | `/`, `nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
+| nocodb | `/`, `.nocodb/Dockerfile` | 8080 | désactivé ; accès privé via Cloudflare Tunnel et Access lors de sa réactivation |
 
 `app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
 chaque environnement. `db` et `ai-backend` restent sans domaine public.
@@ -54,6 +54,11 @@ une évolution du schéma après le premier démarrage exige une migration expli
 Pour promouvoir une version, fusionner `dev` dans `production`. Railway reconstruit alors
 les services concernés à partir de la branche `production`.
 
+Le dossier NocoDB a été déplacé de `nocodb/` vers `.nocodb/` dans la branche de nettoyage
+`92-repository-cleanup`. La configuration Railway du service désactivé peut encore pointer
+vers `nocodb/Dockerfile`. Après fusion du code dans chaque branche d'environnement et avant
+de réactiver NocoDB, régler son chemin de Dockerfile sur `.nocodb/Dockerfile` dans Railway.
+
 ## Sauvegardes PostgreSQL
 
 Le service `backup` lance `pg_dump` sur chaque base listée et vérifie le fichier avec
@@ -63,6 +68,11 @@ vers Cloudflare R2. Il conserve les deux derniers dumps distincts par base et pa
 environnement. Il s'arrête à la fin ; Railway le relance selon sa planification.
 Un échec de dump ou d'envoi termine le service en erreur.
 
+État au dernier contrôle (13 novembre 2026) : un dump existait dans le bucket R2 de `dev`,
+aucun dans celui de `production`. Les essais de la tâche de production s'étaient arrêtés
+sans erreur exploitable dans les logs Railway. Vérifier la première exécution planifiée et
+le fichier dans le bucket de production avant de considérer ces sauvegardes comme validées.
+
 Réglages Railway du service `backup`, dans chaque environnement :
 
 - Settings, Cron Schedule : `0 2 * * 3,6` (mercredi et samedi à 2h UTC).
@@ -70,8 +80,8 @@ Réglages Railway du service `backup`, dans chaque environnement :
 - Aucun domaine public.
 - Le processus s'arrête après chaque sauvegarde ; il ne réserve pas de RAM entre deux exécutions.
 
-Créer dans le compte Cloudflare de Mokart deux buckets R2 privés en classe Standard,
-un pour `dev` et un pour `production`. Créer une clé d'accès R2 limitée à chaque bucket,
+Les buckets R2 privés `mokart-backups-dev` et `mokart-backups-production` existent dans
+le compte Cloudflare de Mokart. Utiliser une clé d'accès R2 limitée à chaque bucket,
 avec les droits de lecture et d'écriture nécessaires à l'envoi, à la liste et à la
 suppression des anciennes sauvegardes. Garder les clés uniquement dans les variables
 Railway de l'environnement correspondant. Ne pas exposer les buckets publiquement.
@@ -139,13 +149,15 @@ hostname public pointe vers `http://localhost:8080`. Les CNAME Cloudflare proxif
 vers les tunnels, et Cloudflare Access n'autorise que les adresses de l'équipe. La configuration
 du tunnel vérifie aussi le JWT Access avant de transmettre une requête à NocoDB.
 
-Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
+Au démarrage, `.nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
 PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
 présence aux redéploiements sans créer de doublons. Les variables `NC_APP_DB_*` doivent être
 configurées dans **dev** et **production** avant le premier déploiement. Si l'initialisation
-échoue, le conteneur s'arrête avec une erreur et Railway le redémarre. La lecture seule de
+échoue, le conteneur s'arrête avec une erreur ; le redémarrage dépend de la politique Railway
+configurée. La lecture seule de
 NocoDB n'est pas une restriction PostgreSQL : le compte utilisé conserve les droits de `db`.
 
 L'interface expose les données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
 doivent être placés derrière une application Cloudflare Access limitée aux membres de l'équipe.
-En local, elle est disponible sur `http://localhost:8090`.
+En local, les blocs `nocodb` des deux fichiers Compose sont commentés. Les décommenter
+et renseigner leurs variables avant de lancer le service sur `http://localhost:8090`.

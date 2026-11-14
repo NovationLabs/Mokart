@@ -1,6 +1,6 @@
 # 07 — Reconstruction de circuit depuis le GPS
 
-Script : **`rpi/build_circuit.py`** (stdlib pure, aucune dépendance — tourne sur le RPi comme sur un poste). Reconstruit la géométrie d'un circuit à partir de **positions GPS multi-tours** enregistrées (`rpi/data/gnss_*.csv`).
+État vérifié le 14 novembre 2026. **`rpi/build_circuit.py`** utilise la bibliothèque standard Python et reconstruit la géométrie d'un circuit à partir de positions GPS multi-tours (`rpi/data/gnss_*.csv`).
 
 ## Pipeline
 
@@ -24,17 +24,16 @@ Script : **`rpi/build_circuit.py`** (stdlib pure, aucune dépendance — tourne 
 
 Exemple :
 ```bash
-cd rpi
-python build_circuit.py data/gnss_*.csv --name "SpeedKart Hyères" --width 8 --emit-sql \
-  | docker compose exec -T db psql -U mokart -d mokart
+python3 rpi/build_circuit.py rpi/data/gnss_*.csv --name "SpeedKart Hyères" --width 8 --emit-sql \
+  | docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
 ```
 
 ## Circuit reconstruit (résultat constaté)
 
-- Inséré en base : circuit **« SpeedKart Hyères (GPS) »**, id `3d01d5ed-ddc0-4409-9928-c89f54ecc66e` (400 bordures + centerline/trajectoire). Origine de projection = **`43.4046596, 6.0123885`**.
+- Les artefacts versionnés dans `rpi/data/` proviennent du circuit **« SpeedKart Hyères (GPS) »** ; un ancien essai local utilisait l'id `3d01d5ed-ddc0-4409-9928-c89f54ecc66e` et l'origine **`43.4046596, 6.0123885`**. Sa présence dans une base actuelle n'est pas garantie.
 - Forme cohérente (épingle + longue courbe). L'algo scipy `optimal-trajectory` ([03](03-backend-api.md)) tourne dessus (~200 pts). Artefact mineur connu : croisement des bordures à l'épingle (offset > rayon local).
 
-> ⚠️ Ce circuit **n'est pas dans `init.sql`** : il a été inséré à l'exécution via le SQL généré par `build_circuit.py`. Il n'existe que dans le **volume Docker local** → un reset DB l'efface (re-jouer le script). Même remarque pour la session réelle ingérée (voir [06](06-hud-telephone.md), [09](09-gaps-todo.md)).
+> Ce circuit **n'est pas dans `init.sql`**. Un ancien essai l'avait inséré via le SQL généré par `build_circuit.py`, dans un volume Docker local. Un nouveau volume ou un autre environnement ne le contient pas automatiquement : rejouer le script si nécessaire. Même remarque pour la session réelle ingérée (voir [06](06-hud-telephone.md), [09](09-gaps-todo.md)).
 
 ## Format des données `rpi/data/`
 

@@ -1,11 +1,13 @@
 # Liste des Fonctionnalités MoKart
 
 **Auteur :** Équipe MoKart
-**Statut :** À jour
-**Date :** Mai 2026
+**Statut :** Vision produit et backlog ; ne décrit pas uniquement le code livré
+**Date :** Mai 2026 — statut clarifié en novembre 2026
 **Version :** 1.0
 
-Ce document présente l'ensemble des fonctionnalités disponibles dans la plateforme MoKart, organisées par catégorie et par page de l'application.
+Ce document regroupe les fonctionnalités envisagées pour MoKart, organisées par catégorie et par page. Une rubrique ou un nom de page ici **ne prouve pas son implémentation**. Pour l'état vérifié du code, consulter [la mémoire projet](../memory/README.md) et les pages présentes dans `app/src/pages/`.
+
+Aujourd'hui, l'authentification par JWT existe et certaines données de sessions sont lues depuis l'API. Plusieurs vues affichent encore des données synthétiques. `PublicLeaderboard.tsx` et `MaintenanceLogPage.tsx` n'existent pas ; WebSockets, MQTT, Redis et la télémétrie live décrits plus bas restent des objectifs.
 
 ---
 
@@ -431,7 +433,7 @@ Vue technique pour mécaniciens stands.
 
 ## 🚀 Fonctionnalités Futures (Roadmap)
 
-### V2.0 - Prévu Q3 2026
+### V2.0 - Ancienne cible Q3 2026, calendrier à revoir
 - **Mode multijoueur**
   - Courses en ligne
   - Classements globaux
@@ -441,7 +443,7 @@ Vue technique pour mécaniciens stands.
   - Conseils conduite
   - Détection anomalies
 
-### V3.0 - Prévu Q1 2027
+### V3.0 - Ancienne cible Q1 2027, calendrier à revoir
 - **Réseau de circuits**
   - Multi-sites
   - Partage données
@@ -453,15 +455,12 @@ Vue technique pour mécaniciens stands.
 
 ---
 
-## 📊 Métriques Actuelles
+## 📊 Objectifs et périmètre envisagé
 
-- **14 pages** principales (+2 MaintenanceLogPage, PublicLeaderboard)
-- **8 rôles** utilisateurs
-- **50+ permissions** granulaires
-- **20Hz** fréquence télémétrie
-- **Real-time** tracking
-- **Multi-device** support
+- Jusqu'à **14 pages** envisagées, dont MaintenanceLogPage et PublicLeaderboard à créer.
+- **8 rôles** décrits dans la matrice front ; les contrôles serveur couvrent seulement une partie de ces permissions.
+- Scopes granulaires, télémétrie **20 Hz**, suivi temps réel et prise en charge de plusieurs appareils : objectifs à implémenter et mesurer.
 
 ---
 
-*Ce document est mis à jour à chaque nouvelle fonctionnalité ajoutée à la plateforme.*
+*Vérifier chaque fonctionnalité contre le code et les tests avant de la présenter comme disponible.*

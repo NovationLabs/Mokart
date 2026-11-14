@@ -1,5 +1,7 @@
 # DEC-006 — Architecture des boitiers pour les kartings
 
+> Décision de conception acceptée le 12/11/2026. Elle décrit l'architecture matérielle visée, pas une installation déjà déployée : le prototype et les scripts `rpi/` actuels ne constituent pas encore deux boîtiers connectés et opérationnels.
+
 ## 1. Résumé
 
 Cette décision définit l'architecture matérielle retenue pour le système embarqué des kartings. L'équipe a choisi d'utiliser deux boitiers distincts :

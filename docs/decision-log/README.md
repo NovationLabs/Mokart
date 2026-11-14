@@ -30,7 +30,7 @@ Ce journal constitue une référence commune pour l'ensemble des membres de l'é
 | Équipe | Mokart |
 | Membres | COLOMBANI-GAILLEUR Anthony, BOUASKER Selim, GREGORI Léo, DORGE Clément |
 | Date de début | 10/03/2026 |
-| Dernière mise à jour | 12/11/2026 |
+| Dernière mise à jour | 14/11/2026 |
 
 ## 3. Organisation du répertoire
 
@@ -40,11 +40,6 @@ Markdown afin de faciliter leur consultation et leur maintenance.
 ```text
 decision-log/
 ├── README.md
-├── DEC-001-database-choice.md
-├── DEC-002-backend-framework.md
-├── DEC-003-project-architecture.md
-├── DEC-004-deployment-strategy.md
-├── DEC-005-authentication-system.md
 └── DEC-006-boitiers-kartings.md
 ```
 
@@ -57,12 +52,9 @@ Cette section répertorie l'ensemble des décisions documentées dans le projet.
 
 | ID | Décision | Catégorie | Statut | Date |
 | --- | --- | --- | --- | --- |
-| DEC-001 | Choix du système de base de données | Technique | Accepted | JJ/MM/AAAA |
-| DEC-002 | Choix du framework backend | Technique | Accepted | JJ/MM/AAAA |
-| DEC-003 | Définition de l'architecture logicielle | Architecture | Proposed | JJ/MM/AAAA |
-| DEC-004 | Stratégie de déploiement | Infrastructure | Proposed | JJ/MM/AAAA |
-| DEC-005 | Système d'authentification | Sécurité | Proposed | JJ/MM/AAAA |
-| DEC-006 | Architecture des boitiers pour les kartings | Architecture | Accepted | 12/11/2026 |
+| [DEC-006](DEC-006-boitiers-kartings.md) | Architecture des boitiers pour les kartings | Architecture | Accepted | 12/11/2026 |
+
+Les identifiants DEC-001 à DEC-005 n'ont pas de fichier dans ce dépôt. Ils ne sont pas présentés ici comme des décisions documentées ; conserver la numérotation existante lors des prochaines entrées.
 
 **Statuts possibles :**
 
@@ -127,11 +119,7 @@ Chaque décision doit respecter le format suivant :
 
 `DEC-[NUMÉRO]-[DESCRIPTION].md`
 
-Exemples :
-
-- `DEC-001-database-choice.md`
-- `DEC-002-backend-framework.md`
-- `DEC-003-project-architecture.md`
+Exemple existant : `DEC-006-boitiers-kartings.md`.
 
 Les identifiants sont incrémentaux et ne sont jamais réutilisés, même lorsqu'une décision est rejetée ou remplacée.
 
@@ -166,6 +154,6 @@ Toute modification du journal doit être effectuée via une Pull Request afin de
 
 **Document maintenu par :** COLOMBANI-GAILLEUR Anthony
 
-**Dernière mise à jour :** 12/11/2026
+**Dernière mise à jour :** 14/11/2026
 
 **MOKART --- EPITECH**
