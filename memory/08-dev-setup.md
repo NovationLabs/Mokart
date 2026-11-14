@@ -17,7 +17,7 @@ Le `.env.example` fournit les noms de variables de la base, de l'API, de NocoDB 
 | API | `http://localhost:8081` |
 | Agent | `http://localhost:8002` |
 | Interface IA | `http://localhost:8003` |
-| NocoDB, si lancé | `http://localhost:8090` |
+| NocoDB, après décommentage du service Compose | `http://localhost:8090` |
 
 `docker compose down` arrête les conteneurs ; le volume PostgreSQL persiste. `docker compose down -v` efface aussi les données locales. `api/init.sql` n'est chargé qu'à la création d'un volume vide. Pour les tests de la configuration de production locale, utiliser `docker compose -f docker-compose.prod.yml up -d --build`.
 

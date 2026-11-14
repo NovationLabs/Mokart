@@ -14,7 +14,7 @@
 
 `docker-compose.yml` sert au développement local. `docker-compose.prod.yml` est utilisé par la CI pour tester une configuration de production locale ; Railway construit chaque service à partir de son Dockerfile. La liste des domaines, Dockerfiles et variables Railway est dans [docs/railway.md](../docs/railway.md).
 
-En local : vitrine `localhost:8080`, app `localhost:8000`, API `localhost:8081`, agent `localhost:8002`, interface IA `localhost:8003`. `db` est lié à `127.0.0.1:5432`. NocoDB, s'il est lancé, est lié à `127.0.0.1:8090`.
+En local : vitrine `localhost:8080`, app `localhost:8000`, API `localhost:8081`, agent `localhost:8002`, interface IA `localhost:8003`. `db` est lié à `127.0.0.1:5432`. Les blocs NocoDB sont commentés dans les deux fichiers Compose ; après réactivation, son port local est `127.0.0.1:8090`.
 
 ## Données et sécurité
 

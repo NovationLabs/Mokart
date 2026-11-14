@@ -159,4 +159,5 @@ NocoDB n'est pas une restriction PostgreSQL : le compte utilisé conserve les dr
 
 L'interface expose les données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
 doivent être placés derrière une application Cloudflare Access limitée aux membres de l'équipe.
-En local, elle est disponible sur `http://localhost:8090`.
+En local, les blocs `nocodb` des deux fichiers Compose sont commentés. Les décommenter
+et renseigner leurs variables avant de lancer le service sur `http://localhost:8090`.
