@@ -1,12 +1,41 @@
-from fastapi import APIRouter, HTTPException, Depends
+import logging
+
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session as DbSession
 from config.database import get_db
+from auth.dependencies import CurrentUser, get_current_user, require_roles
 from models.session import Session, SensorData, TrajectoryPoint, HudFrame, HudSession
 from models import sql_models
 import math
 import uuid
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+logger = logging.getLogger("mokart.sessions")
+
+TELEMETRY_WRITERS = ("admin", "device_kart")
+NOT_FOUND = HTTPException(status_code=404, detail="Session non trouvée")
+
+
+def _internal_error(exc: Exception) -> HTTPException:
+    logger.exception("erreur interne sessions", exc_info=exc)
+    return HTTPException(status_code=500, detail="Erreur interne")
+
+
+def _parse_uuid(value: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except (ValueError, TypeError):
+        raise NOT_FOUND
+
+
+def ensure_session_access(session_id: str, user: CurrentUser, db: DbSession):
+    sid = _parse_uuid(session_id)
+    session = db.query(sql_models.Session).filter(sql_models.Session.id == sid).first()
+    if not session:
+        raise NOT_FOUND
+    if not user.is_staff and str(session.user_id) != user.id:
+        raise NOT_FOUND
+    return session
 
 
 SPEED_MAX_KMH = 120.0   # au-delà = glitch GPS (kart de location ~90 km/h max)
@@ -185,10 +214,13 @@ def _build_hud_frames(rows, dt_s: float, g_scale: float):
     return frames, best_lap, bounds, track
 
 @router.get("/", response_model=list[Session])
-async def get_sessions(db: DbSession = Depends(get_db)):
+async def get_sessions(db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Récupérer toutes les sessions"""
     try:
-        sessions = db.query(sql_models.Session).all()
+        query = db.query(sql_models.Session)
+        if not user.is_staff:
+            query = query.filter(sql_models.Session.user_id == uuid.UUID(user.id))
+        sessions = query.all()
 
         # Convertir les objets SQLAlchemy en dictionnaires puis en modèles Pydantic
         session_list = []
@@ -203,12 +235,16 @@ async def get_sessions(db: DbSession = Depends(get_db)):
             session_list.append(Session(**session_dict))
 
         return session_list
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.get("/user/{user_id}/circuit/{circuit_id}", response_model=list[Session])
-async def get_user_sessions_for_circuit(user_id: str, circuit_id: str, db: DbSession = Depends(get_db)):
+async def get_user_sessions_for_circuit(user_id: str, circuit_id: str, db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Récupérer les sessions d'un utilisateur pour un circuit donné"""
+    if not user.is_staff and user_id != user.id:
+        raise HTTPException(status_code=403, detail="Droits insuffisants")
     try:
         sessions = db.query(sql_models.Session)\
             .filter(sql_models.Session.user_id == uuid.UUID(user_id))\
@@ -229,12 +265,20 @@ async def get_user_sessions_for_circuit(user_id: str, circuit_id: str, db: DbSes
             session_list.append(Session(**session_dict))
 
         return session_list
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.get("/{session_id}/stats")
-async def get_session_stats(session_id: str, db: DbSession = Depends(get_db), limit: int = 10000):
+async def get_session_stats(
+    session_id: str,
+    db: DbSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+    limit: int = Query(10000, ge=1, le=20000),
+):
     """Récupérer les statistiques d'une session"""
+    ensure_session_access(session_id, user, db)
     try:
         # Récupérer les points de la session avec une limite pour éviter les blocages
         data = db.query(sql_models.SensorData)\
@@ -273,12 +317,15 @@ async def get_session_stats(session_id: str, db: DbSession = Depends(get_db), li
         }
 
         return stats
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.get("/{session_id}/trajectory", response_model=list[TrajectoryPoint])
-async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db)):
+async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Récupérer la trajectoire d'une session"""
+    ensure_session_access(session_id, user, db)
     try:
         # Récupérer les données UWB de la session
         # On ne sélectionne que les colonnes nécessaires
@@ -309,16 +356,18 @@ async def get_session_trajectory(session_id: str, db: DbSession = Depends(get_db
                 ))
 
         return trajectory
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.get("/{session_id}/hud-frames", response_model=HudSession)
 async def get_session_hud_frames(
     session_id: str,
     db: DbSession = Depends(get_db),
-    dt_s: float = 0.1,
-    g_scale: float = 1.0,
-    limit: int = 20000,
+    dt_s: float = Query(0.1, gt=0.0, le=1.0),
+    g_scale: float = Query(1.0, gt=0.0, le=10.0),
+    limit: int = Query(20000, ge=1, le=20000),
 ):
     """Frames HUD prêtes à afficher pour le HUD téléphone (replay d'une session).
 
@@ -326,6 +375,7 @@ async def get_session_hud_frames(
     défaut). Voir app/src/pages/HudPage.tsx. `g_scale` permet de convertir l'IMU
     en g si les données brutes sont en m/s² (passer ~0.102).
     """
+    _parse_uuid(session_id)
     try:
         rows = db.query(sql_models.SensorData)\
             .filter(sql_models.SensorData.session_id == session_id)\
@@ -352,25 +402,21 @@ async def get_session_hud_frames(
         )
     except HTTPException:
         raise
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.post("/", response_model=Session)
-async def create_session(session: Session, db: DbSession = Depends(get_db)):
+async def create_session(session: Session, db: DbSession = Depends(get_db), user: CurrentUser = Depends(get_current_user)):
     """Créer une nouvelle session"""
+    if user.demo:
+        raise HTTPException(status_code=403, detail="Action impossible en mode démo")
+    owner_id = session.user_id if (user.is_staff or user.role == "device_kart") and session.user_id else user.id
     try:
-        session_id = None
-        if session.id:
-            try:
-                session_id = uuid.UUID(session.id)
-            except ValueError:
-                session_id = uuid.uuid4()
-        else:
-            session_id = uuid.uuid4()
-
         new_session = sql_models.Session(
-            id=session_id,
-            user_id=uuid.UUID(session.user_id) if session.user_id else uuid.uuid4(), # Should be valid UUID
+            id=uuid.uuid4(),
+            user_id=uuid.UUID(str(owner_id)),
             kart=session.kart
         )
 
@@ -381,11 +427,18 @@ async def create_session(session: Session, db: DbSession = Depends(get_db)):
         return new_session
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)
 
 @router.get("/{session_id}/sensor-data", response_model=list[SensorData])
-async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_db), limit: int = 5000, offset: int = 0):
+async def get_session_sensor_data(
+    session_id: str,
+    db: DbSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+    limit: int = Query(5000, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
+):
     """Récupérer toutes les données de capteur d'une session avec pagination"""
+    ensure_session_access(session_id, user, db)
     try:
         # Récupérer les données de capteur de la session avec pagination
         data = db.query(sql_models.SensorData)\
@@ -418,12 +471,20 @@ async def get_session_sensor_data(session_id: str, db: DbSession = Depends(get_d
             sensor_data_list.append(SensorData(**sensor_dict))
 
         return sensor_data_list
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur interne: {str(e)}")
+        raise _internal_error(e)
 
 @router.post("/{session_id}/sensor-data", response_model=SensorData)
-async def add_sensor_data(session_id: str, sensor_data: SensorData, db: DbSession = Depends(get_db)):
+async def add_sensor_data(
+    session_id: str,
+    sensor_data: SensorData,
+    db: DbSession = Depends(get_db),
+    user: CurrentUser = Depends(require_roles(*TELEMETRY_WRITERS)),
+):
     """Ajouter des données de capteur à une session"""
+    _parse_uuid(session_id)
     try:
         # S'assurer que le session_id correspond
         sensor_data.session_id = session_id
@@ -451,4 +512,4 @@ async def add_sensor_data(session_id: str, sensor_data: SensorData, db: DbSessio
         return new_data
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _internal_error(e)

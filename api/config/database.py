@@ -11,6 +11,10 @@ DATABASE_URL = os.getenv(
     f"postgresql://{db_user}:{db_pass}@{os.getenv('DB_HOST', 'localhost')}:5432/{db_name}"
 )
 
+# SQLAlchemy 2.1 defaults plain PostgreSQL URLs to psycopg 3; the API uses psycopg2.
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
 

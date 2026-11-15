@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Header from '../components/Header';
 import { SkeletonSidePanel, SkeletonChart } from '../components/Skeleton';
 import { Play, Pause, Square, Flag, AlertTriangle, RotateCw, Users, Download, RefreshCw } from 'lucide-react';
-import { API_BASE_URL } from '../services/api';
+import { API_BASE_URL, authFetch } from '../services/api';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrthographicCamera, MapControls, Line } from '@react-three/drei';
 import * as THREE from 'three';
@@ -195,7 +195,7 @@ const SimulationPage: React.FC = () => {
   useEffect(() => {
     const fetchCircuits = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/circuits/`);
+        const response = await authFetch(`${API_BASE_URL}/circuits/`);
         if (response.ok) {
           const data = await response.json();
           setCircuits(data);
@@ -260,7 +260,7 @@ const SimulationPage: React.FC = () => {
       const userId = parsed.id;
       if (!userId) return [];
 
-      const response = await fetch(`${API_BASE_URL}/sessions/user/${userId}/circuit/${circuitId}`);
+      const response = await authFetch(`${API_BASE_URL}/sessions/user/${userId}/circuit/${circuitId}`);
       if (response.ok) {
         return await response.json();
       }
@@ -280,7 +280,7 @@ const SimulationPage: React.FC = () => {
     setLoading(true);
     setLoadError('');
     try {
-      const boundariesRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/boundaries`);
+      const boundariesRes = await authFetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/boundaries`);
       if (isStale()) return;
 
       if (!boundariesRes.ok) {
@@ -296,10 +296,10 @@ const SimulationPage: React.FC = () => {
 
       if (loadTrajectory) {
         if (selectedTrajectoryType === 'optimal') {
-          let trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
+          let trajectoryRes = await authFetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`);
 
           if (trajectoryRes.status === 404 && !isStale()) {
-            trajectoryRes = await fetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
+            trajectoryRes = await authFetch(`${API_BASE_URL}/circuits/${selectedCircuitId}/optimal-trajectory`, {
               method: 'POST'
             });
           }
@@ -311,7 +311,7 @@ const SimulationPage: React.FC = () => {
             trajectoryError = `Trajectoire optimisée indisponible (erreur ${trajectoryRes.status}).`;
           }
         } else if (selectedTrajectoryType === 'session' && selectedSessionId) {
-          const trajectoryRes = await fetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
+          const trajectoryRes = await authFetch(`${API_BASE_URL}/sessions/${selectedSessionId}/trajectory`);
           if (trajectoryRes.ok) {
             trajectory = await trajectoryRes.json();
           } else {
@@ -374,7 +374,7 @@ const SimulationPage: React.FC = () => {
   const loadPredictions = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/circuits/week-circuit/predictions`);
+      const response = await authFetch(`${API_BASE_URL}/circuits/week-circuit/predictions`);
       if (response.ok) {
         setPredictionsLoaded(true);
       } else {

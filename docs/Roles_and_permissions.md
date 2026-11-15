@@ -1,16 +1,16 @@
 # Architecture RBAC MoKart - Spécifications Techniques
 
 **Auteur :** Tech Lead MoKart
-**Statut :** Définitif
-**Date :** Avril 2026
+**Statut :** Spécification cible, partiellement implémentée
+**Date :** Avril 2026 — statut clarifié en novembre 2026
 
-Ce document définit l'architecture stricte de contrôle d'accès basé sur les rôles (RBAC) pour le projet MoKart. Le système repose sur une granularité par **Scopes** (permissions) intégrée dans les tokens JWT, contrôlant à la fois l'accès logiciel (FastAPI/React) et les actions matérielles physiques (Raspberry Pi/GPIO/I2C).
+Ce document définit la cible RBAC de MoKart. Le code actuel émet des JWT et applique des contrôles de rôle et d'accès à certaines routes FastAPI. Il **n'intègre pas** encore les scopes détaillés aux JWT ni les actions physiques Raspberry Pi/GPIO/I2C décrites ci-dessous. La matrice du front est dans `app/src/types/user.ts` ; l'état effectif côté API est résumé dans [la mémoire projet](../memory/10-roles-permissions.md).
 
 ---
 
 ## 1. Matrice des Scopes (Permissions)
 
-Le système abandonne la simple vérification de rôles au profit d'une vérification de scopes pour garantir la sécurité IoT.
+La cible proposée remplace progressivement les contrôles de rôle simples par des scopes. Les listes ci-dessous sont des exigences, pas des autorisations serveur déjà en place.
 
 ### 1.1 Scopes Logiciels (Data & Web)
 - `users.read` / `users.write` : Gestion des profils utilisateurs.
@@ -73,7 +73,7 @@ Le système abandonne la simple vérification de rôles au profit d'une vérific
 
 ## 3. Implémentation Backend (FastAPI)
 
-Le contrôle d'accès doit utiliser les `SecurityScopes` de FastAPI.
+L'exemple suivant montre la cible avec `SecurityScopes` ; cette route et ce contrôle ne sont pas présents dans l'API actuelle.
 
 ```python
 # Exemple de protection d'une route matérielle

@@ -48,6 +48,37 @@ class ApiError extends Error {
   }
 }
 
+export function authHeaders(): Record<string, string> {
+  try {
+    const session = JSON.parse(localStorage.getItem('mokart_session') || 'null');
+    return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
+function endSession() {
+  localStorage.removeItem('mokart_session');
+  localStorage.removeItem('mokart_user');
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login';
+  }
+}
+
+export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      ...authHeaders(),
+      ...((init.headers as Record<string, string>) || {}),
+    },
+  });
+  if (response.status === 401) {
+    endSession();
+  }
+  return response;
+}
+
 // Fonction utilitaire pour les requêtes fetch
 async function apiRequest<T>(
   endpoint: string,
@@ -56,15 +87,15 @@ async function apiRequest<T>(
   const url = `${API_BASE_URL}${endpoint}`;
 
   const config: RequestInit = {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...((options.headers as Record<string, string>) || {}),
     },
-    ...options,
   };
 
   try {
-    const response = await fetch(url, config);
+    const response = await authFetch(url, config);
 
     if (!response.ok) {
       let errorMessage = `Erreur HTTP ${response.status}`;

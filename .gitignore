@@ -7,3 +7,4 @@ package-lock.json
 build
 rpi/imu_data.csv
 .venv
+.security-tools

@@ -14,7 +14,8 @@ avant promotion dans `production`. La branche GitHub par défaut est `dev`.
 | backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
 | ai-backend | `/ai-backend`, `Dockerfile` | 8000 | privé |
 | ai-frontend | `/ai-front`, `Dockerfile` | 4000 | public |
-| nocodb | `/`, `nocodb/Dockerfile` | 8080 | privé, publié par Cloudflare Tunnel et Access |
+| backup | `/`, `backup/Dockerfile` | aucun | privé, tâche cron |
+| nocodb | `/`, `.nocodb/Dockerfile` | 8080 | désactivé ; accès privé via Cloudflare Tunnel et Access lors de sa réactivation |
 
 `app` transmet `/api/` à `api.railway.internal:5000`. Railway isole le réseau privé de
 chaque environnement. `db` et `ai-backend` restent sans domaine public.
@@ -54,6 +55,85 @@ une évolution du schéma après le premier démarrage exige une migration expli
 Pour promouvoir une version, fusionner `dev` dans `production`. Railway reconstruit alors
 les services concernés à partir de la branche `production`.
 
+Le dossier NocoDB a été déplacé de `nocodb/` vers `.nocodb/` dans la branche de nettoyage
+`92-repository-cleanup`. La configuration Railway du service désactivé peut encore pointer
+vers `nocodb/Dockerfile`. Après fusion du code dans chaque branche d'environnement et avant
+de réactiver NocoDB, régler son chemin de Dockerfile sur `.nocodb/Dockerfile` dans Railway.
+
+## Sauvegardes PostgreSQL
+
+Le service `backup` lance `pg_dump` sur chaque base listée et vérifie le fichier avec
+`pg_restore --list`. Il compare l'empreinte du contenu SQL avec celle du dernier dump :
+si l'export SQL est identique, il ne téléverse pas de nouveau fichier. Sinon, il l'envoie
+vers Cloudflare R2. Il conserve les deux derniers dumps distincts par base et par
+environnement. Il s'arrête à la fin ; Railway le relance selon sa planification.
+Un échec de dump ou d'envoi termine le service en erreur.
+
+État au dernier contrôle (13 novembre 2026) : un dump existait dans le bucket R2 de `dev`,
+aucun dans celui de `production`. Les essais de la tâche de production s'étaient arrêtés
+sans erreur exploitable dans les logs Railway. Vérifier la première exécution planifiée et
+le fichier dans le bucket de production avant de considérer ces sauvegardes comme validées.
+
+Réglages Railway du service `backup`, dans chaque environnement :
+
+- Settings, Cron Schedule : `0 2 * * 3,6` (mercredi et samedi à 2h UTC).
+- Settings, Restart Policy : `Never`.
+- Aucun domaine public.
+- Le processus s'arrête après chaque sauvegarde ; il ne réserve pas de RAM entre deux exécutions.
+
+Les buckets R2 privés `mokart-backups-dev` et `mokart-backups-production` existent dans
+le compte Cloudflare de Mokart. Utiliser une clé d'accès R2 limitée à chaque bucket,
+avec les droits de lecture et d'écriture nécessaires à l'envoi, à la liste et à la
+suppression des anciennes sauvegardes. Garder les clés uniquement dans les variables
+Railway de l'environnement correspondant. Ne pas exposer les buckets publiquement.
+
+Variables :
+
+- `PGHOST=db.railway.internal`, `PGPORT=5432`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`,
+  construits avec les références Railway vers les variables de `db`.
+- `BACKUP_DATABASES` : bases à sauvegarder séparées par des espaces, par défaut `PGDATABASE`.
+  Mettre `mokart nocodb` (avec le nom réel de la base) quand NocoDB est déployé.
+- `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`, `S3_BUCKET`
+  (le bucket de l'environnement).
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` : jeton API R2 limité au bucket, en
+  lecture et écriture.
+- `BACKUP_KEEP_COUNT=2` dans les deux environnements. L'ancienne variable
+  `BACKUP_RETENTION_DAYS` n'est plus utilisée.
+
+Les dumps personnalisés contiennent une date de création et ne sont donc pas comparés
+octet par octet. Le service calcule une empreinte SHA-256 de leur sortie SQL répétable
+et la stocke dans les métadonnées R2. Pour un ancien dump sans empreinte, il le
+télécharge et le compare. Si la base reste inchangée longtemps, le dernier dump est
+conservé même s'il a plus de quelques semaines. Un changement d'ordre des lignes dans
+un export peut produire une nouvelle empreinte même si les données logiques n'ont pas changé.
+
+Les fichiers sont rangés sous `<environnement>/<base>/<base>-<date UTC>.dump`.
+`RAILWAY_ENVIRONMENT_NAME` sépare aussi les sauvegardes par environnement dans les
+chemins ; `BACKUP_PREFIX` permet de forcer un autre préfixe. Vérifier un premier
+fichier dans R2 et tester une restauration dans une base de test avant de considérer
+les sauvegardes comme opérationnelles.
+
+Pour restaurer sur Railway, lancer une tâche ponctuelle avec la même image et les
+mêmes variables que `backup`, sans planification, avec la commande de démarrage
+correspondante. La tâche doit être arrêtée après la restauration. Restaurer d'abord
+dans une base de test et vérifier les données avant toute intervention en production.
+
+Commande pour restaurer la dernière sauvegarde d'une base :
+
+```sh
+mokart-restore mokart
+```
+
+Restaurer une sauvegarde précise :
+
+```sh
+mokart-restore mokart mokart-20261017T020000Z.dump
+```
+
+La restauration remplace les tables existantes de la base ciblée. En local, lancer
+`docker compose run --rm backup` pour une sauvegarde et
+`docker compose run --rm backup mokart-restore <base>` pour une restauration, avec les
+variables `S3_*` du fichier `.env`.
 ## Sauvegardes PostgreSQL
 
 Le service `backup` est configuré en **dev** et en **production** sur Railway, avec un
@@ -85,20 +165,24 @@ dans une base `nocodb` séparée, créée automatiquement sur le serveur `db` au
 le schéma de `mokart` n'est jamais modifié. Le compte `NC_ADMIN_EMAIL` est créé au premier
 démarrage, et chaque démarrage réserve les inscriptions aux invitations.
 
-Le service `nocodb` suit la branche GitHub de son environnement et Railway le redéploie aux
-prochains pushs. Ne lui attribuer **aucun domaine public Railway** : le conteneur lance
+Le service `nocodb` est actuellement désactivé en dev et en production, avec ses
+déploiements automatiques coupés. Avant de le réactiver, retirer la commande de
+démarrage qui termine immédiatement et remettre sa politique de redémarrage.
+Ne lui attribuer **aucun domaine public Railway** : le conteneur lance
 `cloudflared` avec `CF_TUNNEL_TOKEN`. Chaque environnement a son tunnel Cloudflare, dont le
 hostname public pointe vers `http://localhost:8080`. Les CNAME Cloudflare proxifiés pointent
 vers les tunnels, et Cloudflare Access n'autorise que les adresses de l'équipe. La configuration
 du tunnel vérifie aussi le JWT Access avant de transmettre une requête à NocoDB.
 
-Au démarrage, `nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
+Au démarrage, `.nocodb/bootstrap.js` crée si nécessaire la base NocoDB `Mokart` et sa source
 PostgreSQL externe vers la base applicative, en lecture seule dans NocoDB. Il vérifie leur
 présence aux redéploiements sans créer de doublons. Les variables `NC_APP_DB_*` doivent être
 configurées dans **dev** et **production** avant le premier déploiement. Si l'initialisation
-échoue, le conteneur s'arrête avec une erreur et Railway le redémarre. La lecture seule de
+échoue, le conteneur s'arrête avec une erreur ; le redémarrage dépend de la politique Railway
+configurée. La lecture seule de
 NocoDB n'est pas une restriction PostgreSQL : le compte utilisé conserve les droits de `db`.
 
 L'interface expose les données. Les domaines `db.mokart.fr` et `db-dev.mokart.fr`
 doivent être placés derrière une application Cloudflare Access limitée aux membres de l'équipe.
-En local, elle est disponible sur `http://localhost:8090`.
+En local, les blocs `nocodb` des deux fichiers Compose sont commentés. Les décommenter
+et renseigner leurs variables avant de lancer le service sur `http://localhost:8090`.

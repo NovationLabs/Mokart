@@ -1,6 +1,38 @@
+<div align="center">
+  <a href="https://mokart.fr"><img src=".github/mokart-logo.png" alt="Mokart" width="360" /></a>
+</div>
+
+<div align="center">
+
+  ![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white)
+
+</div>
+
+<div align="center">
+
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=coverage)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+
+</div>
+
+<div align="center">
+
 [![Mokart Dev CI](https://github.com/novationlabs/mokart/actions/workflows/build_dev.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Prod CI](https://github.com/novationlabs/mokart/actions/workflows/build_prod.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Lint & Build](https://github.com/novationlabs/mokart/actions/workflows/lint.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/lint.yml)
+[![Mokart Security CI](https://github.com/novationlabs/mokart/actions/workflows/security-ci.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/security-ci.yml)
+[![Mokart Security CD](https://github.com/novationlabs/mokart/actions/workflows/security-cd.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/security-cd.yml)
+
+</div>
 
 ## Architecture
 
@@ -16,34 +48,17 @@ Mokart/
 
 ## Quick Start
 
-**Script de démarrage recommandé**
-```bash
-# Démarrage rapide (développement)
-./start.sh
-
-# Construction et démarrage
-./start.sh build
-
-# Reconstruction complète
-./start.sh rebuild
-
-# Mode production
-./start.sh prod
-
-# Arrêter les services
-./start.sh stop
-
-# Nettoyage complet
-./start.sh clean
-```
-
-**Docker Compose direct**
 ```bash
 # Development
+cp .env.example .env
 docker compose up --build
 
-# Production
+# Local production configuration
 docker compose -f docker-compose.prod.yml up --build -d
+
+# Stop
+docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 ---
