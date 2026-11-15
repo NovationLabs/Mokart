@@ -4,7 +4,7 @@
 
 <div align="center">
 
-![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
+  ![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
@@ -16,9 +16,21 @@
 
 <div align="center">
 
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=coverage)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+
+</div>
+
+<div align="center">
+
 [![Mokart Dev CI](https://github.com/novationlabs/mokart/actions/workflows/build_dev.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Prod CI](https://github.com/novationlabs/mokart/actions/workflows/build_prod.yml/badge.svg)](https://github.com/novationlabs/mokart/actions)
 [![Mokart Lint & Build](https://github.com/novationlabs/mokart/actions/workflows/lint.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/lint.yml)
+[![Mokart Security CI](https://github.com/novationlabs/mokart/actions/workflows/security-ci.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/security-ci.yml)
+[![Mokart Security CD](https://github.com/novationlabs/mokart/actions/workflows/security-cd.yml/badge.svg)](https://github.com/novationlabs/mokart/actions/workflows/security-cd.yml)
 
 </div>
 
