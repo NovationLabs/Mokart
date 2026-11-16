@@ -150,7 +150,7 @@ class MokartServer:
         # Socket de reception
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("0.0.0.0", UDP_PORT))
+        self.sock.bind(("127.0.0.1", UDP_PORT))
         self.sock.settimeout(1.0)
 
         # Socket de broadcast

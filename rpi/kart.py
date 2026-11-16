@@ -63,7 +63,7 @@ class MokartKart:
         self.recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.recv_sock.bind(("0.0.0.0", BROADCAST_PORT))
+        self.recv_sock.bind(("127.0.0.1", BROADCAST_PORT))
         self.recv_sock.settimeout(1.0)
 
     def _update_cpu_percent(self):
