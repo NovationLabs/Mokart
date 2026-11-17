@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Send the SonarQube Cloud results for a newly analyzed dev commit to Discord."""
-import datetime
+import uuid
+from pathlib import Path
+
+from sonar_quality_card import create_card
 import json
 import os
 import sys
@@ -73,6 +76,44 @@ def short_title(title, limit=85):
     return title if len(title) <= limit else title[:limit - 5].rstrip() + "[...]"
 
 
+STATE_PATH = Path(".sonar-momo/state.json")
+
+
+def read_previous():
+    try:
+        state = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        return state.get("counts", {}) if isinstance(state, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_current(sha, counts):
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps({"sha": sha, "counts": counts}), encoding="utf-8")
+
+
+def post_card(webhook, payload, image_data):
+    """Send the PNG as a Discord embed attachment in the same multipart POST."""
+    boundary = "momo-" + uuid.uuid4().hex
+    body = bytearray()
+    def add_part(name, data, content_type, filename=None):
+        disposition = f'Content-Disposition: form-data; name="{name}"'
+        if filename:
+            disposition += f'; filename="{filename}"'
+        body.extend(f"--{boundary}\r\n{disposition}\r\nContent-Type: {content_type}\r\n\r\n".encode())
+        body.extend(data)
+        body.extend(b"\r\n")
+    add_part("payload_json", json.dumps(payload, ensure_ascii=False).encode("utf-8"), "application/json")
+    add_part("files[0]", image_data, "image/png", filename="mokart-quality.png")
+    body.extend(f"--{boundary}--\r\n".encode())
+    request = urllib.request.Request(
+        webhook, data=bytes(body), method="POST",
+        headers={"Content-Type": f"multipart/form-data; boundary={boundary}",
+                 "User-Agent": "Mokart-Sonar-Discord/1.0"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        print(f"Discord notification delivered: {response.status}")
+
+
 def main():
     webhook = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
     sha = os.getenv("GITHUB_SHA", "").strip()
@@ -99,13 +140,15 @@ def main():
     urgent = issue_count("SECURITY", "BLOCKER,HIGH")
     passed = measures.get("alert_status") == "OK"
 
-    def field(name, metric, quality):
-        return {"name": name, "value": f"**{rating(measures, metric)}** · **{counts[quality]}** issues", "inline": True}
+    previous = read_previous()
+    rating_map = {
+        "SECURITY": rating(measures, "security_rating"),
+        "RELIABILITY": rating(measures, "reliability_rating"),
+        "MAINTAINABILITY": rating(measures, "sqale_rating"),
+    }
+    image_data = create_card(rating_map, counts, previous)
 
     fields = [
-        field("Security", "security_rating", "SECURITY"),
-        field("Reliability", "reliability_rating", "RELIABILITY"),
-        field("Maintainability", "sqale_rating", "MAINTAINABILITY"),
         {"name": "Blocker + High · Security", "value": f"**{urgent}** issues prioritaires", "inline": True},
         {"name": "Duplications", "value": f"**{measures.get('duplicated_lines_density', '—')}%**", "inline": True},
         {"name": "Coverage", "value": f"**{measures['coverage']}%**" if "coverage" in measures else "Non configuré", "inline": True},
@@ -121,14 +164,11 @@ def main():
             "description": f"**Mokart** · dev · [{sha[:7]}]({commit_url})\n{title}",
             "color": 0x57F287 if passed else 0xED4245,
             "fields": fields,
-            "footer": {"text": "momo 🙊 · Mokart Code Quality · SonarQube Cloud"},
-            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+            "image": {"url": "attachment://mokart-quality.png"}
         }]
     }
-    request = urllib.request.Request(webhook, data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "User-Agent": "Mokart-Sonar-Discord/1.0"}, method="POST")
-    with urllib.request.urlopen(request, timeout=25) as response:
-        print(f"Discord notification delivered: {response.status}")
+    post_card(webhook, payload, image_data)
+    save_current(sha, counts)
     return 0
 
 if __name__ == "__main__":
