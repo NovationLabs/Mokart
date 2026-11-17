@@ -163,8 +163,10 @@ def main():
             "url": view_url,
             "description": f"**Mokart** · dev · [{sha[:7]}]({commit_url})\n{title}",
             "color": 0x57F287 if passed else 0xED4245,
-            "fields": fields,
             "image": {"url": "attachment://mokart-quality.png"}
+        }, {
+            "color": 0x57F287 if passed else 0xED4245,
+            "fields": fields
         }]
     }
     post_card(webhook, payload, image_data)
