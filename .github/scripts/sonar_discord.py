@@ -43,6 +43,36 @@ def analysis_matches(sha):
     revision = latest.get("revision", "")
     return bool(revision and (sha.startswith(revision) or revision.startswith(sha)))
 
+def commit_title(sha):
+    """Read the real push commit title from the GitHub Actions event payload."""
+    event_file = os.getenv("GITHUB_EVENT_PATH")
+    if event_file:
+        try:
+            with open(event_file, encoding="utf-8") as source:
+                event = json.load(source)
+            message = (event.get("head_commit") or {}).get("message", "")
+            if message.strip():
+                return message.splitlines()[0].strip()
+        except (OSError, ValueError, TypeError):
+            pass
+    # Fallback for manual workflow_dispatch, which has no head_commit payload.
+    try:
+        url = f"https://api.github.com/repos/NovationLabs/Mokart/commits/{sha}"
+        request = urllib.request.Request(url, headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": "Mokart-Sonar-Discord/1.0",
+        })
+        with urllib.request.urlopen(request, timeout=15) as response:
+            message = json.load(response)["commit"]["message"]
+        return message.splitlines()[0].strip() or f"Commit {sha[:7]}"
+    except (urllib.error.URLError, KeyError, ValueError, IndexError):
+        return f"Commit {sha[:7]}"
+
+
+def short_title(title, limit=85):
+    return title if len(title) <= limit else title[:limit - 5].rstrip() + "[...]"
+
+
 def main():
     webhook = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
     sha = os.getenv("GITHUB_SHA", "").strip()
@@ -69,25 +99,26 @@ def main():
     urgent = issue_count("SECURITY", "BLOCKER,HIGH")
     passed = measures.get("alert_status") == "OK"
 
-    def field(name, metric, quality, emoji):
-        return {"name": name, "value": f"{emoji} **{rating(measures, metric)}** · **{counts[quality]}** issues", "inline": True}
+    def field(name, metric, quality):
+        return {"name": name, "value": f"**{rating(measures, metric)}** · **{counts[quality]}** issues", "inline": True}
 
     fields = [
-        field("Security", "security_rating", "SECURITY", "🛡️"),
-        field("Reliability", "reliability_rating", "RELIABILITY", "⚙️"),
-        field("Maintainability", "sqale_rating", "MAINTAINABILITY", "🧩"),
+        field("Security", "security_rating", "SECURITY"),
+        field("Reliability", "reliability_rating", "RELIABILITY"),
+        field("Maintainability", "sqale_rating", "MAINTAINABILITY"),
         {"name": "Blocker + High · Security", "value": f"**{urgent}** issues prioritaires", "inline": True},
         {"name": "Duplications", "value": f"**{measures.get('duplicated_lines_density', '—')}%**", "inline": True},
         {"name": "Coverage", "value": f"**{measures['coverage']}%**" if "coverage" in measures else "Non configuré", "inline": True},
     ]
     view_url = "https://sonarcloud.io/summary/overall?id=mokart&branch=dev"
     commit_url = f"https://github.com/NovationLabs/Mokart/commit/{sha}"
+    title = short_title(commit_title(sha))
     payload = {
         "username": "momo 🙊", "avatar_url": AVATAR, "allowed_mentions": {"parse": []},
         "embeds": [{
             "title": "✅ Quality Gate · PASSED" if passed else "🚨 Quality Gate · FAILED / UNKNOWN",
             "url": view_url,
-            "description": f"**Mokart** · dev · [{sha[:7]}]({commit_url})\nAnalyse terminée et associée au commit.",
+            "description": f"**Mokart** · dev · [{sha[:7]}]({commit_url})\n{title}",
             "color": 0x57F287 if passed else 0xED4245,
             "fields": fields,
             "footer": {"text": "momo 🙊 · Mokart Code Quality · SonarQube Cloud"},
