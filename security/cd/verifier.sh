@@ -50,7 +50,9 @@ attendre
 
 verifier "API joignable" "200" "$(code "$API_URL/health")"
 verifier "Admin refusé sans jeton" "401" "$(code "$API_URL/admin/users")"
-verifier "Admin refusé avec un jeton forgé" "401" "$(code -H 'Authorization: Bearer local-token-550e8400-e29b-41d4-a716-446655440001' "$API_URL/admin/users")"
+# Jeton aléatoire et invalide, renouvelé à chaque vérification (aucun secret codé en dur).
+jeton_invalide="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+verifier "Admin refusé avec un jeton invalide" "401" "$(code -H "Authorization: Bearer $jeton_invalide" "$API_URL/admin/users")"
 verifier "Sessions refusées sans jeton" "401" "$(code "$API_URL/sessions/")"
 verifier "Profil refusé sans jeton" "401" "$(code "$API_URL/users/profile?user_id=550e8400-e29b-41d4-a716-446655440001")"
 verifier "Tableau de bord refusé sans jeton" "401" "$(code "$API_URL/dashboard/data?user_id=x&role=admin")"
