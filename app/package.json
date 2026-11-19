@@ -14,7 +14,7 @@
     "react-scripts": "5.0.1",
     "recharts": "^3.10.1",
     "three": "^0.187.0",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "web-vitals": "^3.3.1"
   },
   "overrides": {
