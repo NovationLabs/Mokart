@@ -41,7 +41,7 @@ jobs:
         run: python .github/scripts/sonar_discord.py
       - name: Save current quality counts
         if: success()
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .sonar-momo/state.json
           key: sonar-momo-dev-${{ github.run_id }}-${{ github.run_attempt }}
