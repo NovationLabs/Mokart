@@ -16,11 +16,11 @@
 
 <div align="center">
 
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=reliability_rating)](https://sonarcloud.io/summary/overall?id=mokart&branch=dev)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=coverage)](https://sonarcloud.io/summary/new_code?id=mokart)
-[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mokart)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=mokart)
-[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=alert_status)](https://sonarcloud.io/project/activity?id=mokart)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=duplicated_lines_density)](https://sonarcloud.io/component_measures?id=mokart&metric=duplicated_lines_density&view=list)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=ncloc)](https://sonarcloud.io/code?id=mokart)
 
 </div>
 
