@@ -16,11 +16,11 @@
 
 <div align="center">
 
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=coverage)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
-[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
-[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=NovationLabs_Mokart&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=NovationLabs_Mokart)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=coverage)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=mokart)
+[![Lines of code](https://sonarcloud.io/api/project_badges/measure?project=mokart&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=mokart)
 
 </div>
 

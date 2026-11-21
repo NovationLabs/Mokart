@@ -11,7 +11,7 @@ echecs=0
 total=0
 
 resume() {
-  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
     printf '%s\n' "$@" >> "$GITHUB_STEP_SUMMARY"
   fi
 }
@@ -40,7 +40,7 @@ entete() {
 
 attendre() {
   for _ in $(seq 1 30); do
-    [ "$(code "$API_URL/health")" = "200" ] && return 0
+    [[ "$(code "$API_URL/health")" = "200" ]] && return 0
     sleep 4
   done
 }
@@ -50,6 +50,7 @@ attendre
 
 verifier "API joignable" "200" "$(code "$API_URL/health")"
 verifier "Admin refusé sans jeton" "401" "$(code "$API_URL/admin/users")"
+# Jeton aléatoire et invalide, renouvelé à chaque vérification (aucun secret codé en dur).
 jeton_invalide="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 verifier "Admin refusé avec un jeton invalide" "401" "$(code -H "Authorization: Bearer $jeton_invalide" "$API_URL/admin/users")"
 verifier "Sessions refusées sans jeton" "401" "$(code "$API_URL/sessions/")"
@@ -58,12 +59,12 @@ verifier "Tableau de bord refusé sans jeton" "401" "$(code "$API_URL/dashboard/
 verifier "Swagger fermé" "404" "$(code "$API_URL/docs")"
 verifier "CORS refuse une origine inconnue" "" "$(curl -s -I -m 20 -H 'Origin: https://mokart-verification.invalid' "$API_URL/health" | tr -d '\r' | grep -i '^access-control-allow-origin:' | cut -d: -f2- | xargs)"
 
-if [ "$ENVIRONNEMENT" = "production" ]; then
+if [[ "$ENVIRONNEMENT" = "production" ]]; then
   verifier "Compte démo désactivé" "403" "$(code -X POST -H 'Content-Type: application/json' -d '{"email":"demo@mokart.com","password":"demo123456"}' "$API_URL/auth/login")"
 fi
 
 for cible in "$APP_URL" "$WEB_URL"; do
-  [ -z "$cible" ] && continue
+  [[ -z "$cible" ]] && continue
   verifier "En-tête nosniff sur $cible" "nosniff" "$(entete "$cible" x-content-type-options)"
   verifier "Protection iframe sur $cible" "SAMEORIGIN|DENY" "$(entete "$cible" x-frame-options)"
   if [[ "$cible" == https://* ]]; then
@@ -71,11 +72,11 @@ for cible in "$APP_URL" "$WEB_URL"; do
   fi
 done
 
-if [ -n "$AI_URL" ]; then
+if [[ -n "$AI_URL" ]]; then
   gros="$(python3 -c 'import json;print(json.dumps({"messages":[{"role":"user","content":"x"*70000}]}))')"
   verifier "Agent IA refuse les requêtes géantes" "413|429" "$(code -X POST -H 'Content-Type: application/json' --data "$gros" "$AI_URL/api/chat")"
 fi
 
 resume "" "$((total - echecs)) contrôles sur $total conformes."
 printf '\n%s contrôles sur %s conformes\n' "$((total - echecs))" "$total"
-[ "$echecs" -eq 0 ]
+[[ "$echecs" -eq 0 ]]
