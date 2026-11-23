@@ -1,0 +1,59 @@
+name: SonarCloud Issues Export
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+  schedule:
+    # 09:30 America/New_York: 13:30 UTC during EDT, 14:30 UTC during EST.
+    - cron: '30 13,14 * * *'
+  pull_request:
+    branches: [dev]
+    paths:
+      - '.github/workflows/sonar-issues-export.yml'
+      - '.github/scripts/sonar_issues_export.py'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check scheduled local time
+        id: local_time
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          local = datetime.now(ZoneInfo("America/New_York"))
+          should_run = os.environ["EVENT_NAME"] != "schedule" or (local.hour == 9 and local.minute >= 25 and local.minute <= 59)
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"run={'true' if should_run else 'false'}\n")
+          print(f"New York time: {local.isoformat()}; run: {should_run}")
+          PY
+      - name: Checkout
+        if: steps.local_time.outputs.run == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Python
+        if: steps.local_time.outputs.run == 'true'
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v6.0.0
+        with:
+          python-version: '3.12'
+      - name: Export SonarCloud issues
+        if: steps.local_time.outputs.run == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: python .github/scripts/sonar_issues_export.py
+      - name: Upload report
+        if: steps.local_time.outputs.run == 'true' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sonarcloud-issues-${{ github.run_id }}
+          path: sonar-report/
+          if-no-files-found: error
+          retention-days: 30
